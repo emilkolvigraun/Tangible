@@ -30,7 +30,8 @@ namespace EC.MS
             {
                 try
                 {
-                    Task.Run(() => Producer.SendMessage(new string[] {message}, Topics));
+                    // Task.Run(() => Producer.SendMessage(new string[] {message}, Topics));
+                    Producer.SendMessage(new string[] {message}, Topics);
                     return true;
                 } 
                 catch (Exception)
