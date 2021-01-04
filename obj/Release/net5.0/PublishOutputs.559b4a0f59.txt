@@ -1,0 +1,5 @@
+C:\Users\emilk\OneDrive\tangible\docker\app\bin\Release\net5.0\publish\EC.MS.exe
+C:\Users\emilk\OneDrive\tangible\docker\app\bin\Release\net5.0\publish\EC.MS.dll
+C:\Users\emilk\OneDrive\tangible\docker\app\bin\Release\net5.0\publish\EC.MS.deps.json
+C:\Users\emilk\OneDrive\tangible\docker\app\bin\Release\net5.0\publish\EC.MS.runtimeconfig.json
+C:\Users\emilk\OneDrive\tangible\docker\app\bin\Release\net5.0\publish\EC.MS.pdb
