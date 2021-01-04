@@ -119,7 +119,7 @@ namespace EC.MS
         {
             foreach (var value in item.DequeueValues())
             {
-                Task.Run(() => {
+                // Task.Run(() => {
                     pModule.OnDataReceived(
                         string.Format("opcua:{0}", item.DisplayName.ToString()), 
                         string.Format("value:{0} timestamp:{1} status:{2}", 
@@ -127,7 +127,7 @@ namespace EC.MS
                                         (DateTime.Parse(value.SourceTimestamp.ToString()) - new DateTime(1970, 1, 1)).TotalSeconds.ToString(), 
                                         value.StatusCode.ToString())
                         );
-                });
+                // });
             }
         }
         // OPCUA SINK FUNCTIONS - END

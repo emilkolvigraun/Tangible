@@ -12,8 +12,10 @@ namespace EC.MS
     {
 
         Dictionary<string, List<string>> Subscribers;
-        Dictionary<string, (string Node, string Topic)> Associations;
-        Dictionary<string, string> LatestValues;
+        Dictionary<string, string> Associations;
+        Dictionary<string, string> Ids;
+        Dictionary<string, (string value, string timestamp)> LatestValues;
+
         object Lock;
         object valueLock;
 
@@ -23,8 +25,10 @@ namespace EC.MS
         {
             Client = client;
             Subscribers = new Dictionary<string, List<string>>();
-            Associations = new Dictionary<string, (string Node, string Topic)>();
-            LatestValues = new Dictionary<string, string>();
+            Associations = new Dictionary<string, string>();
+            LatestValues = new Dictionary<string, (string value, string timestamp)>();
+            Ids = new Dictionary<string, string>();
+
             Lock = new object();
             valueLock = new object();
         }
@@ -40,11 +44,11 @@ namespace EC.MS
             }
         }
 
-        private bool ValidateReceivedValue(string id, string currentValue)
+        private bool ValidateReceivedValue(string id, string currentValue, string currentTimeStamp)
         {
             lock (valueLock) 
             {
-                string value;
+                (string value, string timestamp) value;
                 if (LatestValues.TryGetValue(id, out value))
                 {
                     if (value.Equals(currentValue))
@@ -53,13 +57,13 @@ namespace EC.MS
                     }
                     else 
                     {
-                        LatestValues[id] = currentValue;
+                        LatestValues[id] = (currentValue, currentTimeStamp);
                         return true;
                     }
                 }
                 else 
                 {
-                    LatestValues.Add(id, currentValue);
+                    LatestValues.Add(id, (currentValue, currentTimeStamp));
                     return true;
                 }
             }
@@ -71,7 +75,9 @@ namespace EC.MS
             string debugging1 = "driver_received:"+DefaultLog.CurrentTimeMillis();
             string[] _src = source.Split(":");
             string _value = data.Split(" ")[0];
-            if (!ValidateReceivedValue(_src[1], _value)) return true;
+            if (!ValidateReceivedValue(_src[1], data.Split(" ")[1].Split(":")[1], _value.Split(":")[1])) return true;
+
+            Client.Log(string.Format("Received value: {0}", _value));
 
             if (_src.Length > 1 && _src[0].ToString().Equals("opcua"))
             {
@@ -81,28 +87,11 @@ namespace EC.MS
                     if (Subscribers.TryGetValue(_src[1].ToString(), out returnTopics)){
                         foreach(string top in returnTopics)
                         {
-                            string header = "protocol: datasphere-ingest 0.1\n\n";
-                            
-                            List<List<string>> Data = new List<List<string>>();
-                            Data.Add(new List<string> {data.Split(" ")[1].Split(":")[1], _value.Split(":")[1]});
-
-                            Dictionary<string, string> MetaData = new Dictionary<string, string>();
-                            MetaData.Add("date/time/format", "epoch/ms");
-                            MetaData.Add("date/value/type", "float");
-                            MetaData.Add("source/type", _src[0]);
-                            MetaData.Add("source/instance", _src[1]);
-                            MetaData.Add("identifier", GetHashString(source));
-
-                            WesleyMessage msg = new WesleyMessage {
-                                data = Data,
-                                metadata = MetaData
-                            };
-
-                            string payload = header + JsonConvert.SerializeObject(msg, Formatting.Indented);
-                            
-                            // Client.KafkaSendMessage(id:"softwsdu", topic:top, message:string.Format("{0} {1} {2} {3}", source, data, debugging1, debugging2));
-                            Client.KafkaSendMessage(id:"softwsdu", topic:top, message:payload);
-                            Client.Log("Processed update to " + top);
+                            Task.Run(() => {
+                                Client.Log(string.Format("Checking for value: {0} to {1}", _src[1].ToString(), top));
+                                SendUpdate(timestamp:data.Split(" ")[1].Split(":")[1], value:_value.Split(":")[1], topic:top.ToString(), source:_src[0], _src[1]);
+                                Client.Log("Processed update to " + top + ", topic: " + top.ToString());
+                            });
                         }
                     } 
                     else 
@@ -113,6 +102,30 @@ namespace EC.MS
                 }
             }
             return true;
+        }
+
+        private void SendUpdate(string timestamp, string value, string topic, string source, string instance)
+        {
+            string header = "protocol: datasphere-ingest 0.1\n\n";
+            List<List<string>> Data = new List<List<string>>();
+            Data.Add(new List<string> {timestamp, value});
+
+            Dictionary<string, string> MetaData = new Dictionary<string, string>();
+            MetaData.Add("date/time/format", "epoch/ms");
+            MetaData.Add("date/value/type", "float");
+            MetaData.Add("source/type", source);
+            MetaData.Add("source/instance", instance);
+            MetaData.Add("identifier", GetHashString(source));
+
+            WesleyMessage msg = new WesleyMessage {
+                data = Data,
+                metadata = MetaData
+            };
+
+            string payload = header + JsonConvert.SerializeObject(msg, Formatting.Indented);
+            
+            // Client.KafkaSendMessage(id:"softwsdu", topic:top, message:string.Format("{0} {1} {2} {3}", source, data, debugging1, debugging2));
+            Client.KafkaSendMessage(id:"softwsdu", topic:topic, message:payload);
         }
 
         public static byte[] GetHash(string inputString)
@@ -146,26 +159,37 @@ namespace EC.MS
                 {
                     string url = cmd[2];
                     string node = cmd[3];
+                    string subscription = node;
                     string rtopic = cmd[4];
                     try 
                     {
-                        string id = Client.OPCUAStartSubscription(url, node, this);
-                        if (id != null) {
-                            Client.KafkaSendMessage(id:"softwsdu", topic:rtopic, message:FormatResponse("start","id",id));
-                            lock (Lock) {
-                                if (Subscribers.ContainsKey(node))
-                                {
-                                    if (!Subscribers[node].Contains(rtopic))
-                                    {
-                                        Subscribers[node].Add(rtopic);
-                                        Associations[id] = (node, rtopic);
-                                    }
-                                } else {
-                                    Subscribers.Add(node, new List<string>{rtopic});
-                                    Associations.Add(id, (node, rtopic));
-                                }
+                        string id;
+                        bool success = Ids.TryGetValue(subscription, out id);
+
+                        if (!success) 
+                        {
+                            Client.Log("Creating new OPC UA subscription.");
+                            id = Client.OPCUAStartSubscription(url, node, this);
+                            Ids.Add(subscription, id);
+                        } else {
+                            Client.Log("Attaching subscriber to known OPC UA subscription.");
+                            (string t, string v) val;
+                            bool vs = LatestValues.TryGetValue(node, out val);
+                            if (vs) SendUpdate(val.t, val.v, rtopic, "opcua", node);
+                        }
+
+                        if (Subscribers.ContainsKey(subscription)){
+                            if (!Subscribers[subscription].Contains(rtopic)){
+                                Subscribers[subscription].Add(rtopic);
+                                Associations[id] = subscription;
                             }
-                        } 
+                        } else 
+                        {
+                            Subscribers.Add(subscription, new List<string>{rtopic});
+                            Associations.Add(id, subscription);
+                        }
+                        
+                        if (id != null) Client.KafkaSendMessage(id:"softwsdu", topic:rtopic, message:FormatResponse("start","id",id));
                         else Client.KafkaSendMessage(id:"softwsdu", topic:rtopic, message:"error");
                     }
                     catch(Exception ex)
@@ -179,21 +203,27 @@ namespace EC.MS
                     if (cmd.Length == 3)
                     {
                         string id = cmd[2];
-                        bool success = Client.OPCUAStopSubscription(id:id);
-                        (string Node, string Topic) topic; 
+                        string rtopic = cmd[3];
+                        string subscription; 
                         bool error = false;
                         lock (Lock) {
-                            error = Associations.TryGetValue(id, out topic);
+                            error = Associations.TryGetValue(id, out subscription);
                             if(error)
                             {
-                                if (success)
+                                Subscribers[subscription].Remove(rtopic);
+
+                                if (Subscribers.Count() < 1) 
                                 {
-                                    Subscribers[topic.Node].Remove(topic.Topic);
                                     Associations.Remove(id);
-                                    Client.KafkaSendMessage(id:"softwsdu", topic:topic.Topic, message:FormatResponse("stop","status","success"));
-                                } else {
-                                    Client.KafkaSendMessage(id:"softwsdu", topic:topic.Topic, message:FormatResponse("stop","status","error"));
+                                    bool success = Client.OPCUAStopSubscription(id:id);
+                                    if (success)
+                                    {
+                                        Client.KafkaSendMessage(id:"softwsdu", topic:rtopic, message:FormatResponse("stop","status","success stopping "+subscription.ToString()));
+                                    } else {
+                                        Client.KafkaSendMessage(id:"softwsdu", topic:rtopic, message:FormatResponse("stop","status","error stopping "+subscription.ToString()));
+                                    }
                                 }
+                                Client.KafkaSendMessage(id:"softwsdu", topic:rtopic, message:FormatResponse("stop","status","success stopping "+subscription.ToString()));                                
                             }
                         }
                     } 

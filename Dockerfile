@@ -24,7 +24,7 @@ COPY --from=build-env /app/out .
 ENV W_PORT 8081
 ENV W_IP 127.0.0.1
 ENV W_KEY sdfsdfsdfsdfsdf
-ENV W_SOURCE kafka=stage1.cfei.dk:9092=opcua-kafka.pmod.test
+ENV W_SOURCE kafka=stage1.cfei.dk:9092=opcua.quick.test.1
 ENV W_SINK kafka=stage1.cfei.dk:9092=softwsdu
 
 # Run the program
