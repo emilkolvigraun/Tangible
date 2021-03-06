@@ -1,0 +1,88 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Node.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Node.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Node.csproj",
+        "projectName": "Node",
+        "projectPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Node.csproj",
+        "packagesPath": "C:\\Users\\emilk\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\emilk\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net5.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net5.0": {
+            "targetAlias": "net5.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net5.0": {
+          "targetAlias": "net5.0",
+          "dependencies": {
+            "Devart.Data.Oracle.EFCore": {
+              "target": "Package",
+              "version": "[9.14.1204, )"
+            },
+            "LiteDB": {
+              "target": "Package",
+              "version": "[5.0.10, )"
+            },
+            "confluent.kafka": {
+              "target": "Package",
+              "version": "[1.6.2, )"
+            },
+            "docker.dotnet": {
+              "target": "Package",
+              "version": "[3.125.4, )"
+            },
+            "newtonsoft.json": {
+              "target": "Package",
+              "version": "[12.0.3, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.4.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.100\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

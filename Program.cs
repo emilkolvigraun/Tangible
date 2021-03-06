@@ -1,51 +1,63 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 
-namespace EC.MS
+namespace Node
 {
     class Program
     {
-        static void Main(string[] args)
+
+        static void LoadEnvVariables()
         {
-            EdgeClient running = Variables.LoadConfig();
-            if (running == null) 
-            {
-                DefaultLog.GetInstance().Log(LogLevel.ERROR, "Error during startup.");
-                DefaultLog.GetInstance().Log(LogLevel.ERROR, "Shutting dowm.");
-                //Client.SendNotificationToMaster("Error during startup.");
-            }
-            else 
-            {
-                ProcessingModule module = new ProcessingModule(running);
-                DefaultLog.GetInstance().Log(LogLevel.INFO, "Initialized processing module.");
-                List<Task> tasks = new List<Task>();
-                foreach(KeyValuePair<string, string[]> source in Variables.SOURCES)
-                {
-                    if (source.Key.ToLower().Contains("kafka"))
-                    {
-                        string[] _topics = source.Value[1].Split(",");
-                        tasks.Add(new KafkaConsumer( source.Value[0], Utils.GetUniqueKey(12)).Subscribe(CleanTopics(_topics), module));
-                    }
-                    // else another source
-                }
-                        // t.Start();
-                DefaultLog.GetInstance().Log(LogLevel.INFO, "Processing module now running.");
-                Task.WaitAll(tasks.ToArray());
-            }
+            EsbVariables.Load();
+            NetVariables.Load();
+            OrchestrationVariables.Load();
         }
 
-        private static string[] CleanTopics(string[] topics)
+        static void Main(string[] args)
         {
-            List<string> _topics = new List<string>();
-            foreach(string top in topics)
-            {
-                if (!string.IsNullOrEmpty(top) || !string.IsNullOrWhiteSpace(top))
-                {
-                    _topics.Add(top);
-                }
-            }
-            return _topics.ToArray();
+            Environment.SetEnvironmentVariable("KAFKA_BROKERS", "192.168.1.237:9092");
+            Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
+            Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
+            Environment.SetEnvironmentVariable("PORT_NUMBER", "8000");
+            Environment.SetEnvironmentVariable("INTERFACE", "0.0.0.0");
+            Environment.SetEnvironmentVariable("CERT_EXPIRE_DAYS", "365");
+            Environment.SetEnvironmentVariable("CLUSTER_ID", "Tangible#1");
+            Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
+            Environment.SetEnvironmentVariable("HEARTBEAT_S", "3");
+
+            LoadEnvVariables();
+            
+            NetUtils.MakeCertificate();
+            AsyncTLSServer.Instance.AsyncStart();
+
+            Orchestrator.Instance._Description = new Description() {
+                CommonName = NetUtils.LoadCommonName(),
+                AdvertisedHostName = NetVariables.ADVERTISED_HOST_NAME,
+                Port = NetVariables.PORT_NUMBER,
+                Workload = Orchestrator.Instance.CalculateWorkloadBurden(),
+                Quorum = new Dictionary<string, QuorumNode>(),
+                Tasks = new List<Task>(),
+            };
+
+            Console.CancelKeyPress += delegate {
+                AsyncTLSServer.Instance.Stop();
+                KafkaConsumer.Instance.Dispose();
+                Orchestrator.Instance.Dispose();
+            };
+
+            Orchestrator.Instance.Init();
+            Orchestrator.Instance.Run();
+
+            Logger.Log("MAIN", "Started with ID: "+Orchestrator.Instance._Description.CommonName);
+            Logger.Log("MAIN", "With address: "+Orchestrator.Instance._Description.AdvertisedHostName+":"+Orchestrator.Instance._Description.Port);
+            Logger.Log("MAIN", "With Kafka brokers: "+EsbVariables.KAFKA_BROKERS);
+            Logger.Log("MAIN", "With Group: "+EsbVariables.CLUSTER_ID);
+            Logger.Log("MAIN", "With boradcast topic: "+EsbVariables.BROADCAST_TOPIC);
+            Logger.Log("MAIN", "With request topic: "+EsbVariables.REQUEST_TOPIC);
+            Logger.Log("MAIN", "With heartbeat ms: "+OrchestrationVariables.HEARTBEAT_S);
+            Logger.Log("    ", "--------------------");
+            Console.ReadLine();
         }
     }
 }

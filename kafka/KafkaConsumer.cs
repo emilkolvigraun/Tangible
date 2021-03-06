@@ -4,69 +4,102 @@ using System;
 using Confluent.Kafka;
 using System.Threading.Tasks;
 
-namespace EC.MS
+namespace Node
 {
     class KafkaConsumer
     {
 
         public ConsumerConfig Config { get; private set; }
         private CancellationTokenSource token;
+        private static KafkaConsumer _instance = null;
+        private static readonly object padlock = new object();
+        private List<string> Topics;
 
-        public KafkaConsumer(string servers, string group_id, AutoOffsetReset offset = AutoOffsetReset.Latest)
+        private System.Threading.Tasks.Task OnGoing;
+
+        public static KafkaConsumer Instance
         {
-            Config = new ConsumerConfig 
+            get
             {
-                GroupId = group_id,
-                BootstrapServers = servers,
-                AutoOffsetReset = offset,
-                EnableAutoCommit = true,
-            };
-
-            token = new CancellationTokenSource();
-            DefaultLog.GetInstance().Log(LogLevel.INFO, "Created new Kafka consumer.");
+                lock (padlock)
+                {
+                    if (_instance == null)
+                    {
+                        _instance = new KafkaConsumer();
+                    }
+                    return _instance;
+                }
+            }
         }
 
-        public Task Subscribe(IEnumerable<string> topics, ProcessingModule module)
-        {  
-            Task t = Task.Run(() => {
+        KafkaConsumer()
+        {
+            Topics = new List<string>() {EsbVariables.REQUEST_TOPIC};
+            Config = new ConsumerConfig 
+            {
+                GroupId = EsbVariables.CLUSTER_ID,
+                BootstrapServers = EsbVariables.KAFKA_BROKERS,
+                AutoOffsetReset = AutoOffsetReset.Latest,
+                EnableAutoCommit = true,
+                AllowAutoCreateTopics = true
+            };
+        }
+
+        public void Subscribe()
+        {
+            if (OnGoing != null)
+            {
+                Dispose();
+                OnGoing.GetAwaiter().GetResult();
+            }
+            token = new CancellationTokenSource();
+            OnGoing = System.Threading.Tasks.Task.Run(() => {
                 try 
                 {
                     using (var consumer = new ConsumerBuilder<Ignore, string>(Config).Build())
                     {
-                        consumer.Subscribe(topics);
+                        consumer.Subscribe(Topics);
 
                         try 
                         {
-                            DefaultLog.GetInstance().Log(LogLevel.INFO, string.Format("Started subscribing to Kafka topic(s): {0}", string.Join(",", topics) ));
+                            Logger.Log(this.GetType().Name, "Starting listening on: " + string.Join(",", Topics.ToArray()));
                             while (true)
                             {
                                 var response = consumer.Consume(token.Token);
                                 consumer.Commit();
-                                bool success = module.OnDataReceived("kafka:"+response.Topic, response.Message.Value);
-                                DefaultLog.GetInstance().Log(LogLevel.INFO, string.Format("Result from processing module: {0}", success));
+                                Request ParsedRequest = RequestUtils.DeserializeRequest(response.Message.Value.ToString());
+                                RequestHandler.Instance.ProcessFromType(ParsedRequest);
                             }
                         }
-                        catch (Exception ex)  
+                        catch (Exception)  
                         {
-                            DefaultLog.GetInstance().Log(LogLevel.ERROR, string.Format("Failed to subscribe to: {0}:{1}, Exception: {2}", Config.BootstrapServers.ToString(), string.Join(",", topics), ex.Message));
                             consumer.Close();
-                            //Client.NotifyServer("Kafka Consumer was closed.");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    DefaultLog.GetInstance().Log(LogLevel.ERROR, string.Format("Consumer unable to connect to Kafka broker: {0}", ex.Message));
+                    Logger.Log(this.GetType().Name,string.Format("Consumer unable to connect to Kafka broker: {0}", ex.Message));
                 }
-
             });
-            return t;
+        }
+
+        public void ToggleBroadcastListener()
+        {
+            if (Topics.Contains(EsbVariables.BROADCAST_TOPIC)) {
+                Logger.Log(this.GetType().Name, "Set Broadcast Listener OFF");
+                Topics.Remove(EsbVariables.BROADCAST_TOPIC);
+            } 
+            if (!Topics.Contains(EsbVariables.BROADCAST_TOPIC))
+            {
+                Logger.Log(this.GetType().Name, "Set Broadcast Listener ON");
+                Topics.Add(EsbVariables.BROADCAST_TOPIC);
+            }
         }
 
         public void Dispose()
         {
             token.Cancel();
         }
-
     }
 }
