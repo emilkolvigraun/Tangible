@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "QzMVSLMktmrgp5BQuDhY9PditAMRzADMgkKPpq4nE2b5hpv+Svw1iYyOVrfPH4br5meVWjKXs5Ib6s7lljv0tQ==",
+  "dgSpecHash": "975CbsBViKjP8tfTNapxH2ZTcT4i4YYtwmbmRtdVGIW7rVYysFkLuNx23py8F7tTvBWa2d3rl1dVSWX03lTPIw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Node.csproj",
+  "projectFilePath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\emilk\\.nuget\\packages\\confluent.kafka\\1.6.2\\confluent.kafka.1.6.2.nupkg.sha512",
     "C:\\Users\\emilk\\.nuget\\packages\\devart.data\\5.0.2628\\devart.data.5.0.2628.nupkg.sha512",

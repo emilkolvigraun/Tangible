@@ -8,7 +8,7 @@ namespace Node
         public string AdvertisedHostName {get; set;} = null;
         public int Port {get; set;} = -1;
         public float Workload {get; set;} = -1;
-        public float HeartBeat {get; set;} = 0;
+        public int HeartBeat {get; set;} = 0;
         public Dictionary<string, QuorumNode> Quorum {get; set;} = null;
         public List<Task> Tasks {get; set;} = null;
     }

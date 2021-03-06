@@ -49,23 +49,41 @@ namespace Node
                             pulsate = false;
                         }
 
+                        List<string> Flagged = new List<string>();
                         Dictionary<string, QuorumNode> T_Quorum = GetLockQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
                         foreach(string k0 in T_Quorum.Keys.ToList()) 
                         {
                             QuorumNode N0 = T_Quorum[k0];
-
-                            if (pulsate && N0.HeartBeat >=1) 
+                            if (N0.HeartBeat >= 5)
                             {
-                                NodeClient Client = NodeClient.Connect(N0.AdvertisedHostName, N0.Port, N0.CommonName);
-                                if (Client != null) 
-                                {
-                                    Request Response = Client.SendRequestRespondRequest(new Request(){
-                                        TypeOf = Request.Type.HEARTBEAT,
-                                        Node = _Description,
-                                    });
-                                    RegisterNode(Response.Node.AsQuorum());
-                                    Logger.Log(this.GetType().Name, "Send heartbeat to "+k0);
+                                Flagged.Add(k0);
+                                continue;
+                            }
+                            if (pulsate) 
+                            {
+                                if (N0.HeartBeat >= 1) 
+                                {   
+                                    try 
+                                    {
+                                        NodeClient Client = NodeClient.Connect(N0.AdvertisedHostName, N0.Port, N0.CommonName);
+                                        if (Client != null) 
+                                        {
+                                            Request Response = Client.SendRequestRespondRequest(new Request(){
+                                                TypeOf = Request.Type.HEARTBEAT,
+                                                Node = _Description,
+                                            });
+                                            RegisterNode(Response.Node.AsQuorum());
+                                            Logger.Log(this.GetType().Name, "Send heartbeat to "+k0);
+                                        }    
+                                    } catch(Exception)
+                                    {
+                                        Logger.Log(this.GetType().Name, "Unable to reach "+k0);
+                                        N0.HeartBeat++;
+                                        continue;
+                                    }
+                                    
                                 }
+                                N0.HeartBeat++;
                             }
 
                             // Obtain connection to other nodes which I don't have
@@ -83,8 +101,11 @@ namespace Node
                                     );
                                 }
                             }
+                        }
 
-                            N0.HeartBeat++;
+                        foreach(string k2 in Flagged)
+                        {
+                            GetLockQuorum().Remove(k2);
                         }
                     } catch(Exception e)
                     {
@@ -100,7 +121,6 @@ namespace Node
                 status = true;
             }
             GetLockQuorum()[quorumNode.CommonName] = quorumNode;
-            Logger.Log(this.GetType().Name, "Registered " + quorumNode.CommonName + " to Quorum of size: " + GetLockQuorum().Count.ToString());
             return status;
         }
         public float CalculateWorkloadBurden()
@@ -136,7 +156,6 @@ namespace Node
 
             return (float)(Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2)+Math.Round(ram.NextValue() / 1024 / 1024, 2));
         }
-
         public Dictionary<string, QuorumNode> GetLockQuorum()
         {
             lock (qlock) {

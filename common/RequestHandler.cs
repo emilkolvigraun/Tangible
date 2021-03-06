@@ -46,6 +46,7 @@ namespace Node
                     NetUtils.StoreCertificate(Response);
                     Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName);
                     Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
+                    Logger.Log(this.GetType().Name, "Registered " + request.Node.CommonName + " to Quorum of size: " + Orchestrator.Instance.GetLockQuorum().Count.ToString());
                 }
             } catch (Exception e)
             {
@@ -61,6 +62,7 @@ namespace Node
                 NetUtils.SendBytes(stream, Orchestrator.Instance.Certificate);
                 Logger.Log(this.GetType().Name, "Responded with certificate");
                 Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
+                    Logger.Log(this.GetType().Name, "Registered " + request.Node.CommonName + " to Quorum of size: " + Orchestrator.Instance.GetLockQuorum().Count.ToString());
             } catch (Exception e)
             {
                 Logger.Log(this.GetType().Name, "Certificate, "+ e.Message);
