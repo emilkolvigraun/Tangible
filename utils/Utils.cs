@@ -49,12 +49,18 @@ namespace Node
                 char[] chars = new char[bytes.Length / sizeof(char)];
                 System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
                 return new string(chars);
-            } catch (Exception e)
+            } catch (Exception)
             {
-                Logger.Log("Utils", "GetString, "+e.Message);
-                char[] chars = new char[bytes.Length];
-                System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-                return new string(chars);
+                try 
+                {
+                    char[] chars = new char[bytes.Length];
+                    System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
+                    return new string(chars);
+                } catch(Exception e)
+                {
+                    Logger.Log("Utils", "GetString, "+e.Message, Logger.LogLevel.ERROR);
+                    return "";
+                }
             }
         }
 

@@ -40,5 +40,15 @@ namespace Node
                 });
             return MetaQuorum;
         }
+
+        public static DataObject AsDataObject(this QuorumNode quorumNode)
+        {
+            return new DataObject(){
+                Key = quorumNode.AdvertisedHostName,
+                Value = new DataObject(){
+                    Key = quorumNode.Port.ToString()
+                }
+            };
+        }
     }
 }

@@ -12,7 +12,7 @@ namespace Node
             try {
                 return JsonConvert.DeserializeObject<Request>(NetUtils.DecodeRequest(Stream));
             } catch(Exception e) {
-                Logger.Log("DeserializeRequest", e.Message);
+                Logger.Log("DeserializeRequest", e.Message, Logger.LogLevel.ERROR);
                 return null;
             }
         }
@@ -22,7 +22,7 @@ namespace Node
             try {
                 return JsonConvert.DeserializeObject<Request>(Request.Message.Value.ToString());
             } catch(Exception e) {
-                Logger.Log("DeserializeRequest", e.Message);
+                Logger.Log("DeserializeRequest", e.Message, Logger.LogLevel.ERROR);
                 return null;
             }
         }
@@ -32,7 +32,7 @@ namespace Node
             try {
                 return JsonConvert.DeserializeObject<Request>(Request);
             } catch(Exception e) {
-                Logger.Log("DeserializeRequest", e.Message);
+                Logger.Log("DeserializeRequest", e.Message, Logger.LogLevel.ERROR);
                 return null;
             }
         }
@@ -42,7 +42,7 @@ namespace Node
             try {
                 return JsonConvert.SerializeObject(request, Formatting.None);
             } catch(Exception e) {
-                Logger.Log("SerializeRequest", e.Message);
+                Logger.Log("SerializeRequest", e.Message, Logger.LogLevel.ERROR);
                 return null;
             }
         }

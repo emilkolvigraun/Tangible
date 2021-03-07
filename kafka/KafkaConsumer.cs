@@ -62,7 +62,7 @@ namespace Node
 
                         try 
                         {
-                            Logger.Log(this.GetType().Name, "Starting listening on: " + string.Join(",", Topics.ToArray()));
+                            Logger.Log(this.GetType().Name, "Starting listening on: " + string.Join(",", Topics.ToArray()), Logger.LogLevel.INFO);
                             while (true)
                             {
                                 var response = consumer.Consume(token.Token);
@@ -79,7 +79,7 @@ namespace Node
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log(this.GetType().Name,string.Format("Consumer unable to connect to Kafka broker: {0}", ex.Message));
+                    Logger.Log(this.GetType().Name,string.Format("Consumer unable to connect to Kafka broker: {0}", ex.Message), Logger.LogLevel.ERROR);
                 }
             });
         }
@@ -87,12 +87,12 @@ namespace Node
         public void ToggleBroadcastListener()
         {
             if (Topics.Contains(EsbVariables.BROADCAST_TOPIC)) {
-                Logger.Log(this.GetType().Name, "Set Broadcast Listener OFF");
+                Logger.Log(this.GetType().Name, "Set Broadcast Listener OFF", Logger.LogLevel.INFO);
                 Topics.Remove(EsbVariables.BROADCAST_TOPIC);
             } 
             if (!Topics.Contains(EsbVariables.BROADCAST_TOPIC))
             {
-                Logger.Log(this.GetType().Name, "Set Broadcast Listener ON");
+                Logger.Log(this.GetType().Name, "Set Broadcast Listener ON", Logger.LogLevel.INFO);
                 Topics.Add(EsbVariables.BROADCAST_TOPIC);
             }
         }

@@ -14,12 +14,12 @@ namespace Node
                 try {
                     if (request.Node.CommonName.Contains(Orchestrator.Instance._Description.CommonName)) return;
                 } catch(Exception e) {
-                    Logger.Log("if check", e.Message);
+                    Logger.Log(this.GetType().Name, e.Message, Logger.LogLevel.ERROR);
                 }
                 try {
-                    Logger.Log(this.GetType().Name, "Received " + request.TypeOf + " from " + request.Node.CommonName);
+                    Logger.Log(this.GetType().Name, "Received " + request.TypeOf + " from " + request.Node.CommonName, Logger.LogLevel.INFO);
                 } catch(Exception e) {
-                    Logger.Log("logging", e.Message);
+                    Logger.Log(this.GetType().Name, e.Message, Logger.LogLevel.ERROR);
                 }
                 
                 switch (request.TypeOf)
@@ -30,13 +30,13 @@ namespace Node
                     case Request.Type.CERTIFICATE: 
                         Certificate(request, stream);
                         break;
-                    case Request.Type.HEARTBEAT: 
-                        Heartbeat(request, stream);
+                    case Request.Type.LEADER_ELECTION: 
+                        LeaderElection(request, stream);
                         break;
                 }
             } catch(Exception e)
             {
-                Logger.Log(this.GetType().Name, "ProcessFromType, " + e.Message);
+                Logger.Log(this.GetType().Name, "ProcessFromType, " + e.Message, Logger.LogLevel.ERROR);
             }
         }
 
@@ -48,44 +48,43 @@ namespace Node
                     NodeClient Client = NodeClient.Connect(request.Node.AdvertisedHostName, request.Node.Port, request.Node.CommonName);
                     if (Client != null)
                     {
-                        Logger.Log(this.GetType().Name, "Connected to Client " + request.Node.CommonName);
+                        Logger.Log(this.GetType().Name, "Connected to Client " + request.Node.CommonName, Logger.LogLevel.INFO);
                         
                         byte[] Response = Client.SendRequestRespondBytes(new Request(){
                             TypeOf = Request.Type.CERTIFICATE,
                             Node = Orchestrator.Instance._Description,
-                            Data = new Dictionary<string, string>(){{"Cert",Utils.GetString(Orchestrator.Instance.Certificate)}}
+                            Data = new Dictionary<string, DataObject>(){{"Cert",new DataObject(){Key = Utils.GetString(Orchestrator.Instance.Certificate)}}}
                         });
-                        Logger.Log(this.GetType().Name, "Responded with CERTIFICATE request to " + request.Node.CommonName);
+                        Logger.Log(this.GetType().Name, "Responded with CERTIFICATE request to " + request.Node.CommonName, Logger.LogLevel.INFO);
                         NetUtils.StoreCertificate(Response);
-                        Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName);
+                        Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName, Logger.LogLevel.INFO);
                         Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
-                        Logger.Log(this.GetType().Name, "Registered " + request.Node.CommonName + " to Quorum of size: " + Orchestrator.Instance.GetLockQuorum().Count.ToString());
                     }
                 } else {
-                    Logger.Log(this.GetType().Name, "Received REGISTRATION, but " + request.Node.CommonName + " was already registered.");
+                    Logger.Log(this.GetType().Name, "Received REGISTRATION, but " + request.Node.CommonName + " was already registered.", Logger.LogLevel.INFO);
                 }
             } catch (Exception e)
             {
-                Logger.Log(this.GetType().Name, "Registration, "+ e.Message);
+                Logger.Log(this.GetType().Name, "Registration, "+ e.Message, Logger.LogLevel.ERROR);
             }
         }
-
         public void Certificate(Request request, SslStream stream)
         {
             try 
             {
-                NetUtils.StoreCertificate(Utils.GetBytes(request.Data["Cert"]));
-                Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName);
+                NetUtils.StoreCertificate(Utils.GetBytes(request.Data["Cert"].Key));
                 NetUtils.SendBytes(stream, Orchestrator.Instance.Certificate);
-                Logger.Log(this.GetType().Name, "Responded with certificate");
+                Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName + " and responded with my own.", Logger.LogLevel.INFO);
                 Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
-                    Logger.Log(this.GetType().Name, "Registered " + request.Node.CommonName + " to Quorum of size: " + Orchestrator.Instance.GetLockQuorum().Count.ToString());
             } catch (Exception e)
             {
-                Logger.Log(this.GetType().Name, "Certificate, "+ e.Message);
+                Logger.Log(this.GetType().Name, "Certificate, "+ e.Message, Logger.LogLevel.ERROR);
             }
         }
+        public void LeaderElection(Request request, SslStream stream)
+        {
 
+        }
         public void Heartbeat(Request request, SslStream stream)
         {
             try 
@@ -94,10 +93,10 @@ namespace Node
                 NetUtils.SendRequestResponse(stream, new Request(){
                     Node = Orchestrator.Instance._Description,
                 });
-                Logger.Log(this.GetType().Name, "Responded to heartbeat from "+request.Node.CommonName);
+                Logger.Log(this.GetType().Name, "Responded to heartbeat from "+request.Node.CommonName, Logger.LogLevel.INFO);
             } catch (Exception e)
             {
-                Logger.Log(this.GetType().Name, "Heartbeat, "+ e.Message);
+                Logger.Log(this.GetType().Name, "Heartbeat, "+ e.Message, Logger.LogLevel.ERROR);
             }
         }
 

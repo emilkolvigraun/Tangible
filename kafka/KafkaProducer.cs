@@ -21,11 +21,11 @@ namespace Node
                 { 
                     string msg = RequestUtils.SerializeRequest(Request);
                     p.Produce(EsbVariables.BROADCAST_TOPIC, new Message<Null, string> { Value = msg });
-                    Logger.Log("KafkaProducer", msg);
+                    Logger.Log("KafkaProducer", msg, Logger.LogLevel.INFO);
                 }
                 catch (ProduceException<Null, string> e)
                 {
-                    Logger.Log("KafkaProducer",$"Kafka message production failed: {e.Error.Reason}");
+                    Logger.Log("KafkaProducer",$"Kafka message production failed: {e.Error.Reason}", Logger.LogLevel.ERROR);
                 }
                 
                 p.Flush(TimeSpan.FromSeconds(10));

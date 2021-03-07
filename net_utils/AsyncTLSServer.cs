@@ -32,7 +32,7 @@ namespace Node
 
         public void AsyncStart() 
         { 
-            Logger.Log(this.GetType().Name, "Starting Server");
+            Logger.Log(this.GetType().Name, "Starting Server", Logger.LogLevel.INFO);
             Running = true;
             Server.Start();
             AwaitClient(); 
@@ -51,7 +51,7 @@ namespace Node
         private void AwaitClient() 
         { 
             Server.BeginAcceptTcpClient(ClientHandler, Server);
-            Logger.Log(this.GetType().Name, "Awaiting next client");
+            Logger.Log(this.GetType().Name, "Awaiting next client", Logger.LogLevel.INFO);
         } 
 
         private void ClientHandler(IAsyncResult result)
@@ -76,19 +76,19 @@ namespace Node
                     sslStream.WriteTimeout = 10000;
                     if (ParsedRequest != null) RequestHandler.Instance.ProcessFromType(ParsedRequest, sslStream);
                     else {
-                        Logger.Log(this.GetType().Name, "Received malformed request.");
+                        Logger.Log(this.GetType().Name, "Received malformed request.", Logger.LogLevel.INFO);
                         // Orchestrator.Instance.Broadcast();
                     }
                 } catch (Exception e)
                 {
                     sslStream.Close();
                     _client.Close();
-                    Logger.Log(this.GetType().Name, "Error parsing " + e.Message);
+                    Logger.Log(this.GetType().Name, "Error parsing " + e.Message, Logger.LogLevel.ERROR);
                 }
             }
             catch (Exception e)
             {
-                Logger.Log(this.GetType().Name, e.Message); 
+                Logger.Log(this.GetType().Name, e.Message, Logger.LogLevel.ERROR); 
                 sslStream.Close();
                 _client.Close();
                 return;

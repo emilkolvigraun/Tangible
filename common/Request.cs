@@ -14,10 +14,10 @@ namespace Node
             SHADOW, // Used to tell Node to produce a shadow clone of a Task
             MAINTAIN, // Used to tell a Node to execute and potentially maintain a Task
             HEARTBEAT, // Used when a node is pulsating
+            LEADER_ELECTION
         }
-
         public Type TypeOf {get; set;}
-        public Dictionary<string, string> Data {get; set;} = null;
+        public Dictionary<string, DataObject> Data {get; set;} = null;
         public Description Node {get; set;}
     }
 }
