@@ -10,9 +10,18 @@ namespace Node
         public void ProcessFromType(Request request, SslStream stream = null)
         {
             try {
-                if (request.Node.CommonName.Contains(Orchestrator.Instance._Description.CommonName)) return;
                 
-                Logger.Log(this.GetType().Name, "Received " + request.TypeOf + " from " + request.Node.CommonName);
+                try {
+                    if (request.Node.CommonName.Contains(Orchestrator.Instance._Description.CommonName)) return;
+                } catch(Exception e) {
+                    Logger.Log("if check", e.Message);
+                }
+                try {
+                    Logger.Log(this.GetType().Name, "Received " + request.TypeOf + " from " + request.Node.CommonName);
+                } catch(Exception e) {
+                    Logger.Log("logging", e.Message);
+                }
+                
                 switch (request.TypeOf)
                 {
                     case Request.Type.REGISTRATION: 
@@ -34,19 +43,26 @@ namespace Node
         public void Registration(Request request)
         {      
             try {  
-                NodeClient Client = NodeClient.Connect(request.Node.AdvertisedHostName, request.Node.Port, request.Node.CommonName);
-                if (Client != null)
+                if (!Orchestrator.Instance.GetLockQuorum().ContainsKey(request.Node.CommonName))
                 {
-                    byte[] Response = Client.SendRequestRespondBytes(new Request(){
-                        TypeOf = Request.Type.CERTIFICATE,
-                        Node = Orchestrator.Instance._Description,
-                        Data = new Dictionary<string, string>(){{"Cert",Utils.GetString(Orchestrator.Instance.Certificate)}}
-                    });
-                    Logger.Log(this.GetType().Name, "Responded with CERTIFICATE request to " + request.Node.CommonName);
-                    NetUtils.StoreCertificate(Response);
-                    Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName);
-                    Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
-                    Logger.Log(this.GetType().Name, "Registered " + request.Node.CommonName + " to Quorum of size: " + Orchestrator.Instance.GetLockQuorum().Count.ToString());
+                    NodeClient Client = NodeClient.Connect(request.Node.AdvertisedHostName, request.Node.Port, request.Node.CommonName);
+                    if (Client != null)
+                    {
+                        Logger.Log(this.GetType().Name, "Connected to Client " + request.Node.CommonName);
+                        
+                        byte[] Response = Client.SendRequestRespondBytes(new Request(){
+                            TypeOf = Request.Type.CERTIFICATE,
+                            Node = Orchestrator.Instance._Description,
+                            Data = new Dictionary<string, string>(){{"Cert",Utils.GetString(Orchestrator.Instance.Certificate)}}
+                        });
+                        Logger.Log(this.GetType().Name, "Responded with CERTIFICATE request to " + request.Node.CommonName);
+                        NetUtils.StoreCertificate(Response);
+                        Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName);
+                        Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
+                        Logger.Log(this.GetType().Name, "Registered " + request.Node.CommonName + " to Quorum of size: " + Orchestrator.Instance.GetLockQuorum().Count.ToString());
+                    }
+                } else {
+                    Logger.Log(this.GetType().Name, "Received REGISTRATION, but " + request.Node.CommonName + " was already registered.");
                 }
             } catch (Exception e)
             {
@@ -59,6 +75,7 @@ namespace Node
             try 
             {
                 NetUtils.StoreCertificate(Utils.GetBytes(request.Data["Cert"]));
+                Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName);
                 NetUtils.SendBytes(stream, Orchestrator.Instance.Certificate);
                 Logger.Log(this.GetType().Name, "Responded with certificate");
                 Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());

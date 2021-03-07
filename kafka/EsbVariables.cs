@@ -8,11 +8,11 @@ namespace Node
         public static string CLUSTER_ID;
         public static string BROADCAST_TOPIC;
         public static string REQUEST_TOPIC;
+        public static int WAIT_TIME_S;
 
         public static void Load()
         {
             string bt = Environment.GetEnvironmentVariable("BROADCAST_TOPIC");
-            if (bt == null) BROADCAST_TOPIC = "Tangible.broadcast.1"; 
             if (bt == null) 
             {
                 throw new ArgumentException("BROADCAST_TOPIC is undefined.");
@@ -32,6 +32,9 @@ namespace Node
             {
                 throw new ArgumentException("REQUEST_TOPIC is undefined.");
             } else REQUEST_TOPIC = rt;
+            string wt = Environment.GetEnvironmentVariable("WAIT_TIME_S");
+            if (wt == null) WAIT_TIME_S = 3000;
+            else WAIT_TIME_S = (int.Parse(wt)*1000)+3000;
         }
     }
 }

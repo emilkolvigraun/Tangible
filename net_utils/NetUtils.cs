@@ -72,7 +72,8 @@ namespace Node
 
         public static string DecodeRequest(SslStream _stream)
         {
-            return Utils.GetString(ParseBytes(_stream));
+            string decoded = Utils.GetString(ParseBytes(_stream));
+            return decoded;
         }
 
         public static byte[] ParseBytes(SslStream _stream)

@@ -32,6 +32,7 @@ namespace Node
 
         public void AsyncStart() 
         { 
+            Logger.Log(this.GetType().Name, "Starting Server");
             Running = true;
             Server.Start();
             AwaitClient(); 
@@ -39,14 +40,18 @@ namespace Node
 
         public void Stop()
         {  
-            Running = false;
-            Server.EndAcceptTcpClient(null);
-            Server.Stop();
+            try 
+            {
+                Running = false;
+                Server.EndAcceptTcpClient(null);
+                Server.Stop();
+            } catch (Exception) { }
         } 
 
         private void AwaitClient() 
         { 
             Server.BeginAcceptTcpClient(ClientHandler, Server);
+            Logger.Log(this.GetType().Name, "Awaiting next client");
         } 
 
         private void ClientHandler(IAsyncResult result)
@@ -59,19 +64,26 @@ namespace Node
             AwaitClient();  
 
             SslStream sslStream = new SslStream(_client.GetStream(), false);
-
             try
             {
+
+
                 sslStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired: false, checkCertificateRevocation: true);
                 
                 try {
                     Request ParsedRequest = RequestUtils.DeserializeRequest(sslStream);
                     sslStream.ReadTimeout = 10000;
                     sslStream.WriteTimeout = 10000;
-                    RequestHandler.Instance.ProcessFromType(ParsedRequest, sslStream);
+                    if (ParsedRequest != null) RequestHandler.Instance.ProcessFromType(ParsedRequest, sslStream);
+                    else {
+                        Logger.Log(this.GetType().Name, "Received malformed request.");
+                        // Orchestrator.Instance.Broadcast();
+                    }
                 } catch (Exception e)
                 {
-                    Logger.Log(this.GetType().Name, "parsing " + e.Message);
+                    sslStream.Close();
+                    _client.Close();
+                    Logger.Log(this.GetType().Name, "Error parsing " + e.Message);
                 }
             }
             catch (Exception e)

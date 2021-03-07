@@ -43,7 +43,6 @@ namespace Node
         public Request SendRequestRespondRequest(Request request)
         {
             string rq0 = RequestUtils.SerializeRequest(request);
-            Console.WriteLine(rq0);
             byte[] byteArr = Utils.GetBytes(rq0);
             Stream.Write(byteArr);
             Stream.Flush();
@@ -56,7 +55,8 @@ namespace Node
         public byte[] SendRequestRespondBytes(Request request)
         {
             try {
-                byte[] byteArr = Utils.GetBytes(RequestUtils.SerializeRequest(request));
+                string SerializedRequest = RequestUtils.SerializeRequest(request);
+                byte[] byteArr = Utils.GetBytes(SerializedRequest);
                 Stream.Write(byteArr);
                 Stream.Flush();
                 byte[] Response = NetUtils.ParseBytes(Stream);
@@ -65,33 +65,35 @@ namespace Node
                 return Response;
             } catch (Exception e) {
                 Logger.Log(this.GetType().Name, e.Message);
-                return null;
+                return new byte[]{};
             }
         }
 
         private static bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            X509Store userCaStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            try
-            {
-                userCaStore.Open(OpenFlags.ReadOnly);
-                X509Certificate2Collection certificatesInStore = userCaStore.Certificates;
-                foreach (X509Certificate2 cert in certificatesInStore)
-                    if (cert.Issuer.Contains(certificate.Issuer)  
-                        && cert.GetCertHashString().Contains(certificate.GetCertHashString()) 
-                        && cert.Subject.Contains(certificate.Subject)){
-                        return true;
-                    } 
-            } 
-            finally
-            { 
-                userCaStore.Close();
-            }
+            // X509Store userCaStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            // try
+            // {
+            //     userCaStore.Open(OpenFlags.ReadOnly);
+            //     X509Certificate2Collection certificatesInStore = userCaStore.Certificates;
+            //     foreach (X509Certificate2 cert in certificatesInStore)
+            //         if (cert.Issuer.Contains(certificate.Issuer)  
+            //             && cert.GetCertHashString().Contains(certificate.GetCertHashString()) 
+            //             && cert.Subject.Contains(certificate.Subject)){
+            //             return true;
+            //         } 
+            // } 
+            // finally
+            // { 
+            //     userCaStore.Close();
+            // }
 
             // if (sslPolicyErrors == SslPolicyErrors.None)
             //     return true;
 
-            return false;
+            // return false;
+
+            return true;
         }
     }
 }

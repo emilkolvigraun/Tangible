@@ -17,34 +17,42 @@ namespace Node
         {
             Certificate = AsyncTLSServer.Instance.GetEncodedCertificate();
             Running = true;
-            KafkaProducer.SendMessage(new Request{
-                TypeOf = Request.Type.REGISTRATION,
-                Node = _Description
-            });
+            Broadcast();
 
             System.Threading.Tasks.Task.Run(() => {
-                System.Threading.Tasks.Task.Delay(3000);
+                long t0 = Utils.Millis;
+                while (true)
+                {
+                    if (Utils.Millis - t0 >= 2000) break;
+                }
+
                 KafkaConsumer.Instance.ToggleBroadcastListener();
                 KafkaConsumer.Instance.Subscribe();
-            });
-            
+            });            
         }
+
+        // NEED TO MAKE CONSENSUS
+        // https://raft.github.io/
+        // Consul uses RAFT
+        // https://www.consul.io/docs/architecture/consensus
         public void Run()
         {
             long t0 = Utils.Millis;
             bool pulsate = false;
-            System.Threading.Tasks.Task.Run(() => {
+            // System.Threading.Tasks.Task.Run(() => {
                 while (Running)
                 {
                     try 
                     {
-                        Orchestrator.Instance._Description.Workload = CalculateWorkloadBurden();
                         
                         // Reset pulse
                         if (Utils.Millis - t0 > OrchestrationVariables.HEARTBEAT_S) 
                         {
                             pulsate = true;
                             t0 = Utils.Millis;
+                            Orchestrator.Instance._Description.Workload = CalculateWorkloadBurden();
+
+                            // if (GetLockQuorum().Count == 0) Broadcast();
                         } else {
                             pulsate = false;
                         }
@@ -106,13 +114,14 @@ namespace Node
                         foreach(string k2 in Flagged)
                         {
                             GetLockQuorum().Remove(k2);
+                            Logger.Log(this.GetType().Name, "Removed " + k2 + " from quorum.");
                         }
                     } catch(Exception e)
                     {
                         Logger.Log(this.GetType().Name, e.Message);
                     }
                 }
-            });
+            // });
         }
         public bool RegisterNode(QuorumNode quorumNode)
         {   
@@ -123,38 +132,18 @@ namespace Node
             GetLockQuorum()[quorumNode.CommonName] = quorumNode;
             return status;
         }
+        public void Broadcast()
+        {
+            Logger.Log(this.GetType().Name, "Broadcasting..");
+            KafkaProducer.SendMessage(new Request{
+                TypeOf = Request.Type.REGISTRATION,
+                Node = _Description
+            });
+        }
         public float CalculateWorkloadBurden()
         {
-            // Devart.Data.Oracle.EFCore
-            // Getting information about current process
-            var process = Process.GetCurrentProcess();
-
-            // Preparing variable for application instance name
-            var name = string.Empty;
-
-            foreach (var instance in new PerformanceCounterCategory("Process").GetInstanceNames())
-            {
-                if (instance.StartsWith(process.ProcessName))
-                {
-                    using (var processId = new PerformanceCounter("Process", "ID Process", instance, true))
-                    {
-                        if (process.Id == (int)processId.RawValue)
-                        {
-                            name = instance;
-                            break; 
-                        }
-                    }
-                }
-            } 
-
-            var cpu = new PerformanceCounter("Process", "% Processor Time", name, true);
-            var ram = new PerformanceCounter("Process", "Private Bytes", name, true);
-
-            // Getting first initial values
-            cpu.NextValue();
-            ram.NextValue();
-
-            return (float)(Math.Round(cpu.NextValue() / Environment.ProcessorCount, 2)+Math.Round(ram.NextValue() / 1024 / 1024, 2));
+            var me = Process.GetCurrentProcess();
+            return (float)((me.WorkingSet64/ 1024 / 1024)+me.TotalProcessorTime.TotalSeconds);
         }
         public Dictionary<string, QuorumNode> GetLockQuorum()
         {

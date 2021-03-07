@@ -1,0 +1,47 @@
+version: '2'
+services:
+  
+  node1:
+    image: emilkolvigraun/tangible-node
+    ports:
+      - "8000:8000"
+    environment:
+      ADVERTISED_HOST_NAME: "192.168.1.237"
+      PORT_NUMBER: "8000"
+      HEARTBEAT_S: "3"
+      KAFKA_BROKERS: "192.168.1.237:9092"
+      BROADCAST_TOPIC: "Tangible.broadcast.1"
+      REQUEST_TOPIC: "Tangible.request.1"
+      CLUSTER_ID: "Tangible#1"
+  
+  node2:
+    image: emilkolvigraun/tangible-node
+    ports:
+      - "8001:8001"
+    depends_on:
+      - "node1"
+    environment:
+      ADVERTISED_HOST_NAME: "192.168.1.237"
+      PORT_NUMBER: "8001"
+      HEARTBEAT_S: "3"
+      KAFKA_BROKERS: "192.168.1.237:9092"
+      BROADCAST_TOPIC: "Tangible.broadcast.1"
+      REQUEST_TOPIC: "Tangible.request.1"
+      CLUSTER_ID: "Tangible#1"
+      WAIT_TIME_S: "3"
+  
+  node3:
+    image: emilkolvigraun/tangible-node
+    ports:
+      - "8002:8002"
+    depends_on:
+      - "node2"
+    environment:
+      ADVERTISED_HOST_NAME: "192.168.1.237"
+      PORT_NUMBER: "8002"
+      HEARTBEAT_S: "3"
+      KAFKA_BROKERS: "192.168.1.237:9092"
+      BROADCAST_TOPIC: "Tangible.broadcast.1"
+      REQUEST_TOPIC: "Tangible.request.1"
+      CLUSTER_ID: "Tangible#1"
+      WAIT_TIME_S: "6"
