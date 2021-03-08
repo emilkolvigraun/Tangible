@@ -65,7 +65,7 @@ namespace Node
                 return Response;
             } catch (Exception e) {
                 Logger.Log(this.GetType().Name, e.Message, Logger.LogLevel.ERROR);
-                return new byte[]{};
+                return null;
             }
         }
 

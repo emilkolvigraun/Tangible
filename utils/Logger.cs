@@ -10,6 +10,7 @@ namespace Node
         {
             INFO,
             ERROR,
+            FATAL,
             DEBUG,
             NONE
         }

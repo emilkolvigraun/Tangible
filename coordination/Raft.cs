@@ -12,15 +12,14 @@ namespace Node
             CANDIDATE
         }
 
-        public Role _Role {get; set;} = Role.CANDIDATE;
+        public Role _Role {get; set;} = Role.FOLLOWER;
         public long LastHeartbeat;
-        public long ElectionTimeout;
         public long TsLastLeaderElected;
         public string CurrentLeader;
 
-        public Role GetState()
+        public Role GetState(int t0)
         {
-            if (LastHeartbeat - Utils.Millis > ElectionTimeout) _Role = Role.CANDIDATE;
+            if (t0 > OrchestrationVariables.ELECTION_TIMEOUT_MS+OrchestrationVariables.HEARTBEAT_MS) _Role = Role.CANDIDATE;
             else if (_Role != Role.LEADER) _Role = Role.FOLLOWER;
             return _Role;
         }
@@ -30,12 +29,16 @@ namespace Node
             LastHeartbeat = Utils.Millis;
         }
 
-        public void ValidateIfLeader()
+        public bool ValidateIfLeader()
         {
             lock (roleLock) 
             {
                 if (CurrentLeader.Contains(Orchestrator.Instance._Description.CommonName))
+                {
                     _Role = Role.LEADER;
+                    return true;
+                }
+                return false;
             }
         }
 
@@ -59,11 +62,15 @@ namespace Node
                         Votes.Add(Response.Data.V2.CommonName);
                     }
                 }
+                // if two votes are the same, it is the first in the collection and the last election
                 string majorityVote = Votes.GroupBy( i => i ).OrderByDescending(group => group.Count()).ElementAt(0).Key;
                 CurrentLeader = majorityVote;
                 TsLastLeaderElected = Utils.Millis;
                 VerifyMajorityVote(quorum);
-                ValidateIfLeader();
+                if (ValidateIfLeader())
+                {
+                    Logger.Log(this.GetType().Name, "I am the leader [ " + CurrentLeader + " ]", Logger.LogLevel.INFO);
+                } else Logger.Log(this.GetType().Name, "Set leader to " + CurrentLeader, Logger.LogLevel.INFO);
             }
         }
 
@@ -77,7 +84,8 @@ namespace Node
                     Request Response = Client.SendRequestRespondRequest(new Request(){
                         TypeOf = Request.Type.MAJORITY_VOTE,
                         TimeStamp = TsLastLeaderElected,
-                        Data = new DataObject(){V0 = CurrentLeader}
+                        Data = new DataObject(){V0 = CurrentLeader},
+                        Node = Orchestrator.Instance._Description
                     });
 
                     if (Response.TypeOf == Request.Type.NOT_ACCEPTED)
@@ -105,7 +113,7 @@ namespace Node
         public static readonly object hbLock = new object();
         public static readonly object roleLock = new object();
         public static readonly object padlock = new object();
-        public static Raft _instance = null;
+        private static Raft _instance = null;
         public static Raft Instance
         {
             get {
@@ -122,9 +130,9 @@ namespace Node
 
         Raft()
         {
-            ElectionTimeout = OrchestrationVariables.HEARTBEAT_MS;
             LastHeartbeat = Utils.Millis;
             TsLastLeaderElected = -1;
+            CurrentLeader = null;
         }
     }
 }

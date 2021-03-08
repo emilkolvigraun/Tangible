@@ -8,7 +8,7 @@ services:
     environment:
       ADVERTISED_HOST_NAME: "192.168.1.237"
       PORT_NUMBER: "8000"
-      HEARTBEAT_S: "300"
+      HEARTBEAT_S: "3000"
       KAFKA_BROKERS: "192.168.1.237:9092"
       BROADCAST_TOPIC: "Tangible.broadcast.1"
       REQUEST_TOPIC: "Tangible.request.1"
@@ -23,7 +23,7 @@ services:
     environment:
       ADVERTISED_HOST_NAME: "192.168.1.237"
       PORT_NUMBER: "8001"
-      HEARTBEAT_S: "300"
+      HEARTBEAT_S: "3000"
       KAFKA_BROKERS: "192.168.1.237:9092"
       BROADCAST_TOPIC: "Tangible.broadcast.1"
       REQUEST_TOPIC: "Tangible.request.1"
@@ -39,9 +39,9 @@ services:
     environment:
       ADVERTISED_HOST_NAME: "192.168.1.237"
       PORT_NUMBER: "8002"
-      HEARTBEAT_S: "300"
+      HEARTBEAT_S: "3000"
       KAFKA_BROKERS: "192.168.1.237:9092"
       BROADCAST_TOPIC: "Tangible.broadcast.1"
       REQUEST_TOPIC: "Tangible.request.1"
       CLUSTER_ID: "Tangible#1"
-      WAIT_TIME_S: "2"
+      WAIT_TIME_S: "20"

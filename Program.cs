@@ -25,7 +25,7 @@ namespace Node
             // Environment.SetEnvironmentVariable("CERT_EXPIRE_DAYS", "365");
             // Environment.SetEnvironmentVariable("CLUSTER_ID", "Tangible#1");
             // Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
-            // Environment.SetEnvironmentVariable("HEARTBEAT_S", "3");
+            // Environment.SetEnvironmentVariable("HEARTBEAT_MS", "3000");
             LoadEnvVariables();
 
             Logger.Log("MAIN", "Preparing ingredients..", Logger.LogLevel.INFO);

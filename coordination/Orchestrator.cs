@@ -33,11 +33,32 @@ namespace Node
             {
                 try 
                 {
+                    int t0 = Convert.ToInt32(Utils.Millis - Raft.Instance.LastHeartbeat);
                     Dictionary<string, QuorumNode> T_Quorum;
-                    lock(qlock)
+                    
+                    lock (qlock)
                     {
-                        T_Quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+                        T_Quorum= CopyQuorum();
                     }
+
+                    if (Utils.Millis - Raft.Instance.LastHeartbeat > OrchestrationVariables.HEARTBEAT_MS) 
+                    {
+                        Console.WriteLine(Raft.Instance.GetState(t0) + ", quorum: " + T_Quorum.Count);
+                        Raft.Instance.LastHeartbeat = Utils.Millis;
+                    }
+                    // if (Utils.Millis - lastHeartbeat > OrchestrationVariables.HEARTBEAT_MS)
+                    // {
+                    //     Dictionary<string, QuorumNode> T_Quorum = null;
+                    //     lock(qlock)
+                    //     {
+                    //         T_Quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+                    //     }
+
+                    //     // if (T_Quorum!=null && T_Quorum.Count > 0 && Raft.Instance.GetState()==Raft.Role.CANDIDATE)
+                    //     // {
+                    //     //     // Console.WriteLine(Raft.Instance.GetState());
+                    //     // }
+                    // }
 
                 } catch(Exception e)
                 {
@@ -47,16 +68,28 @@ namespace Node
         }
         public bool RegisterNode(QuorumNode quorumNode)
         {   
-            lock (qlock)
-            {
+            // lock (qlock)
+            // {
                 bool status = false;
-                if (!GetQuorum().ContainsKey(quorumNode.CommonName)){
-                    status = true;
+                try 
+                {
+                    if (!GetQuorum().ContainsKey(quorumNode.CommonName)){
+                        status = true;
+                    }
+                    GetQuorum()[quorumNode.CommonName] = quorumNode;
+                    if(status) Logger.Log(this.GetType().Name, "Registered " + quorumNode.CommonName + " to Quorum of size: " + GetQuorum().Count.ToString(), Logger.LogLevel.INFO);
+                    else {
+                        foreach(KeyValuePair<string, QuorumNode> q in GetQuorum())
+                        {
+                            Console.WriteLine(q.Key);
+                        }
+                    }
+                } catch ( Exception e)
+                {
+                    Logger.Log(this.GetType().Name, "RegisterNode, " + e.Message, Logger.LogLevel.ERROR);
                 }
-                GetQuorum()[quorumNode.CommonName] = quorumNode;
-                if(status) Logger.Log(this.GetType().Name, "Registered " + quorumNode.CommonName + " to Quorum of size: " + GetQuorum().Count.ToString(), Logger.LogLevel.INFO);
                 return status;
-            }
+            // }
         }
         public void Broadcast()
         {
@@ -66,16 +99,15 @@ namespace Node
                 Node = _Description
             });
         }
-
-        public QuorumNode MakeVote(QuorumNode candidate)
+        public QuorumNode MakeVote()
         {
             Dictionary<string, QuorumNode> quorum;
             lock (qlock)
             {
                 quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
             }
-            QuorumNode node = candidate;
-            float fitness = candidate.Workload;
+            QuorumNode node = _Description.AsQuorum();
+            float fitness = node.Workload; 
             foreach (KeyValuePair<string, QuorumNode> q in quorum)
             {
                 if (q.Value.CommonName.Contains(node.CommonName)) continue;
@@ -87,14 +119,14 @@ namespace Node
             }
             return node;
         }
-
         public void ContactMemberQuorum(QuorumNode quorumNode)
         {
             lock (qlock)
             {
+                Dictionary<string, QuorumNode> T_Quorum = CopyQuorum();
                 foreach(KeyValuePair<string, MetaNode> metaNode in quorumNode.Quorum)
                 {
-                    if (metaNode.Key.Contains(_Description.CommonName) || GetQuorum().ContainsKey(metaNode.Key)) continue;
+                    if (metaNode.Key.Contains(_Description.CommonName) || T_Quorum.ContainsKey(metaNode.Key)) continue;
                     else {
                         RequestHandler.Instance.Registration(
                             new Request(){
@@ -102,11 +134,11 @@ namespace Node
                                 Node = metaNode.Value.AsDescription(metaNode.Key)
                             }
                         );
+                        Logger.Log(this.GetType().Name, "Contacted " + metaNode.Key, Logger.LogLevel.INFO);
                     }
                 }
             }
         }
-
         public float CalculateWorkloadBurden()
         {
             var me = Process.GetCurrentProcess();
@@ -118,6 +150,13 @@ namespace Node
                 return _Description.Quorum;
             }
         }
+        public Dictionary<string, QuorumNode> CopyQuorum()
+        {
+            lock(qlock)
+            {
+                return GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+            }
+        }
         public void Dispose()
         {
             Running = false;
@@ -126,9 +165,6 @@ namespace Node
         //////////////////////////////////////////////////////////
         ////////////////////////CONSTRUCTOR///////////////////////
         //////////////////////////////////////////////////////////
-        Orchestrator()
-        {
-        }
         private static Orchestrator _instance = null;
         private static readonly object padlock = new object();
         public static Orchestrator Instance
