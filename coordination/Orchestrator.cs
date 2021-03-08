@@ -19,17 +19,8 @@ namespace Node
             Certificate = AsyncTLSServer.Instance.GetEncodedCertificate();
             Running = true;
             Broadcast();
-
-            System.Threading.Tasks.Task.Run(() => {
-                long t0 = Utils.Millis;
-                while (true)
-                {
-                    if (Utils.Millis - t0 >= 2000) break;
-                }
-
-                KafkaConsumer.Instance.ToggleBroadcastListener();
-                KafkaConsumer.Instance.Subscribe();
-            });            
+            KafkaConsumer.Instance.ToggleBroadcastListener();
+            KafkaConsumer.Instance.Subscribe();
         }
 
         // NEED TO MAKE CONSENSUS
@@ -42,7 +33,11 @@ namespace Node
             {
                 try 
                 {
-                    Dictionary<string, QuorumNode> T_Quorum = GetLockQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+                    Dictionary<string, QuorumNode> T_Quorum;
+                    lock(qlock)
+                    {
+                        T_Quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+                    }
 
                 } catch(Exception e)
                 {
@@ -52,13 +47,16 @@ namespace Node
         }
         public bool RegisterNode(QuorumNode quorumNode)
         {   
-            bool status = false;
-            if (!GetLockQuorum().ContainsKey(quorumNode.CommonName)){
-                status = true;
-                Logger.Log(this.GetType().Name, "Registered " + quorumNode.CommonName + " to Quorum of size: " + GetLockQuorum().Count.ToString(), Logger.LogLevel.INFO);
+            lock (qlock)
+            {
+                bool status = false;
+                if (!GetQuorum().ContainsKey(quorumNode.CommonName)){
+                    status = true;
+                }
+                GetQuorum()[quorumNode.CommonName] = quorumNode;
+                if(status) Logger.Log(this.GetType().Name, "Registered " + quorumNode.CommonName + " to Quorum of size: " + GetQuorum().Count.ToString(), Logger.LogLevel.INFO);
+                return status;
             }
-            GetLockQuorum()[quorumNode.CommonName] = quorumNode;
-            return status;
         }
         public void Broadcast()
         {
@@ -68,12 +66,53 @@ namespace Node
                 Node = _Description
             });
         }
+
+        public QuorumNode MakeVote(QuorumNode candidate)
+        {
+            Dictionary<string, QuorumNode> quorum;
+            lock (qlock)
+            {
+                quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+            }
+            QuorumNode node = candidate;
+            float fitness = candidate.Workload;
+            foreach (KeyValuePair<string, QuorumNode> q in quorum)
+            {
+                if (q.Value.CommonName.Contains(node.CommonName)) continue;
+                else if (q.Value.Workload < fitness) // if burden from start takes lees of a toll on this node
+                {
+                    node = q.Value;
+                    fitness = q.Value.Workload;
+                }
+            }
+            return node;
+        }
+
+        public void ContactMemberQuorum(QuorumNode quorumNode)
+        {
+            lock (qlock)
+            {
+                foreach(KeyValuePair<string, MetaNode> metaNode in quorumNode.Quorum)
+                {
+                    if (metaNode.Key.Contains(_Description.CommonName) || GetQuorum().ContainsKey(metaNode.Key)) continue;
+                    else {
+                        RequestHandler.Instance.Registration(
+                            new Request(){
+                                TypeOf = Request.Type.REGISTRATION,
+                                Node = metaNode.Value.AsDescription(metaNode.Key)
+                            }
+                        );
+                    }
+                }
+            }
+        }
+
         public float CalculateWorkloadBurden()
         {
             var me = Process.GetCurrentProcess();
             return (float)((me.WorkingSet64/ 1024 / 1024)+me.TotalProcessorTime.TotalSeconds);
         }
-        public Dictionary<string, QuorumNode> GetLockQuorum()
+        public Dictionary<string, QuorumNode> GetQuorum()
         {
             lock (qlock) {
                 return _Description.Quorum;
@@ -119,13 +158,13 @@ namespace Node
                         //     pulsate = true;
                         //     t0 = Utils.Millis;
                         //     Orchestrator.Instance._Description.Workload = CalculateWorkloadBurden();
-                        //     if (GetLockQuorum().Count == 0) Broadcast();
+                        //     if (GetQuorum().Count == 0) Broadcast();
                         // } else {
                         //     pulsate = false;
                         // }
 
                         // List<string> Flagged = new List<string>();
-                        // Dictionary<string, QuorumNode> T_Quorum = GetLockQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
+                        // Dictionary<string, QuorumNode> T_Quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
                         // foreach(string k0 in T_Quorum.Keys.ToList()) 
                         // {
                         //     QuorumNode N0 = T_Quorum[k0];
@@ -180,6 +219,6 @@ namespace Node
 
                         // foreach(string k2 in Flagged)
                         // {
-                        //     GetLockQuorum().Remove(k2);
+                        //     GetQuorum().Remove(k2);
                         //     Logger.Log(this.GetType().Name, "Removed " + k2 + " from quorum.", Logger.LogLevel.ORCHESTRATION);
                         // }

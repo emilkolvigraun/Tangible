@@ -1,5 +1,5 @@
 docker-compose down
-docker images purge -a
+docker image prune -a -f
 docker container prune -f
 docker system prune -f
 pause

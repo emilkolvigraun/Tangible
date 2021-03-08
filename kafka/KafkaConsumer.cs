@@ -59,7 +59,7 @@ namespace Node
                     using (var consumer = new ConsumerBuilder<Ignore, string>(Config).Build())
                     {
                         consumer.Subscribe(Topics);
-
+                        
                         try 
                         {
                             Logger.Log(this.GetType().Name, "Starting listening on: " + string.Join(",", Topics.ToArray()), Logger.LogLevel.INFO);

@@ -12,9 +12,12 @@ namespace Node
             CANDIDATE
         }
 
-        public Role _Role {get; set;} = Role.FOLLOWER;
+        public Role _Role {get; set;} = Role.CANDIDATE;
         public long LastHeartbeat;
         public long ElectionTimeout;
+        public long TsLastLeaderElected;
+        public string CurrentLeader;
+
         public Role GetState()
         {
             if (LastHeartbeat - Utils.Millis > ElectionTimeout) _Role = Role.CANDIDATE;
@@ -27,36 +30,80 @@ namespace Node
             LastHeartbeat = Utils.Millis;
         }
 
-        public void MarkAsLeader()
+        public void ValidateIfLeader()
         {
-            _Role = Role.LEADER;
+            lock (roleLock) 
+            {
+                if (CurrentLeader.Contains(Orchestrator.Instance._Description.CommonName))
+                    _Role = Role.LEADER;
+            }
         }
 
         public void CastVote(Dictionary<string, QuorumNode> quorum, QuorumNode quorumNode)
         {
-            List<string> Votes = new List<string>();
+            lock(roleLock)
+            {
+                List<string> Votes = new List<string>(){quorumNode.CommonName};
+                foreach(string k0 in quorum.Keys)
+                {
+                    NodeClient Client = NodeClient.Connect(quorum[k0].AdvertisedHostName, quorum[k0].Port, quorum[k0].CommonName);
+                    if (Client != null)
+                    {
+                        Request Response = Client.SendRequestRespondRequest(new Request(){
+                            TypeOf = Request.Type.LEADER_ELECTION,
+                            Data = new DataObject(){
+                                    V2 = quorumNode
+                                },
+                            Node = Orchestrator.Instance._Description
+                        });
+                        Votes.Add(Response.Data.V2.CommonName);
+                    }
+                }
+                string majorityVote = Votes.GroupBy( i => i ).OrderByDescending(group => group.Count()).ElementAt(0).Key;
+                CurrentLeader = majorityVote;
+                TsLastLeaderElected = Utils.Millis;
+                VerifyMajorityVote(quorum);
+                ValidateIfLeader();
+            }
+        }
+
+        private void VerifyMajorityVote(Dictionary<string, QuorumNode> quorum)
+        {
             foreach(string k0 in quorum.Keys)
             {
                 NodeClient Client = NodeClient.Connect(quorum[k0].AdvertisedHostName, quorum[k0].Port, quorum[k0].CommonName);
                 if (Client != null)
                 {
                     Request Response = Client.SendRequestRespondRequest(new Request(){
-                        TypeOf = Request.Type.LEADER_ELECTION,
-                        Data = new Dictionary<string, DataObject>(){{
-                            quorumNode.CommonName, quorumNode.AsDataObject()
-                            }},
-                        Node = Orchestrator.Instance._Description
+                        TypeOf = Request.Type.MAJORITY_VOTE,
+                        TimeStamp = TsLastLeaderElected,
+                        Data = new DataObject(){V0 = CurrentLeader}
                     });
+
+                    if (Response.TypeOf == Request.Type.NOT_ACCEPTED)
+                    {
+                        CurrentLeader = Response.Data.V0;
+                        TsLastLeaderElected = Response.TimeStamp;
+                        VerifyMajorityVote(quorum);
+                        break;
+                    }
                 }
             }
-            string majorityVote = Votes.GroupBy( i => i )
-                                    .OrderByDescending(group => group.Count())
-                                    .ElementAt(0).Key;
+        }
+
+        public void ResetHeartbeat()
+        {
+            lock (hbLock)
+            {
+                LastHeartbeat = Utils.Millis;
+            }
         }
 
         //////////////////////////////////////////////////////////
         ////////////////////////CONSTRUCTOR///////////////////////
         //////////////////////////////////////////////////////////
+        public static readonly object hbLock = new object();
+        public static readonly object roleLock = new object();
         public static readonly object padlock = new object();
         public static Raft _instance = null;
         public static Raft Instance
@@ -77,6 +124,7 @@ namespace Node
         {
             ElectionTimeout = OrchestrationVariables.HEARTBEAT_MS;
             LastHeartbeat = Utils.Millis;
+            TsLastLeaderElected = -1;
         }
     }
 }

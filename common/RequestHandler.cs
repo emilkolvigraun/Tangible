@@ -33,6 +33,9 @@ namespace Node
                     case Request.Type.LEADER_ELECTION: 
                         LeaderElection(request, stream);
                         break;
+                    case Request.Type.MAJORITY_VOTE: 
+                        ValidateMajorityVote(request, stream);
+                        break;
                 }
             } catch(Exception e)
             {
@@ -43,7 +46,7 @@ namespace Node
         public void Registration(Request request)
         {      
             try {  
-                if (!Orchestrator.Instance.GetLockQuorum().ContainsKey(request.Node.CommonName))
+                if (!Orchestrator.Instance.GetQuorum().ContainsKey(request.Node.CommonName))
                 {
                     NodeClient Client = NodeClient.Connect(request.Node.AdvertisedHostName, request.Node.Port, request.Node.CommonName);
                     if (Client != null)
@@ -53,7 +56,7 @@ namespace Node
                         byte[] Response = Client.SendRequestRespondBytes(new Request(){
                             TypeOf = Request.Type.CERTIFICATE,
                             Node = Orchestrator.Instance._Description,
-                            Data = new Dictionary<string, DataObject>(){{"Cert",new DataObject(){Key = Utils.GetString(Orchestrator.Instance.Certificate)}}}
+                            Data = new DataObject(){V0 = Utils.GetString(Orchestrator.Instance.Certificate)}
                         });
                         Logger.Log(this.GetType().Name, "Responded with CERTIFICATE request to " + request.Node.CommonName, Logger.LogLevel.INFO);
                         NetUtils.StoreCertificate(Response);
@@ -72,10 +75,12 @@ namespace Node
         {
             try 
             {
-                NetUtils.StoreCertificate(Utils.GetBytes(request.Data["Cert"].Key));
+                NetUtils.StoreCertificate(Utils.GetBytes(request.Data.V0));
                 NetUtils.SendBytes(stream, Orchestrator.Instance.Certificate);
                 Logger.Log(this.GetType().Name, "Stored certificate from " + request.Node.CommonName + " and responded with my own.", Logger.LogLevel.INFO);
-                Orchestrator.Instance.RegisterNode(request.Node.AsQuorum());
+                QuorumNode asQuorum = request.Node.AsQuorum();
+                Orchestrator.Instance.RegisterNode(asQuorum);
+                Orchestrator.Instance.ContactMemberQuorum(asQuorum);
             } catch (Exception e)
             {
                 Logger.Log(this.GetType().Name, "Certificate, "+ e.Message, Logger.LogLevel.ERROR);
@@ -83,8 +88,36 @@ namespace Node
         }
         public void LeaderElection(Request request, SslStream stream)
         {
-
+            QuorumNode myVote = Orchestrator.Instance.MakeVote(request.Data.V2);
+            NetUtils.SendRequestResponse( stream, new Request () {
+                    Data = new DataObject() {V2 = myVote}
+                }
+            );
         }
+        public void ValidateMajorityVote(Request request, SslStream stream)
+        {
+            long t0 = Raft.Instance.TsLastLeaderElected;
+            string cl = Raft.Instance.CurrentLeader;
+            if (t0 == -1 || t0 < request.TimeStamp || cl == null 
+                || (request.Data.V0.Contains(cl) && t0.Equals(request.TimeStamp)))
+            {
+                NetUtils.SendRequestResponse(stream, new Request(){
+                    TypeOf = Request.Type.ACCEPTED
+                });
+                Raft.Instance.TsLastLeaderElected = request.TimeStamp;
+                Raft.Instance.CurrentLeader = request.Data.V0;
+                Raft.Instance.ResetHeartbeat();
+                Raft.Instance.ValidateIfLeader();
+            } else { // t0 is greater than the timestamp obtained from the request
+                NetUtils.SendRequestResponse(stream, new Request(){
+                    TypeOf = Request.Type.NOT_ACCEPTED,
+                    TimeStamp = t0,
+                    Data = new DataObject(){V0=cl}
+                });
+                Raft.Instance.ResetHeartbeat();
+            }
+        }
+
         public void Heartbeat(Request request, SslStream stream)
         {
             try 

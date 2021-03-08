@@ -3,7 +3,8 @@ namespace Node
 {
     class DataObject 
     {
-        public string Key {get; set;}
-        public DataObject Value {get; set;} = null;
+        public string V0 {get; set;}
+        public object V1 {get; set;}
+        public QuorumNode V2 {get; set;}
     }
 }
