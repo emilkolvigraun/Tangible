@@ -1,3 +1,7 @@
+# Tangible
+
+description
+
 ### Dependencies
 
 Pulling the project includes all dependecies. However, are installed as follows:
@@ -12,3 +16,7 @@ Pulling the project includes all dependecies. However, are installed as follows:
 * Devart.Data.Oracle.EFCore `9.14.1204`
 * System.Diagnostics.PerformanceCounter `5.0.1`
 * xunit `2.4.1`
+
+### Other
+
+* Tangible uses a version of [RAFT](https://raft.github.io/) as its consensus algorithm for leader election.
