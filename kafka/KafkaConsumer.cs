@@ -14,8 +14,9 @@ namespace Node
         private static KafkaConsumer _instance = null;
         private static readonly object padlock = new object();
         private List<string> Topics;
-
+        private IConsumer<Ignore, string> Consumer = null;
         private System.Threading.Tasks.Task OnGoing;
+        public bool subscribing {get; private set;} = false;
 
         public static KafkaConsumer Instance
         {
@@ -34,7 +35,7 @@ namespace Node
 
         KafkaConsumer()
         {
-            Topics = new List<string>() {EsbVariables.REQUEST_TOPIC};
+            Topics = new List<string>() {EsbVariables.REQUEST_TOPIC, EsbVariables.BROADCAST_TOPIC};
             Config = new ConsumerConfig 
             {
                 GroupId = EsbVariables.CLUSTER_ID,
@@ -50,31 +51,42 @@ namespace Node
             if (OnGoing != null)
             {
                 Dispose();
-                OnGoing.GetAwaiter().GetResult();
+                // OnGoing.GetAwaiter().GetResult();
             }
+
+            if (Consumer != null)
+            {
+                Consumer.Commit();
+                Consumer.Unsubscribe();
+                Consumer.Close();
+                Consumer.Dispose();
+            }
+
             token = new CancellationTokenSource();
             OnGoing = System.Threading.Tasks.Task.Run(() => {
                 try 
                 {
-                    using (var consumer = new ConsumerBuilder<Ignore, string>(Config).Build())
+                    Consumer = new ConsumerBuilder<Ignore, string>(Config).Build();
+                    subscribing = true;
+                    Consumer.Subscribe(Topics);
+                    try 
                     {
-                        consumer.Subscribe(Topics);
-                        
-                        try 
+                        Logger.Log(this.GetType().Name, "Subscribed to: " + string.Join(",", Topics.ToArray()), Logger.LogLevel.INFO);
+                        while (true)
                         {
-                            Logger.Log(this.GetType().Name, "Starting listening on: " + string.Join(",", Topics.ToArray()), Logger.LogLevel.INFO);
-                            while (true)
-                            {
-                                var response = consumer.Consume(token.Token);
-                                consumer.Commit();
-                                Request ParsedRequest = RequestUtils.DeserializeRequest(response.Message.Value.ToString());
-                                RequestHandler.Instance.ProcessFromType(ParsedRequest);
-                            }
+                            var response = Consumer.Consume(token.Token);
+                            Consumer.Commit();
+                            Request ParsedRequest = RequestUtils.DeserializeRequest(response.Message.Value.ToString());
+                            RequestHandler.Instance.ProcessFromType(ParsedRequest);
                         }
-                        catch (Exception)  
-                        {
-                            consumer.Close();
-                        }
+                    }
+                    catch (Exception)  
+                    {   
+                        try {
+                            Consumer.Commit();
+                            Consumer.Unsubscribe();
+                            Consumer.Close();
+                        } catch (Exception) {}
                     }
                 }
                 catch (Exception ex)
@@ -84,22 +96,14 @@ namespace Node
             });
         }
 
-        public void ToggleBroadcastListener()
-        {
-            if (Topics.Contains(EsbVariables.BROADCAST_TOPIC)) {
-                Logger.Log(this.GetType().Name, "Set Broadcast Listener OFF", Logger.LogLevel.INFO);
-                Topics.Remove(EsbVariables.BROADCAST_TOPIC);
-            } 
-            if (!Topics.Contains(EsbVariables.BROADCAST_TOPIC))
-            {
-                Logger.Log(this.GetType().Name, "Set Broadcast Listener ON", Logger.LogLevel.INFO);
-                Topics.Add(EsbVariables.BROADCAST_TOPIC);
-            }
-        }
-
         public void Dispose()
         {
-            token.Cancel();
+            try
+            {
+                token.Cancel();
+                subscribing = false;
+                // OnGoing.GetAwaiter().GetResult();
+            } catch (Exception) {}
         }
     }
 }

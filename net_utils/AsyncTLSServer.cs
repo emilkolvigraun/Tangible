@@ -72,8 +72,8 @@ namespace Node
                 
                 try {
                     Request ParsedRequest = RequestUtils.DeserializeRequest(sslStream);
-                    sslStream.ReadTimeout = 10000;
-                    sslStream.WriteTimeout = 10000;
+                    sslStream.ReadTimeout = 5000;
+                    sslStream.WriteTimeout = 5000;
                     if (ParsedRequest != null) RequestHandler.Instance.ProcessFromType(ParsedRequest, sslStream);
                     else {
                         Logger.Log(this.GetType().Name, "Received malformed request.", Logger.LogLevel.INFO);

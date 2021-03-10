@@ -19,46 +19,27 @@ namespace Node
             Certificate = AsyncTLSServer.Instance.GetEncodedCertificate();
             Running = true;
             Broadcast();
-            KafkaConsumer.Instance.ToggleBroadcastListener();
             KafkaConsumer.Instance.Subscribe();
         }
-
-        // NEED TO MAKE CONSENSUS
-        // https://raft.github.io/
-        // Consul uses RAFT
-        // https://www.consul.io/docs/architecture/consensus
         public void Run()
         {
             while (Running)
             {
                 try 
                 {
-                    int t0 = Convert.ToInt32(Utils.Millis - Raft.Instance.LastHeartbeat);
-                    Dictionary<string, QuorumNode> T_Quorum;
-                    
-                    lock (qlock)
+                    long deltaT = Utils.Millis;
+                    long timeSinceLastHB = Raft.Instance.LastHeartbeat;
+                    if (GetQuorum().Count > 0)
                     {
-                        T_Quorum= CopyQuorum();
+                        timeSinceLastHB = Utils.Millis - timeSinceLastHB;
+                        Raft.Role State = Raft.Instance.GetState(timeSinceLastHB, OrchestrationVariables.HEARTBEAT_MS);
+                        
+                        if (State != Raft.Role.LEADER && timeSinceLastHB >= OrchestrationVariables.HEARTBEAT_MS)
+                        {
+                            Logger.Log(this.GetType().Name, State + " Heartbeat: " + timeSinceLastHB, Logger.LogLevel.INFO);
+                            Raft.Instance.UpdateLastHeartbeat(deltaT);
+                        }
                     }
-
-                    if (Utils.Millis - Raft.Instance.LastHeartbeat > OrchestrationVariables.HEARTBEAT_MS) 
-                    {
-                        Console.WriteLine(Raft.Instance.GetState(t0) + ", quorum: " + T_Quorum.Count);
-                        Raft.Instance.LastHeartbeat = Utils.Millis;
-                    }
-                    // if (Utils.Millis - lastHeartbeat > OrchestrationVariables.HEARTBEAT_MS)
-                    // {
-                    //     Dictionary<string, QuorumNode> T_Quorum = null;
-                    //     lock(qlock)
-                    //     {
-                    //         T_Quorum = GetQuorum().ToDictionary(entry => entry.Key, entry => entry.Value);
-                    //     }
-
-                    //     // if (T_Quorum!=null && T_Quorum.Count > 0 && Raft.Instance.GetState()==Raft.Role.CANDIDATE)
-                    //     // {
-                    //     //     // Console.WriteLine(Raft.Instance.GetState());
-                    //     // }
-                    // }
 
                 } catch(Exception e)
                 {

@@ -28,11 +28,16 @@ namespace Node
             // Environment.SetEnvironmentVariable("HEARTBEAT_MS", "3000");
             LoadEnvVariables();
 
-            Logger.Log("MAIN", "Preparing ingredients..", Logger.LogLevel.INFO);
             long t0 = Utils.Millis;
             while (true)
             {
                 if (Utils.Millis - t0 >= EsbVariables.WAIT_TIME_S) break;
+            }
+            Logger.Log("MAIN", "Preparing ingredients..", Logger.LogLevel.INFO);
+            t0 = Utils.Millis;
+            while (true)
+            {
+                if (Utils.Millis - t0 >= 1000) break;
             }
 
             NetUtils.MakeCertificate();

@@ -12,12 +12,8 @@ namespace Node
             try {
                 
                 try {
-                    if (request.Node.CommonName.Contains(Orchestrator.Instance._Description.CommonName)) return;
-                } catch(Exception e) {
-                    Logger.Log(this.GetType().Name, "ProcessFromType," + e.Message, Logger.LogLevel.ERROR);
-                }
-                try {
-                    Logger.Log(this.GetType().Name, "Received " + request.TypeOf + " from " + request.Node.CommonName, Logger.LogLevel.INFO);
+                    if (request.Node!=null && 
+                        request.Node.CommonName.Contains(Orchestrator.Instance._Description.CommonName)) return;
                 } catch(Exception e) {
                     Logger.Log(this.GetType().Name, "ProcessFromType," + e.Message, Logger.LogLevel.ERROR);
                 }
@@ -89,6 +85,7 @@ namespace Node
         {
             try 
             {
+                // Raft.Instance.SetPenalty(1000, Utils.Millis);
                 NetUtils.StoreCertificate(Utils.GetBytes(request.Data.V0));
                 NetUtils.SendBytes(stream, Orchestrator.Instance.Certificate);
                 QuorumNode asQuorum = request.Node.AsQuorum();
@@ -111,6 +108,7 @@ namespace Node
         public void LeaderElection(Request request, SslStream stream)
         {
             try {
+                // Raft.Instance.SetPenalty(1000, Utils.Millis);
                 QuorumNode myVote = Orchestrator.Instance.MakeVote();
                 NetUtils.SendRequestResponse( stream, new Request () {
                         Data = new DataObject() {V2 = myVote}
@@ -126,6 +124,7 @@ namespace Node
         {
             try 
             {
+                // Raft.Instance.SetPenalty(1000, Utils.Millis);
                 long t0 = Raft.Instance.TsLastLeaderElected;
                 string cl = Raft.Instance.CurrentLeader;
                 if (t0 == -1 || t0 < request.TimeStamp || cl == null 
@@ -137,8 +136,18 @@ namespace Node
                     Raft.Instance.TsLastLeaderElected = request.TimeStamp;
                     Raft.Instance.CurrentLeader = request.Data.V0;
                     Raft.Instance.ResetHeartbeat();
-                    Raft.Instance.ValidateIfLeader();
-                    Logger.Log(this.GetType().Name, "Set leader to " + request.Data.V0, Logger.LogLevel.INFO);
+                    bool ifLeader = Raft.Instance.ValidateIfLeader();
+                    if (ifLeader) 
+                    {
+                        if (!KafkaConsumer.Instance.subscribing) KafkaConsumer.Instance.Subscribe();
+                        Logger.Log(this.GetType().Name, "I am the leader " + request.Data.V0, Logger.LogLevel.INFO);
+                    }
+                    else 
+                    {
+                        KafkaConsumer.Instance.Dispose();
+                        Logger.Log(this.GetType().Name, "Unsubscribed to topics.", Logger.LogLevel.INFO);
+                        Logger.Log(this.GetType().Name, "Set leader to " + request.Data.V0, Logger.LogLevel.INFO);
+                    }
                 } else { // t0 is greater than the timestamp obtained from the request
                     NetUtils.SendRequestResponse(stream, new Request(){
                         TypeOf = Request.Type.NOT_ACCEPTED,

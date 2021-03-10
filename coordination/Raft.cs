@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace Node
 {
@@ -11,22 +12,51 @@ namespace Node
             FOLLOWER,
             CANDIDATE
         }
-
         public Role _Role {get; set;} = Role.FOLLOWER;
         public long LastHeartbeat;
         public long TsLastLeaderElected;
         public string CurrentLeader;
+        public int WaitPenalty;
+        public long PenaltyStart;
 
-        public Role GetState(int t0)
+        public bool PenaltyServed()
         {
-            if (t0 > OrchestrationVariables.ELECTION_TIMEOUT_MS+OrchestrationVariables.HEARTBEAT_MS) _Role = Role.CANDIDATE;
-            else if (_Role != Role.LEADER) _Role = Role.FOLLOWER;
-            return _Role;
+            lock (penaltyLock)
+            {
+                if (Utils.Millis - PenaltyStart >= WaitPenalty) return true;
+                return false;
+            }
         }
 
-        public void UpdateLastHeartbeat()
+        public void SetPenalty(int wait, long start)
         {
-            LastHeartbeat = Utils.Millis;
+            lock (penaltyLock)
+            {
+                WaitPenalty = wait;
+                PenaltyStart = start;
+            }
+        }
+
+        public Role GetState(long deltaT, int interval)
+        {
+            lock (roleLock)
+            {
+                if (!PenaltyServed() && _Role == Role.LEADER) _Role = Role.LEADER;
+                else if (!PenaltyServed() && (_Role == Role.FOLLOWER || _Role == Role.CANDIDATE)) _Role = Role.FOLLOWER;
+                else if (_Role == Role.LEADER) _Role = Role.LEADER;
+                else if (deltaT > interval) _Role = Role.CANDIDATE;
+                else if (_Role != Role.LEADER) _Role = Role.FOLLOWER; // double checking because humor
+                return _Role;
+            }
+        }
+
+        public void UpdateLastHeartbeat(long deltaT)
+        {
+            lock (hbLock)
+            {
+                long t0 = Utils.Millis;
+                LastHeartbeat = t0 - (t0 - deltaT);
+            }
         }
 
         public bool ValidateIfLeader()
@@ -73,7 +103,6 @@ namespace Node
                 } else Logger.Log(this.GetType().Name, "Set leader to " + CurrentLeader, Logger.LogLevel.INFO);
             }
         }
-
         private void VerifyMajorityVote(Dictionary<string, QuorumNode> quorum)
         {
             foreach(string k0 in quorum.Keys)
@@ -110,6 +139,7 @@ namespace Node
         //////////////////////////////////////////////////////////
         ////////////////////////CONSTRUCTOR///////////////////////
         //////////////////////////////////////////////////////////
+        public static readonly object penaltyLock = new object();
         public static readonly object hbLock = new object();
         public static readonly object roleLock = new object();
         public static readonly object padlock = new object();
@@ -133,6 +163,8 @@ namespace Node
             LastHeartbeat = Utils.Millis;
             TsLastLeaderElected = -1;
             CurrentLeader = null;
+            WaitPenalty = 0;
+            PenaltyStart = LastHeartbeat;
         }
     }
 }

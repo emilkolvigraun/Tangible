@@ -29,6 +29,7 @@ namespace Node
                 }
                 
                 p.Flush(TimeSpan.FromSeconds(10));
+                p.Flush();
                 p.Dispose();
             }
         }
