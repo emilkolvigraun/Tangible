@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node.csproj": {}
+    "C:\\Users\\emilk\\OneDrive\\tangible\\sc\\Node\\Node.csproj": {}
   },
   "projects": {
-    "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node.csproj": {
+    "C:\\Users\\emilk\\OneDrive\\tangible\\sc\\Node\\Node.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node.csproj",
+        "projectUniqueName": "C:\\Users\\emilk\\OneDrive\\tangible\\sc\\Node\\Node.csproj",
         "projectName": "Node",
-        "projectPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node.csproj",
+        "projectPath": "C:\\Users\\emilk\\OneDrive\\tangible\\sc\\Node\\Node.csproj",
         "packagesPath": "C:\\Users\\emilk\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\obj\\",
+        "outputPath": "C:\\Users\\emilk\\OneDrive\\tangible\\sc\\Node\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\emilk\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -40,29 +40,13 @@
         "net5.0": {
           "targetAlias": "net5.0",
           "dependencies": {
-            "Devart.Data.Oracle.EFCore": {
-              "target": "Package",
-              "version": "[9.14.1204, )"
-            },
-            "LiteDB": {
-              "target": "Package",
-              "version": "[5.0.10, )"
-            },
             "confluent.kafka": {
               "target": "Package",
               "version": "[1.6.2, )"
             },
-            "docker.dotnet": {
-              "target": "Package",
-              "version": "[3.125.4, )"
-            },
             "newtonsoft.json": {
               "target": "Package",
               "version": "[12.0.3, )"
-            },
-            "xunit": {
-              "target": "Package",
-              "version": "[2.4.1, )"
             }
           },
           "imports": [

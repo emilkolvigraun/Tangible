@@ -9,6 +9,7 @@ namespace Node
         public enum LogLevel 
         {
             INFO,
+            WARN,
             ERROR,
             FATAL,
             DEBUG,
@@ -31,15 +32,43 @@ namespace Node
                 }
             } else
             {
-                Levels = new List<LogLevel>(){LogLevel.DEBUG};
+                Levels = new List<LogLevel>(){LogLevel.DEBUG};//LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL};
             }
         }
         public static void Log(string sender, string message, LogLevel tag)
         {
             if ((Levels.ToList().Contains(tag) || Levels.ToList().Contains(LogLevel.DEBUG)) && !Levels.ToList().Contains(LogLevel.NONE))
             {
-                Console.WriteLine(Utils.Millis.ToString() + " | " + tag.ToString().PadRight(5) + " | " + sender.PadRight(15) + " | " + message + ".");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write(Utils.Millis.ToString());
+                PrintSeperator();
+                GetColor(tag);
+                Console.Write(tag.ToString().PadRight(5));
+                PrintSeperator();
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write(sender.PadRight(16));
+                PrintSeperator();
+                GetColor(tag);
+                Console.WriteLine(message);
+                Console.ForegroundColor = ConsoleColor.White;
             }
+
+            if (tag == LogLevel.FATAL) Environment.Exit(1);
+        }
+
+        private static void PrintSeperator()
+        {
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write(" | ");
+        }
+
+        private static void GetColor(LogLevel tag)
+        {
+            if (tag == LogLevel.WARN) Console.ForegroundColor = ConsoleColor.DarkYellow;
+            if (tag == LogLevel.FATAL) Console.ForegroundColor = ConsoleColor.DarkMagenta;
+            if (tag == LogLevel.ERROR) Console.ForegroundColor = ConsoleColor.Red;
+            if (tag == LogLevel.DEBUG) Console.ForegroundColor = ConsoleColor.Gray;
+            if (tag == LogLevel.INFO) Console.ForegroundColor = ConsoleColor.Green;
         }
     }
 }

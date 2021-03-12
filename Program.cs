@@ -1,76 +1,72 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 
 namespace Node
 {
     class Program
     {
 
-        static void LoadEnvVariables()
+        static void DisplayStartInformation()
         {
-            Logger.LoadLogLevel();
-            EsbVariables.Load();
-            NetVariables.Load();
-            OrchestrationVariables.Load();
+            Logger.Log("Main", "Starting with parameters:", Logger.LogLevel.INFO);
+            Logger.Log("Main", "- ADDRESS: " + Params.ADVERTISED_HOST_NAME + ":" + Params.PORT_NUMBER, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- NODE_NAME: " + Params.NODE_NAME, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- KAFKA_BROKERS: " + Params.KAFKA_BROKERS, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- CLUSTER_ID: " + Params.CLUSTER_ID, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- BROADCAST_TOPIC: " + Params.BROADCAST_TOPIC, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- REQUEST_TOPIC: " + Params.REQUEST_TOPIC, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- ELECTION_TIMEOUT: " + Params.HEARTBEAT_MS +"ms", Logger.LogLevel.INFO);
+            Logger.Log("Main", "% Processor Time: " + Params.USAGE, Logger.LogLevel.INFO);
         }
 
         static void Main(string[] args)
         {
+            // DEBUGGING
             // Environment.SetEnvironmentVariable("KAFKA_BROKERS", "192.168.1.237:9092");
-            // Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
-            // Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
-            // Environment.SetEnvironmentVariable("PORT_NUMBER", "8000");
-            // Environment.SetEnvironmentVariable("INTERFACE", "0.0.0.0");
-            // Environment.SetEnvironmentVariable("CERT_EXPIRE_DAYS", "365");
             // Environment.SetEnvironmentVariable("CLUSTER_ID", "Tangible#1");
             // Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
-            // Environment.SetEnvironmentVariable("HEARTBEAT_MS", "3000");
-            LoadEnvVariables();
+            // Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
+            // Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
+            // Environment.SetEnvironmentVariable("PORT_NUMBER", "5001");
+            // Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
+            
+            // load environment variables
+            Params.LoadConfig();
 
-            long t0 = Utils.Millis;
-            while (true)
+            Utils.Wait();
+
+            DisplayStartInformation();
+
+            // initializing server thread
+            Thread serverThread = new Thread(() => {
+                NodeServer.RunServer();
+            });
+
+            // initializing orchestrator
+            Thread orchestratorThread = new Thread(() => {
+                Coordinator.Instance.RunCoordinator();
+            });
+
+            // running internal comunication 
+            serverThread.Start();
+
+            // running orchestration/raft 
+            orchestratorThread.Start();
+            
+            Utils.Wait(1);
+
+            // sending the broadcast
+            (bool Status, string[] failures) Result = Producer.Send(new BroadcastRequest().EncodeRequestStr(), new string[] {Params.BROADCAST_TOPIC});
+
+            if (Result.Status)
             {
-                if (Utils.Millis - t0 >= EsbVariables.WAIT_TIME_S) break;
-            }
-            Logger.Log("MAIN", "Preparing ingredients..", Logger.LogLevel.INFO);
-            t0 = Utils.Millis;
-            while (true)
+                Utils.Wait(500);
+                Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC});
+            } else 
             {
-                if (Utils.Millis - t0 >= 1000) break;
+                Logger.Log("Main", "Failed to broadcast", Logger.LogLevel.FATAL);
             }
-
-            NetUtils.MakeCertificate();
-            AsyncTLSServer.Instance.AsyncStart();
-
-            Orchestrator.Instance._Description = new Description() {
-                CommonName = NetUtils.LoadCommonName(),
-                AdvertisedHostName = NetVariables.ADVERTISED_HOST_NAME,
-                Port = NetVariables.PORT_NUMBER,
-                Workload = Orchestrator.Instance.CalculateWorkloadBurden(),
-                Quorum = new Dictionary<string, QuorumNode>(),
-                Tasks = new List<Task>(),
-            };
-
-            Console.CancelKeyPress += delegate {
-                AsyncTLSServer.Instance.Stop();
-                KafkaConsumer.Instance.Dispose();
-                Orchestrator.Instance.Dispose();
-            };
-
-            Logger.Log("MAIN", "Started with ID: "+Orchestrator.Instance._Description.CommonName, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- address: "+Orchestrator.Instance._Description.AdvertisedHostName+":"+Orchestrator.Instance._Description.Port, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- Kafka brokers: "+EsbVariables.KAFKA_BROKERS, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- Group: "+EsbVariables.CLUSTER_ID, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- boradcast topic: "+EsbVariables.BROADCAST_TOPIC, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- request topic: "+EsbVariables.REQUEST_TOPIC, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- heartbeat ms: "+OrchestrationVariables.HEARTBEAT_MS, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- fitness: "+Orchestrator.Instance._Description.Workload, Logger.LogLevel.INFO);
-            Logger.Log("MAIN", "- halting time: "+EsbVariables.WAIT_TIME_S, Logger.LogLevel.INFO);
-
-            Orchestrator.Instance.Init();
-            Orchestrator.Instance.Run();
-            // Console.ReadLine();
+            Logger.Log("Main", "Successfully started Node", Logger.LogLevel.INFO);
         }
     }
 }

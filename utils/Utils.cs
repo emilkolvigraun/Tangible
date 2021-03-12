@@ -1,19 +1,12 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Diagnostics;
 
 namespace Node
 {
     class Utils
     {
-
-        private static Random random = new Random();
-
-        /// <summary>Class to get current timestamp with enough precision</summary>
-        private static readonly DateTime Jan1St1970 = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        /// <summary>Get extra long current timestamp</summary>
-        public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
-
         internal static readonly char[] chars =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".ToCharArray();
 
@@ -36,38 +29,44 @@ namespace Node
             return result.ToString();
         }
 
-        public static byte[] GetBytes(string str)
-        {
-            byte[] bytes = new byte[str.Length * sizeof(char)];
-            System.Buffer.BlockCopy(str.ToCharArray(), 0, bytes, 0, bytes.Length);
-            return bytes;
-        }
-
-        public static string GetString(byte[] bytes)
-        {
-            try 
-            {
-                char[] chars = new char[bytes.Length / sizeof(char)];
-                System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-                return new string(chars);
-            } catch (Exception)
-            {
-                try 
-                {
-                    char[] chars = new char[bytes.Length];
-                    System.Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-                    return new string(chars);
-                } catch(Exception e)
-                {
-                    Logger.Log("Utils", "GetString, "+e.Message, Logger.LogLevel.ERROR);
-                    return "";
-                }
-            }
-        }
-
+        private static Random random = new Random();
         public static int GetRandomInt(int x, int y)
         {
             return random.Next(x, y);
         }
-    } 
+
+        /// <summary>Class to get current timestamp with enough precision</summary>
+        private static readonly DateTime Jan1St1970 = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        /// <summary>Get extra long current timestamp</summary>
+        public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
+
+        public static void Wait(int time = -1)
+        {
+            if (time == -1) time = Params.WAIT_TIME_MS;
+            long t0 = Utils.Millis;
+            while (true)
+            {
+                if (Utils.Millis - t0 > time) break;
+            }
+            Logger.Log("Utils", "Waited " + time + "ms", Logger.LogLevel.DEBUG);
+        }
+
+        public static double ResourceUsage
+        {
+            get 
+            {
+                var proc = Process.GetCurrentProcess();
+                return proc.TotalProcessorTime.TotalSeconds;
+            }
+        }
+
+        public static MetaNode ThisAsShallowMetaNode()
+        {
+            return new MetaNode() 
+            {
+                Name = Params.NODE_NAME,
+                Usage = Params.USAGE
+            };
+        }
+    }
 }
