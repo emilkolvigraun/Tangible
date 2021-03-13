@@ -59,14 +59,5 @@ namespace Node
                 return proc.TotalProcessorTime.TotalSeconds;
             }
         }
-
-        public static MetaNode ThisAsShallowMetaNode()
-        {
-            return new MetaNode() 
-            {
-                Name = Params.NODE_NAME,
-                Usage = Params.USAGE
-            };
-        }
     }
 }

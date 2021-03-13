@@ -1,9 +1,12 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Node
 {
-    class Coordinator
+    public class Coordinator
     {
 
-        enum State 
+        public enum State 
         {
             LEADER,
             FOLLOWER,
@@ -12,14 +15,22 @@ namespace Node
 
         private long _lastHeartbeat = Utils.Millis;
         private long _currentPenalty = Utils.Millis;
+        private long _cancel = Utils.Millis;
         private bool _isLeader = false;
+        private string _leader = null;
+        private StateActor Actor = new StateActor();
+        private List<string> _Flagged;
+        private static readonly object _flag_lock = new object();
+        private static readonly object _cancel_lock = new object();
 
         public void RunCoordinator()
         {
+            _Flagged = new List<string>();
             Logger.Log(this.GetType().Name, "Coordinator is running.", Logger.LogLevel.INFO);
             while (true)
             {
-                Logger.Log(this.GetType().Name, "State: " + GetState().ToString() + ", Quorum: " + Ledger.Instance.Quorum + " " + string.Join(", ", Ledger.Instance.Cluster.AsBasicNodes().AsStringArray()), Logger.LogLevel.DEBUG);
+                State _State = GetState(); 
+                Actor.Process(_State);
             }
         }
 
@@ -29,32 +40,117 @@ namespace Node
             _currentPenalty = Utils.Millis + time;
         }
 
-        private State GetState()
+        public bool IsCancelled
         {
-            State _state = State.FOLLOWER;
-            while (_state == State.FOLLOWER)
+            get 
             {
-                if (Ledger.Instance.Quorum < 1)
+                lock (_cancel_lock)
                 {
-                    _state = State.FOLLOWER;
+                    return _cancel > Utils.Millis;
                 }
-                else if (_isLeader)
-                {
-                    _state = State.LEADER;
-                } 
-                else if (Utils.Millis - _lastHeartbeat > Params.HEARTBEAT_MS && Utils.Millis > _currentPenalty) 
-                {
-                    SetPenalty(Params.HEARTBEAT_MS);
-                    _state = State.CANDIDATE;
-                } 
-                else
-                {
-                    _state = State.FOLLOWER;
-                } 
             }
-            return _state;
         }
 
+        public void Cancel()
+        {
+            lock (_cancel_lock)
+            {
+                _cancel = Utils.Millis + Params.HEARTBEAT_MS;
+            }
+        }
+
+        private State GetState()
+        {
+            while (true)
+            {
+                if(Ledger.Instance.Quorum > 0) break;
+            }
+            if (_isLeader)
+            {
+                return State.LEADER;
+            } 
+            else if (Utils.Millis - _lastHeartbeat > Params.HEARTBEAT_MS && Utils.Millis > _currentPenalty && !IsCancelled) 
+            {
+                SetPenalty(Params.HEARTBEAT_MS);
+                return State.CANDIDATE;
+            } 
+            else
+            {
+                return State.FOLLOWER;
+            } 
+        }
+        
+        public void AddFlag(string name)
+        {
+            lock (_flag_lock)
+            {
+                Flagged.Add(name);
+            }
+        }
+
+        public void RemoveFlag(string name)
+        {
+            lock (_flag_lock)
+            {
+                Flagged.Remove(name);
+            }
+        }
+
+        public string Vote 
+        {
+            get 
+            {
+                // TODO: NOT YET IMPLEMENTED VOTATION METRICS
+                return Params.NODE_NAME;
+            }
+        }
+
+        public List<string> Flagged
+        {
+            get 
+            {
+                lock(_flag_lock)
+                {
+                    return _Flagged;
+                }
+            }
+        }
+
+        public List<string> FlaggedCopy
+        {
+            get 
+            {
+                lock(_flag_lock)
+                {
+                    return Flagged.ToList();
+                }
+            }
+        }
+        public void ToggleLeadership(bool v0, string leader)
+        {
+            lock(_leader_lock)
+            {
+                _isLeader = v0;
+                _leader = leader;
+                Logger.Log(this.GetType().Name, "Set leader to " + leader + ", is that me? " + (v0?"Yes":"No"), Logger.LogLevel.INFO);
+
+                if (!v0) Consumer.Instance.Stop();
+                else if (v0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
+            }
+        }
+
+        public string Leader
+        {
+            get 
+            {
+                lock(_leader_lock)
+                {
+                    return _leader;
+                }
+            }
+        }
+
+        private static readonly object _leader_lock = new object();
         private static readonly object _lock = new object();
         private static Coordinator _instance = null;
 

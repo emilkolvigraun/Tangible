@@ -11,7 +11,7 @@ namespace Node
         RS, // register
         CT, // certificate
         VT, // voting
-        CN, // connect with nodes
+        ST, // status response
         EMPTY, // empty
         NIL // no expectation
     }

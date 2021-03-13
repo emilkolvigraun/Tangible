@@ -31,7 +31,7 @@ namespace Node
 
         public static void LoadConfig()
         {
-            WAIT_TIME_MS        = GetIntVar("WAIT_TIME_MS", 1000);
+            WAIT_TIME_MS        = GetIntVar("WAIT_TIME_MS", 0);
             KAFKA_BROKERS       = GetStrVar("KAFKA_BROKERS");
             CLUSTER_ID          = GetStrVar("CLUSTER_ID");
             BROADCAST_TOPIC     = GetStrVar("BROADCAST_TOPIC");

@@ -56,16 +56,16 @@ namespace Node
             Utils.Wait(1);
 
             // sending the broadcast
-            (bool Status, string[] failures) Result = Producer.Send(new BroadcastRequest().EncodeRequestStr(), new string[] {Params.BROADCAST_TOPIC});
-
-            if (Result.Status)
+            while (true)
             {
-                Utils.Wait(500);
-                Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC});
-            } else 
-            {
-                Logger.Log("Main", "Failed to broadcast", Logger.LogLevel.FATAL);
+                (bool Status, string[] failures) Result = Producer.Send(new BroadcastRequest().EncodeRequestStr(), new string[] {Params.BROADCAST_TOPIC});
+                if (Result.Status) break;
+                Logger.Log("Main", "Failed to broadcast, retrying in 1 second...", Logger.LogLevel.WARN);
+                Utils.Wait(1000);
             }
+            Logger.Log("Main", "Transmitted broadcast", Logger.LogLevel.INFO);
+            Utils.Wait();
+            if (Ledger.Instance.ClusterCopy.Count == 0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
             Logger.Log("Main", "Successfully started Node", Logger.LogLevel.INFO);
         }
     }

@@ -9,8 +9,10 @@ namespace Node
     {
         private CancellationTokenSource tSrc;
         private EsbRequestHandler Handler = new EsbRequestHandler();
+        private bool _running = false;
         public void Start(string[] topics)
         {
+            if (_running) return;
             var config = new ConsumerConfig
             {
                 BootstrapServers = Params.KAFKA_BROKERS,
@@ -23,6 +25,7 @@ namespace Node
             };
             tSrc = new CancellationTokenSource();
             Consume(topics, config, tSrc.Token);
+            _running = true;
         }
 
         async private void Consume(string[] topics, ConsumerConfig config, CancellationToken token)
@@ -75,7 +78,14 @@ namespace Node
         }
         public void Stop()
         {
-            tSrc.Cancel();
+            try 
+            {
+                if(tSrc != null)tSrc.Cancel();
+            } catch (Exception e)
+            {
+                Logger.Log("Consumer", e.Message, Logger.LogLevel.ERROR);
+            }
+            _running = false;
         }
 
         private static readonly object _lock = new object();

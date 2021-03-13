@@ -28,6 +28,7 @@ namespace Node
         {           
             if (!request.Name.Equals(Params.NODE_NAME) && !request.Port.Equals(Params.PORT_NUMBER))
             {
+                Logger.Log("ProcessBroadcast", "Received BC request from " + request.Name + "[1]", Logger.LogLevel.INFO);
                 IRequest Response = null;
                 byte[] _cert_b = null;
                 try 
@@ -44,8 +45,8 @@ namespace Node
                     return;
                 }
                 Params.StoreCertificate(_cert_b);
-                Logger.Log("ProcessBroadcast", "Received BC request from " + request.Name, Logger.LogLevel.INFO);
-                Ledger.Instance.AddNode(request.Name, Builder.CreateMetaNode(request.Name, request.Host, request.Port, request.Usage, new BasicNode[]{}));
+                Ledger.Instance.AddNode(request.Name, Builder.CreateMetaNode(request.Name, request.Host, request.Port));
+                Logger.Log("ProcessBroadcast", "Processed BC request from " + request.Name + "[2]", Logger.LogLevel.INFO);
             }
         }  
     }

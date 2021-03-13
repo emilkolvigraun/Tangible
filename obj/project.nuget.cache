@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nRNm3LomAtTi1IE+Wql9IyXERpdx3ycOqtcYJIpkvi0t0MAAHhjVs8g0rLIrvTn8cctORMAiySXKc/X27QDtfw==",
+  "dgSpecHash": "TKYLN23up6yZa2lJVGFF7tmxIKPhaOcih9D+U8kst0CUrEtKeKZs6vwMy2HNrrimqRvT3+gX8Z0Xi2NHYr2R2A==",
   "success": true,
-  "projectFilePath": "C:\\Users\\emilk\\OneDrive\\tangible\\sc\\Node\\Node.csproj",
+  "projectFilePath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\emilk\\.nuget\\packages\\confluent.kafka\\1.6.2\\confluent.kafka.1.6.2.nupkg.sha512",
     "C:\\Users\\emilk\\.nuget\\packages\\librdkafka.redist\\1.6.1\\librdkafka.redist.1.6.1.nupkg.sha512",

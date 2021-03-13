@@ -12,14 +12,12 @@ namespace Node
             };
         }
 
-        public static MetaNode CreateMetaNode(string name, string host, int port, double usage, BasicNode[] nodes)
+        public static MetaNode CreateMetaNode(string name, string host, int port)
         {
             return new MetaNode(){
                 Host = host,
                 Port = port,
-                Name = name,
-                Nodes = nodes,
-                Usage = usage
+                Name = name
             };
         }
     }

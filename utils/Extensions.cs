@@ -125,8 +125,12 @@ namespace Node
                         return JsonConvert.DeserializeObject<RegistrationRequest>(request);
                     case RequestType.CT:
                         return JsonConvert.DeserializeObject<CertificateResponse>(request);
+                    case RequestType.VT:
+                        return JsonConvert.DeserializeObject<VotingRequest>(request);
                     case RequestType.BC:
                         return JsonConvert.DeserializeObject<BroadcastRequest>(request);
+                    case RequestType.ST:
+                        return JsonConvert.DeserializeObject<StatusResponse>(request);
                     default:
                         return JsonConvert.DeserializeObject<EmptyRequest>(request);
                 }
@@ -136,43 +140,7 @@ namespace Node
                 return new EmptyRequest();
             }
         }
-
-        public static bool RemoveNode(this KeyValuePair<string, MetaNode> node)
-        {
-            return Ledger.Instance.Cluster.TryRemove(node);
-        }
     
-        public static BasicNode[] AsBasicNodes(this ConcurrentDictionary<string, MetaNode> nodes)
-        {
-            List<BasicNode> basicNodes = new List<BasicNode>();
-            foreach(KeyValuePair<string, MetaNode> node in nodes)
-            {   
-                basicNodes.Add(node.Value.AsBasicNode());
-            }
-            return basicNodes.ToArray();
-        }
-
-        public static BasicNode AsBasicNode(this INode node)
-        {
-            return new BasicNode(){
-                Host = node.Host,
-                Port = node.Port,
-                Name = node.Name
-            };
-        }
-
-        public static string[] AsStringArray(this BasicNode[] nodes)
-        {
-            List<string> strArr = new List<string>();
-            foreach (BasicNode node in nodes)
-            {
-                strArr.Add(
-                    "{"+node.Name+","+node.Host+":"+node.Port.ToString()+"}"
-                );
-            }
-            return strArr.ToArray();
-        }
-
         public static IRequest GetCreateRequest(this RequestType _type)
         {
             switch (_type)
@@ -181,13 +149,25 @@ namespace Node
                 case RequestType.AE: return new AppendEntriesRequest();
                 case RequestType.BC: return new BroadcastRequest();
                 case RequestType.CT: return new CertificateResponse();
+                case RequestType.ST: return new StatusResponse();
+                case RequestType.VT: return new VotingRequest(){Vote = Ledger.Instance.Vote};
                 default: return new EmptyRequest();
             }
         }
 
-        public static int AsCeilInt(this double v0)
+        public static Dictionary<string, MetaNode> Copy(this Dictionary<string, MetaNode> d0)
         {
-            return (int) Math.Ceiling((decimal) v0);
+            return d0.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
+        public static MetaNode[] AsNodeArray(this Dictionary<string, MetaNode> d0)
+        {
+            return d0.Values.ToArray();
+        }
+
+        public static string GetMajority(this List<string> votes)
+        {
+            // throws exception if length of votes is less than 1
+            return votes.GroupBy( i => i ).OrderByDescending(group => group.Count()).ElementAt(0).Key;
         }
     }
 }
