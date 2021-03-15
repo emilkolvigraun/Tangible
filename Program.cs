@@ -59,9 +59,9 @@ namespace Node
             while (true)
             {
                 (bool Status, string[] failures) Result = Producer.Send(new BroadcastRequest().EncodeRequestStr(), new string[] {Params.BROADCAST_TOPIC});
+                Utils.Wait(1000);
                 if (Result.Status) break;
                 Logger.Log("Main", "Failed to broadcast, retrying in 1 second...", Logger.LogLevel.WARN);
-                Utils.Wait(1000);
             }
             Logger.Log("Main", "Transmitted broadcast", Logger.LogLevel.INFO);
             Utils.Wait();

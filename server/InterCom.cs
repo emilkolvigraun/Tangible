@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Node 
 {
@@ -24,25 +25,51 @@ namespace Node
 
         private byte[] ProcessAppendEntry(AppendEntriesRequest request)
         {
-            Logger.Log("RequestHandler", "Received AE request", Logger.LogLevel.DEBUG);
-            Coordinator.Instance.SetPenalty(Params.HEARTBEAT_MS);
-            foreach(MetaNode n0 in request.Add)
+            try
             {
-                if (n0.Name != Params.NODE_NAME && !Ledger.Instance.ContainsKey(n0.Name)
-                    && !Coordinator.Instance.FlaggedCopy.Contains(n0.Name))
+                Logger.Log("RequestHandler", "Received AE request", Logger.LogLevel.INFO);
+                Coordinator.Instance.SetPenalty(Params.HEARTBEAT_MS);
+                Coordinator.Instance.Cancel();
+                Coordinator.Instance.ToggleLeadership(request.Name == Params.NODE_NAME, request.Name);
+                List<MetaNode> _add = request.Add.ToList();
+                List<string> _flag = request.Flag.ToList();
+                foreach(MetaNode n0 in _add)
                 {
-                    Ledger.Instance.AddNode(n0.Name, n0);
+                    if (n0.Name != Params.NODE_NAME && !Ledger.Instance.ContainsKey(n0.Name)
+                        && !Coordinator.Instance.FlaggedCopy.Contains(n0.Name) && !_flag.Contains(n0.Name))
+                    {
+                        Ledger.Instance.AddNode(n0.Name, n0);
+                    }
                 }
-            }
-            foreach(string n0 in request.Flag)
+                foreach(string n0 in _flag)
+                {
+                    if (n0 != Params.NODE_NAME && !Coordinator.Instance.FlaggedCopy.Contains(n0))
+                    {
+                        Coordinator.Instance.AddFlag(n0);
+                    }
+                }
+                List<MetaNode> _nodes = new List<MetaNode>();
+                foreach(KeyValuePair<string, MetaNode> n0 in Ledger.Instance.ClusterCopy)
+                {
+                    if (!_add.Contains(n0.Value) && !_flag.Contains(n0.Key) && Coordinator.Instance.FlaggedCopy.Contains(n0.Key)) _nodes.Add(n0.Value);
+                }
+                Coordinator.Instance.SetPenalty(Params.HEARTBEAT_MS);
+                Coordinator.Instance.Cancel();
+
+                if (_nodes.Count > 0) return new AppendEntriesRequest(){
+                    Add = _nodes.ToArray(),
+                    Flag = null
+                }.EncodeRequest();
+
+            } catch(Exception e)
             {
-                if (n0 != Params.NODE_NAME && !Coordinator.Instance.FlaggedCopy.Contains(n0))
-                {
-                    Coordinator.Instance.AddFlag(n0);
-                }
+                Logger.Log(this.GetType().Name, e.Message, Logger.LogLevel.ERROR);
             }
-            Coordinator.Instance.SetPenalty(Params.HEARTBEAT_MS);
-            return new EmptyRequest().EncodeRequest();
+
+            return new AppendEntriesRequest(){
+                Add = null,
+                Flag = null
+            }.EncodeRequest();
         }
         private byte[] ProcessRegistration(RegistrationRequest request)
         {

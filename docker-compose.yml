@@ -14,7 +14,7 @@ services:
       BROADCAST_TOPIC: "Tangible.broadcast.1"
       REQUEST_TOPIC: "Tangible.request.1"
       CLUSTER_ID: "Tangible#1"
-      WAIT_TIME_MS: "1000"
+      # WAIT_TIME_MS: "1000"
   
   node2:
     image: emilkolvigraun/tangible-node
@@ -65,4 +65,4 @@ services:
       BROADCAST_TOPIC: "Tangible.broadcast.1"
       REQUEST_TOPIC: "Tangible.request.1"
       CLUSTER_ID: "Tangible#1"
-      WAIT_TIME_MS: "3000"
+      WAIT_TIME_MS: "2000"

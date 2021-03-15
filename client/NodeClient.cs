@@ -25,9 +25,9 @@ namespace Node
             }
             return Response;
         } 
-        public static IRequest RunClient(string host, int port, string name, IRequest request, RequestType result = RequestType.NIL, int __retries = 0)
+        public static IRequest RunClient(string host, int port, string name, IRequest request, RequestType result = RequestType.NIL, int __retries = 0, bool timeout = false)
         {
-            IRequest Response = WriteRequest(host, port, name, request); 
+            IRequest Response = WriteRequest(host, port, name, request, timeout); 
             if (result == RequestType.NIL) return Response;
             else if (__retries > 2 && result != Response.TypeOf)
             {
@@ -37,12 +37,12 @@ namespace Node
             else if (result != Response.TypeOf) 
             {
                 Logger.Log("RunClient", name + " did not return expected request type - retrying: " + (__retries+1).ToString(), Logger.LogLevel.WARN);
-                return RunClient(host, port, name, request, result, __retries+1);
+                return RunClient(host, port, name, request, result, __retries+1, timeout);
             }
             return Response;
         } 
 
-        private static IRequest WriteRequest(string machineName, int port, string targetHost, IRequest request)
+        private static IRequest WriteRequest(string machineName, int port, string targetHost, IRequest request, bool timeout = false)
         {
             IRequest response = new EmptyRequest();
 
@@ -50,7 +50,17 @@ namespace Node
             {
                 // Create a TCP/IP client socket.
                 // machineName is the host running the server application.
-                TcpClient client = new TcpClient(machineName,port);
+                TcpClient client;
+                if (!timeout) client = new TcpClient(machineName,port);
+                else {
+                    client = new TcpClient();
+                    if (!client.ConnectAsync(machineName,port).Wait(250))
+                    {
+                        Logger.Log("WriteRequest", "Unable to reach follower - " + machineName + ":" + port.ToString(), Logger.LogLevel.WARN);
+                        client.Close();
+                        return response;
+                    }
+                }
                 Logger.Log("NodeClient", "Client connected to " +targetHost, Logger.LogLevel.DEBUG);
                 // Create an SSL stream that will close the client's stream.
                 SslStream sslStream = new SslStream(

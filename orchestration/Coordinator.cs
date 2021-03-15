@@ -55,7 +55,7 @@ namespace Node
         {
             lock (_cancel_lock)
             {
-                _cancel = Utils.Millis + Params.HEARTBEAT_MS;
+                _cancel = Utils.Millis + Params.HEARTBEAT_MS*2;
             }
         }
 
@@ -65,11 +65,11 @@ namespace Node
             {
                 if(Ledger.Instance.Quorum > 0) break;
             }
-            if (_isLeader)
+            if (_isLeader && !IsCancelled)
             {
                 return State.LEADER;
             } 
-            else if (Utils.Millis - _lastHeartbeat > Params.HEARTBEAT_MS && Utils.Millis > _currentPenalty && !IsCancelled) 
+            else if (Utils.Millis - _lastHeartbeat > Params.HEARTBEAT_MS && Utils.Millis > _currentPenalty) 
             {
                 SetPenalty(Params.HEARTBEAT_MS);
                 return State.CANDIDATE;
@@ -130,12 +130,15 @@ namespace Node
         {
             lock(_leader_lock)
             {
-                _isLeader = v0;
-                _leader = leader;
-                Logger.Log(this.GetType().Name, "Set leader to " + leader + ", is that me? " + (v0?"Yes":"No"), Logger.LogLevel.INFO);
-
-                if (!v0) Consumer.Instance.Stop();
-                else if (v0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
+                if (v0 != _isLeader || _leader != leader)
+                {
+                    _isLeader = v0;
+                    _leader = leader;
+                    Logger.Log(this.GetType().Name, "Set leader to " + leader + ", is that me? " + (v0?"Yes":"No"), Logger.LogLevel.INFO);
+                    if (_isLeader) Logger.Log(leader, "I am the leader.", Logger.LogLevel.IMPOR);
+                    if (!_isLeader) Consumer.Instance.Stop();
+                    else if (_isLeader) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
+                }
             }
         }
 

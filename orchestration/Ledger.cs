@@ -23,7 +23,7 @@ namespace Node
         public void RemoveNode(string name)
         {
             lock (_cluster_lock)
-            {
+            {   
                 Cluster.Remove(name);
                 Logger.Log(this.GetType().Name, "Removed " + name + " from cluster", Logger.LogLevel.INFO);
             }
