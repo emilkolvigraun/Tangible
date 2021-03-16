@@ -8,6 +8,6 @@ namespace Node
         public string Host {get; set;} = Params.ADVERTISED_HOST_NAME;
         public int Port {get; set;} = Params.PORT_NUMBER;
         public string Name {get; set;} = Params.NODE_NAME;
-        public MetaNode[] Add {get; set;} = null;
+        public MetaNode[] Add {get; set;} = Ledger.Instance.ClusterCopy.AsNodeArray();
     }
 }

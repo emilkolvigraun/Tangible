@@ -4,8 +4,6 @@ using System.Net.Sockets;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Linq;
-using System.Threading;
 
 namespace Node
 {
@@ -28,7 +26,6 @@ namespace Node
                 Logger.Log("NodeServer", "Waiting for a client to connect..", Logger.LogLevel.DEBUG);
                 // Application blocks while waiting for an incoming connection.
                 // Type CNTL-C to terminate the server.
-  
                 try 
                 {
                     TcpClient client = listener.AcceptTcpClient();
@@ -38,8 +35,6 @@ namespace Node
                     Logger.Log("NodeServer",  e.Message, Logger.LogLevel.ERROR);
                 }
             }
-            Logger.Log("NodeServer",  "SERVER STOPPED RUNNING", Logger.LogLevel.ERROR);
-
         }
         static void ProcessClient (TcpClient client)
         {

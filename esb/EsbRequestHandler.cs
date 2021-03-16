@@ -34,9 +34,6 @@ namespace Node
                 byte[] _cert_b = null;
                 try 
                 {
-                    RegistrationRequest rs = new RegistrationRequest(){
-                        Add = Ledger.Instance.ClusterCopy.AsNodeArray()
-                    };
                     Response = NodeClient.RunClient(request.Host, request.Port, request.Name, RequestType.RS, RequestType.CT);
                     if(Response.TypeOf == RequestType.EMPTY) 
                     {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using System.Linq;
 using System;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Node
 {
@@ -27,26 +27,32 @@ namespace Node
                     break;
             }
 
-            if (_updater+5000 < Utils.Millis)
+            if (_updater+4000 < Utils.Millis)
             {
-                Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " quorum: " + string.Join(",",Ledger.Instance.ClusterCopy.GetAsToString()), Logger.LogLevel.INFO);
+                Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " " + string.Join(",",Ledger.Instance.ClusterCopy.GetAsToString()), Logger.LogLevel.INFO);
                 _updater = Utils.Millis;
             }
         }
 
         private void ActAsFollower()
         {
-            Change item = Coordinator.Instance.DequeueChange();
-            while (item != null)
+            try 
             {
-                if (item.TypeOf == Change.Type.ADD)
+                Change item = Coordinator.Instance.DequeueChange();
+                while (item != null)
                 {
-                    Ledger.Instance.AddNode(item.Name, new MetaNode(){Name=item.Name, Host=item.Host, Port=item.Port});
-                } else if (item.TypeOf == Change.Type.DEL)
-                {
-                    Ledger.Instance.RemoveNode(item.Name);
+                    if (item.TypeOf == Change.Type.ADD)
+                    {
+                        Ledger.Instance.AddNode(item.Name, new MetaNode(){Name=item.Name, Host=item.Host, Port=item.Port});
+                    } else if (item.TypeOf == Change.Type.DEL)
+                    {
+                        Ledger.Instance.RemoveNode(item.Name);
+                    }
+                    item = Coordinator.Instance.DequeueChange();
                 }
-                item = Coordinator.Instance.DequeueChange();
+            } catch(Exception e)
+            {
+                Logger.Log("ActAsFollower", e.Message, Logger.LogLevel.ERROR);
             }
         }
 
@@ -63,7 +69,11 @@ namespace Node
 
                 var tasks = new Task[cluster.Count];
 
-                if (Coordinator.Instance.CurrentLeader != null && cluster.Count > 1)
+                if (Coordinator.Instance.CurrentLeader != null && cluster.Count == 1 && Coordinator.Instance.IsElectionTerm)
+                {
+                    Coordinator.Instance.ToggleLeadership(true);
+                    return;
+                } else if (Coordinator.Instance.CurrentLeader != null && cluster.Count > 1)
                 {
                     tasks = new Task[cluster.Count-1];
                 }
@@ -75,13 +85,7 @@ namespace Node
                     // Sending a Vote request to all known nodes
                     foreach(KeyValuePair<string, MetaNode> n0 in cluster)
                     {
-                        try 
-                        {
-                            if (n0.Key == Coordinator.Instance.CurrentLeader) continue;
-                        } catch(Exception e)
-                        {
-                            Logger.Log("election term 3", e.Message, Logger.LogLevel.ERROR);
-                        }
+                        if (n0.Key == Coordinator.Instance.CurrentLeader) continue;
 
                         tasks[i] = new Task(() =>
                         {
@@ -93,7 +97,7 @@ namespace Node
                                     Coordinator.Instance.StopElectionTerm();
                                 }
                             }
-                            catch(Exception e){Logger.Log("election term 4", e.Message, Logger.LogLevel.ERROR);}
+                            catch(Exception e){Logger.Log("election term 3", e.Message, Logger.LogLevel.ERROR);}
                             });
                         i++;
                     }
@@ -127,25 +131,19 @@ namespace Node
         {
             Ledger.Instance.IncrementAll();
             List<string> flagged = new List<string>();
-            foreach(KeyValuePair<string, MetaNode> n0 in Ledger.Instance.ClusterCopy)
+            Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
+            foreach(KeyValuePair<string, MetaNode> n0 in cluster)
             {
-                if(Ledger.Instance.IfRemove(n0.Key)) flagged.Add(n0.Key);
+                if(Ledger.Instance.IfRemove(n0.Key))
+                {
+                    flagged.Add(n0.Key);
+                    Ledger.Instance.UpdateAllNodesNFlags(n0.Key, cluster, flag:n0.Key);
+                } 
             }
 
             // Retrieve a copy of all the nodes in the cluster
-            Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
-            
-            // create the append entries request, to make sure that all nodes receive the same
-            AppendEntriesRequest ar = new AppendEntriesRequest(){
-                Add = cluster.AsNodeArray(),
-                Flag = flagged.ToArray()
-            };
-            SendBatch(ar, cluster);
-        }
-
-
-        private void SendBatch(IRequest request, Dictionary<string, MetaNode> cluster)
-        {
+            cluster = Ledger.Instance.ClusterCopy;
+                        
             // create a task for each node
             var tasks = new Task[cluster.Count];
             int i = 0;
@@ -153,8 +151,24 @@ namespace Node
             {
                 tasks[i] = new Task(() =>
                 {
-                    IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, request, timeout:true);
-                    if (r0.TypeOf == RequestType.AE) Ledger.Instance.ResetStatus(n0.Key);
+                    IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, new AppendEntriesRequest(){
+                        Add = Ledger.Instance.GetNodesCluster(n0.Key),
+                        Flag = Ledger.Instance.GetNodesFlags(n0.Key)
+                    }, timeout:true);
+                    if (r0.TypeOf == RequestType.AE) 
+                    {
+                        Ledger.Instance.ResetStatus(n0.Key);
+                        Ledger.Instance.ResetNodesNCluster(n0.Key);
+
+                        MetaNode[] response = ((AppendEntriesRequest) r0).Add;
+                        if (response != null) 
+                        {
+                            foreach(MetaNode n in Ledger.Instance.ClusterCopy.AsNodeArray().Except(response))
+                            {
+                                Ledger.Instance.UpdateNodesCluster(n0.Value.Name, n);
+                            }
+                        }
+                    }
                 });
                 i++;
             }
@@ -163,6 +177,7 @@ namespace Node
             Parallel.ForEach<Task>(tasks, (t) => { t.Start(); }); 
             bool success = Task.WaitAll(tasks, 500);
             // Logger.Log(Params.NODE_NAME, "Send heartbeats [status:"+success+"]", success?Logger.LogLevel.INFO:Logger.LogLevel.WARN);
-        }
+        
+        }        
     }
 } 

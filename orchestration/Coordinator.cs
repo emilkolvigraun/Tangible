@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Linq;
 using System;
 
@@ -35,18 +34,14 @@ namespace Node
         public void RunCoordinator()
         {
             Logger.Log(this.GetType().Name, "Coordinator is running.", Logger.LogLevel.INFO);
-            long t0 = Utils.Millis;
             while (true)
             {
                 try 
                 {
-                    if(Utils.Millis > t0+100)
-                    {
-                        State _State = GetState; 
-                        _actor.Process(_State);
-                        // Logger.Log(Params.NODE_NAME, "leader->" + _isLeader + " " + string.Join(", ", Ledger.Instance.ClusterCopy.GetAsToString()), Logger.LogLevel.WARN);
-                        t0 = Utils.Millis;
-                    }
+                    Utils.Wait(5);
+                    State _State = GetState; 
+                    _actor.Process(_State);
+                
                 } catch(Exception e)
                 {
                     Logger.Log("RunCoordinator", e.Message, Logger.LogLevel.WARN);
@@ -56,24 +51,41 @@ namespace Node
 
         public void EnqueueRange(MetaNode[] _add = null, string[] _del = null)
         {
-            if(_add!=null) foreach(MetaNode node in _add)
+            try
             {
-                if (node.Name == Params.NODE_NAME || Ledger.Instance.ContainsKey(node.Name)) continue;
-                    EnqueueChange(new Change(){
-                        TypeOf = Change.Type.ADD,
-                        Name = node.Name,
-                        Host = node.Host,
-                        Port = node.Port
-                    });
+                if(_add!=null) foreach(MetaNode node in _add)
+                {
+                    if (node.Name != Params.NODE_NAME && !Ledger.Instance.ContainsKey(node.Name) && !ChangeQueue.Any(x => x.Name == node.Name)) 
+                    {
+                        EnqueueChange(new Change(){
+                            TypeOf = Change.Type.ADD,
+                            Name = node.Name,
+                            Host = node.Host,
+                            Port = node.Port
+                        });
+                        Logger.Log("_add", "added add [" + node.Name + "] to change queue", Logger.LogLevel.IMPOR);
+                    }
+                }
+            } catch(Exception e)
+            {
+                Logger.Log("EnqueueRange_add", e.Message, Logger.LogLevel.ERROR);
             }
-            if(_del!=null) foreach(string name in _del)
+            try
             {
-                if (name == Params.NODE_NAME || Ledger.Instance.ContainsKey(name)) continue;                
-                    EnqueueChange(new Change(){
-                        TypeOf = Change.Type.DEL,
-                        Name = name
-                    });
-                
+                if(_del!=null) foreach(string name in _del)
+                {
+                    if (Ledger.Instance.ContainsKey(name) && !ChangeQueue.Any(x => x.Name == name))
+                    {
+                        EnqueueChange(new Change(){
+                            TypeOf = Change.Type.DEL,
+                            Name = name
+                        });
+                        Logger.Log("_del", "added delete [" + name + "] to change queue", Logger.LogLevel.IMPOR);
+                    }                
+                }
+            } catch(Exception e)
+            {
+                Logger.Log("EnqueueRange_del", e.Message, Logger.LogLevel.ERROR);
             }
         }
 

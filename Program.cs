@@ -16,7 +16,7 @@ namespace Node
             Logger.Log("Main", "- BROADCAST_TOPIC: " + Params.BROADCAST_TOPIC, Logger.LogLevel.INFO);
             Logger.Log("Main", "- REQUEST_TOPIC: " + Params.REQUEST_TOPIC, Logger.LogLevel.INFO);
             Logger.Log("Main", "- ELECTION_TIMEOUT: " + Params.HEARTBEAT_MS +"ms", Logger.LogLevel.INFO);
-            Logger.Log("Main", "% Processor Time: " + Params.USAGE, Logger.LogLevel.INFO);
+            // Logger.Log("Main", "% Processor Time: " + Params.USAGE, Logger.LogLevel.INFO);
         }
 
         static void Main(string[] args)
@@ -29,6 +29,7 @@ namespace Node
             Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
             Environment.SetEnvironmentVariable("PORT_NUMBER", "5001");
             Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
+            Environment.SetEnvironmentVariable("NODE_NAME", "node1");
             
             // load environment variables
             Params.LoadConfig();

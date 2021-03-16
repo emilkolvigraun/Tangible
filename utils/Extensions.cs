@@ -178,7 +178,7 @@ namespace Node
         {
             List<string> sl = new List<string>();
             foreach(KeyValuePair<string, MetaNode> n in d0){
-                sl.Add("{" + n.Value.Name + "-" + n.Value.Host+":"+n.Value.Port.ToString()+ "}");
+                sl.Add(n.Value.Name);
             }
             return sl.ToArray();
         }
