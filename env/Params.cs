@@ -38,8 +38,8 @@ namespace Node
             REQUEST_TOPIC       = GetStrVar("REQUEST_TOPIC");
             ADVERTISED_HOST_NAME= GetStrVar("ADVERTISED_HOST_NAME");
             PORT_NUMBER         = GetIntVar("PORT_NUMBER");
-            HEARTBEAT_MS        = Utils.GetRandomInt(300, 500);
-            NODE_NAME           = Utils.GetUniqueKey(size:10);
+            HEARTBEAT_MS        = Utils.GetRandomInt(500, 900);
+            NODE_NAME           = GetStrVar("NODE_NAME", Utils.GetUniqueKey(size:10));
 
             string CERT_NAME    = NODE_NAME+".pfx";
             X509CERT_BYTES = GenerateCertificate(NODE_NAME);

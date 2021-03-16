@@ -14,6 +14,7 @@ services:
       BROADCAST_TOPIC: "Tangible.broadcast.1"
       REQUEST_TOPIC: "Tangible.request.1"
       CLUSTER_ID: "Tangible#1"
+      NODE_NAME: "node1_1"
       # WAIT_TIME_MS: "1000"
   
   node2:
@@ -32,6 +33,7 @@ services:
       REQUEST_TOPIC: "Tangible.request.1"
       CLUSTER_ID: "Tangible#1"
       WAIT_TIME_MS: "2000"
+      NODE_NAME: "node2_1"
   
   node3:
     image: emilkolvigraun/tangible-node
@@ -49,20 +51,21 @@ services:
       REQUEST_TOPIC: "Tangible.request.1"
       CLUSTER_ID: "Tangible#1"
       WAIT_TIME_MS: "2000"
+      NODE_NAME: "node3_1"
   
-  node4:
-    image: emilkolvigraun/tangible-node
-    ports:
-      - "5003:5003"
-    stdin_open: true # docker run -i
-    tty: true
-    depends_on:
-      - "node3"
-    environment:
-      ADVERTISED_HOST_NAME: "192.168.1.237"
-      PORT_NUMBER: "5003"
-      KAFKA_BROKERS: "192.168.1.237:9092"
-      BROADCAST_TOPIC: "Tangible.broadcast.1"
-      REQUEST_TOPIC: "Tangible.request.1"
-      CLUSTER_ID: "Tangible#1"
-      WAIT_TIME_MS: "2000"
+  # node4:
+  #   image: emilkolvigraun/tangible-node
+  #   ports:
+  #     - "5003:5003"
+  #   stdin_open: true # docker run -i
+  #   tty: true
+  #   depends_on:
+  #     - "node3"
+  #   environment:
+  #     ADVERTISED_HOST_NAME: "192.168.1.237"
+  #     PORT_NUMBER: "5003"
+  #     KAFKA_BROKERS: "192.168.1.237:9092"
+  #     BROADCAST_TOPIC: "Tangible.broadcast.1"
+  #     REQUEST_TOPIC: "Tangible.request.1"
+  #     CLUSTER_ID: "Tangible#1"
+  #     WAIT_TIME_MS: "2000"

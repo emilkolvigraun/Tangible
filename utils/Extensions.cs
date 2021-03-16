@@ -150,12 +150,16 @@ namespace Node
                 case RequestType.BC: return new BroadcastRequest();
                 case RequestType.CT: return new CertificateResponse();
                 case RequestType.ST: return new StatusResponse();
-                case RequestType.VT: return new VotingRequest(){Vote = Ledger.Instance.Vote};
+                case RequestType.VT: return new VotingRequest();
                 default: return new EmptyRequest();
             }
         }
 
         public static Dictionary<string, MetaNode> Copy(this Dictionary<string, MetaNode> d0)
+        {
+            return d0.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
+        public static Dictionary<string, int> Copy(this Dictionary<string, int> d0)
         {
             return d0.ToDictionary(entry => entry.Key, entry => entry.Value);
         }
@@ -168,6 +172,15 @@ namespace Node
         {
             // throws exception if length of votes is less than 1
             return votes.GroupBy( i => i ).OrderByDescending(group => group.Count()).ElementAt(0).Key;
+        }
+
+        public static string[] GetAsToString(this Dictionary<string, MetaNode> d0)
+        {
+            List<string> sl = new List<string>();
+            foreach(KeyValuePair<string, MetaNode> n in d0){
+                sl.Add("{" + n.Value.Name + "-" + n.Value.Host+":"+n.Value.Port.ToString()+ "}");
+            }
+            return sl.ToArray();
         }
     }
 }

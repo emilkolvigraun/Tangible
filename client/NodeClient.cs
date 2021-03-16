@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -46,15 +45,15 @@ namespace Node
         {
             IRequest response = new EmptyRequest();
 
+            TcpClient client = null;
             try
             {
                 // Create a TCP/IP client socket.
                 // machineName is the host running the server application.
-                TcpClient client;
                 if (!timeout) client = new TcpClient(machineName,port);
                 else {
                     client = new TcpClient();
-                    if (!client.ConnectAsync(machineName,port).Wait(250))
+                    if (!client.ConnectAsync(machineName,port).Wait(150))
                     {
                         Logger.Log("WriteRequest", "Unable to reach follower - " + machineName + ":" + port.ToString(), Logger.LogLevel.WARN);
                         client.Close();
@@ -104,7 +103,11 @@ namespace Node
             {
                 Logger.Log("WriteRequest", e.Message, Logger.LogLevel.ERROR);
             }
-
+            try 
+            {
+                if(client != null) client.Close();
+            }catch(Exception){}
+            
             return response;
         }
 

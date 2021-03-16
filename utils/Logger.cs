@@ -33,7 +33,7 @@ namespace Node
                 }
             } else
             {
-                Levels = new List<LogLevel>(){LogLevel.DEBUG};//LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL};
+                Levels = new List<LogLevel>(){LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL, LogLevel.IMPOR}; //LogLevel.DEBUG};//
             }
         }
         public static void Log(string sender, string message, LogLevel tag)
@@ -70,7 +70,7 @@ namespace Node
             if (tag == LogLevel.ERROR) Console.ForegroundColor = ConsoleColor.Red;
             if (tag == LogLevel.DEBUG) Console.ForegroundColor = ConsoleColor.Gray;
             if (tag == LogLevel.INFO) Console.ForegroundColor = ConsoleColor.Green;
-            if (tag == LogLevel.IMPOR) Console.ForegroundColor = ConsoleColor.Blue;
+            if (tag == LogLevel.IMPOR) Console.ForegroundColor = ConsoleColor.Cyan;
         }
     }
 }

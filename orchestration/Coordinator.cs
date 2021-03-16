@@ -1,159 +1,215 @@
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
+using System;
 
 namespace Node
 {
     public class Coordinator
     {
+        private StateActor _actor = new StateActor();
+        private bool _isLeader = false;
+        private int _electionTimeout = Utils.GetRandomInt(0, 300);
+        private long _lastHeartBeat = Utils.Millis;
+        private readonly object _hb_lock = new object();
+        private readonly object _isLeader_lock = new object();
+        private readonly object _leader_lock = new object();
+        private readonly object _change_lock = new object();
+        private string _currentLeader = "";
+
+        private Queue<Change> _changeQueue;
 
         public enum State 
         {
             LEADER,
             FOLLOWER,
-            CANDIDATE
+            CANDIDATE,
+            SLEEPING
         }
 
-        private long _lastHeartbeat = Utils.Millis;
-        private long _currentPenalty = Utils.Millis;
-        private long _cancel = Utils.Millis;
-        private bool _isLeader = false;
-        private string _leader = null;
-        private StateActor Actor = new StateActor();
-        private List<string> _Flagged;
-        private static readonly object _flag_lock = new object();
-        private static readonly object _cancel_lock = new object();
+        Coordinator()
+        {
+            _changeQueue = new Queue<Change>();
+        }
 
         public void RunCoordinator()
         {
-            _Flagged = new List<string>();
             Logger.Log(this.GetType().Name, "Coordinator is running.", Logger.LogLevel.INFO);
+            long t0 = Utils.Millis;
             while (true)
             {
-                State _State = GetState(); 
-                Actor.Process(_State);
-            }
-        }
-
-        public void SetPenalty(int time = -1)
-        {
-            if (time == -1) time = Params.HEARTBEAT_MS;
-            _currentPenalty = Utils.Millis + time;
-        }
-
-        public bool IsCancelled
-        {
-            get 
-            {
-                lock (_cancel_lock)
+                try 
                 {
-                    return _cancel > Utils.Millis;
+                    if(Utils.Millis > t0+100)
+                    {
+                        State _State = GetState; 
+                        _actor.Process(_State);
+                        // Logger.Log(Params.NODE_NAME, "leader->" + _isLeader + " " + string.Join(", ", Ledger.Instance.ClusterCopy.GetAsToString()), Logger.LogLevel.WARN);
+                        t0 = Utils.Millis;
+                    }
+                } catch(Exception e)
+                {
+                    Logger.Log("RunCoordinator", e.Message, Logger.LogLevel.WARN);
                 }
             }
         }
 
-        public void Cancel()
+        public void EnqueueRange(MetaNode[] _add = null, string[] _del = null)
         {
-            lock (_cancel_lock)
+            if(_add!=null) foreach(MetaNode node in _add)
             {
-                _cancel = Utils.Millis + Params.HEARTBEAT_MS*2;
+                if (node.Name == Params.NODE_NAME || Ledger.Instance.ContainsKey(node.Name)) continue;
+                    EnqueueChange(new Change(){
+                        TypeOf = Change.Type.ADD,
+                        Name = node.Name,
+                        Host = node.Host,
+                        Port = node.Port
+                    });
+            }
+            if(_del!=null) foreach(string name in _del)
+            {
+                if (name == Params.NODE_NAME || Ledger.Instance.ContainsKey(name)) continue;                
+                    EnqueueChange(new Change(){
+                        TypeOf = Change.Type.DEL,
+                        Name = name
+                    });
+                
             }
         }
 
-        private State GetState()
+        public void EnqueueChange(Change change)
         {
-            while (true)
+            lock(_change_lock)
             {
-                if(Ledger.Instance.Quorum > 0) break;
-            }
-            if (_isLeader && !IsCancelled)
-            {
-                return State.LEADER;
-            } 
-            else if (Utils.Millis - _lastHeartbeat > Params.HEARTBEAT_MS && Utils.Millis > _currentPenalty) 
-            {
-                SetPenalty(Params.HEARTBEAT_MS);
-                return State.CANDIDATE;
-            } 
-            else
-            {
-                return State.FOLLOWER;
-            } 
-        }
-        
-        public void AddFlag(string name)
-        {
-            lock (_flag_lock)
-            {
-                Flagged.Add(name);
+                ChangeQueue.Enqueue(change);
             }
         }
 
-        public void RemoveFlag(string name)
+        public Change DequeueChange()
         {
-            lock (_flag_lock)
+            lock(_change_lock)
             {
-                Flagged.Remove(name);
+                if (ChangeQueue.Count > 0)
+                    return ChangeQueue.Dequeue();
+                else    
+                    return null;
             }
+
         }
 
-        public string Vote 
+        public Queue<Change> ChangeQueue
         {
             get 
             {
-                // TODO: NOT YET IMPLEMENTED VOTATION METRICS
-                return Params.NODE_NAME;
-            }
-        }
-
-        public List<string> Flagged
-        {
-            get 
-            {
-                lock(_flag_lock)
+                lock (_change_lock)
                 {
-                    return _Flagged;
+                    return _changeQueue;
                 }
             }
         }
 
-        public List<string> FlaggedCopy
-        {
-            get 
-            {
-                lock(_flag_lock)
-                {
-                    return Flagged.ToList();
-                }
-            }
-        }
-        public void ToggleLeadership(bool v0, string leader)
+        public void SetCurrentLeader(string n)
         {
             lock(_leader_lock)
             {
-                if (v0 != _isLeader || _leader != leader)
-                {
-                    _isLeader = v0;
-                    _leader = leader;
-                    Logger.Log(this.GetType().Name, "Set leader to " + leader + ", is that me? " + (v0?"Yes":"No"), Logger.LogLevel.INFO);
-                    if (_isLeader) Logger.Log(leader, "I am the leader.", Logger.LogLevel.IMPOR);
-                    if (!_isLeader) Consumer.Instance.Stop();
-                    else if (_isLeader) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
-                }
+                _currentLeader = n;
             }
         }
 
-        public string Leader
+        public string CurrentLeader
         {
             get 
             {
                 lock(_leader_lock)
                 {
-                    return _leader;
+                    return _currentLeader;
                 }
             }
         }
 
-        private static readonly object _leader_lock = new object();
+        private State GetState
+        {
+            get 
+            {
+                State _state = State.SLEEPING;
+                while (_state == State.SLEEPING)
+                {
+                    if (Ledger.Instance.ClusterCopy.Count < 1) _state = State.SLEEPING;
+                    else if (_isLeader) _state = State.LEADER;
+                    else if (Utils.Millis > _lastHeartBeat + Params.HEARTBEAT_MS + _electionTimeout)
+                    {
+                        _state = State.CANDIDATE;
+                    }
+                    else _state = State.FOLLOWER;
+                }
+                return _state;
+            }
+        }
+
+        public bool IsLeader 
+        {
+            get 
+            {
+                lock (_isLeader_lock)
+                {
+                    return _isLeader;   
+                }
+            }
+        }
+
+        public void ToggleLeadership(bool b)
+        {
+            lock(_isLeader_lock)
+            {
+                if (b)
+                {
+                    if(!Consumer.Instance.IsRunning) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
+                    _currentLeader = Params.NODE_NAME;
+                    Logger.Log(Params.NODE_NAME, "Acting as Leader", Logger.LogLevel.IMPOR);           
+                }
+                else if (_isLeader!=b && !b) 
+                {
+                    Logger.Log(Params.NODE_NAME, "No longer acting as Leader", Logger.LogLevel.IMPOR);
+                    Consumer.Instance.Stop();
+                } else if (!b && CurrentLeader == null) Consumer.Instance.Stop();
+                _isLeader = b;
+            }
+        }
+
+        public void ResetHeartbeat()
+        {
+            lock (_hb_lock)
+            {
+                _lastHeartBeat = Utils.Millis;
+            }
+        }
+
+        public void StartElectionTerm()
+        {
+            lock (_isLeader_lock)
+            {
+                electionTerm = true;
+            }
+        }
+        public void StopElectionTerm()
+        {
+            lock (_isLeader_lock)
+            {
+                electionTerm = false;
+            }
+        }
+        public bool IsElectionTerm
+        {
+            get 
+            {
+                lock(_isLeader_lock)
+                {
+                    return electionTerm;
+                }
+            }
+        }
+
+        private bool electionTerm = false;
         private static readonly object _lock = new object();
         private static Coordinator _instance = null;
 

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Node 
 {
@@ -26,13 +27,16 @@ namespace Node
 
         private void ProcessBroadcast(BroadcastRequest request)
         {           
-            if (!request.Name.Equals(Params.NODE_NAME) && !request.Port.Equals(Params.PORT_NUMBER))
+            if (request.Name != Params.NODE_NAME && request.Port != Params.PORT_NUMBER)
             {
                 Logger.Log("ProcessBroadcast", "Received BC request from " + request.Name + "[1]", Logger.LogLevel.INFO);
                 IRequest Response = null;
                 byte[] _cert_b = null;
                 try 
                 {
+                    RegistrationRequest rs = new RegistrationRequest(){
+                        Add = Ledger.Instance.ClusterCopy.AsNodeArray()
+                    };
                     Response = NodeClient.RunClient(request.Host, request.Port, request.Name, RequestType.RS, RequestType.CT);
                     if(Response.TypeOf == RequestType.EMPTY) 
                     {
@@ -44,8 +48,12 @@ namespace Node
                     Logger.Log("ProcessBroadcast", e.Message, Logger.LogLevel.ERROR);
                     return;
                 }
-                Params.StoreCertificate(_cert_b);
-                Ledger.Instance.AddNode(request.Name, Builder.CreateMetaNode(request.Name, request.Host, request.Port));
+                Task.Run(()=>{Params.StoreCertificate(_cert_b);});
+                Ledger.Instance.AddNode(request.Name, new MetaNode(){
+                    Name = request.Name, 
+                    Host = request.Host,
+                    Port = request.Port
+                });
                 Logger.Log("ProcessBroadcast", "Processed BC request from " + request.Name + "[2]", Logger.LogLevel.INFO);
             }
         }  

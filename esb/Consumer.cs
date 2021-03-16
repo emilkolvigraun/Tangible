@@ -12,7 +12,10 @@ namespace Node
         private bool _running = false;
         public void Start(string[] topics)
         {
-            if (_running) return;
+            if (_running)
+            {
+                Stop();
+            } 
             var config = new ConsumerConfig
             {
                 BootstrapServers = Params.KAFKA_BROKERS,
@@ -26,6 +29,14 @@ namespace Node
             tSrc = new CancellationTokenSource();
             Consume(topics, config, tSrc.Token);
             _running = true;
+        }
+
+        public bool IsRunning
+        {
+            get 
+            {
+                return _running;
+            }
         }
 
         async private void Consume(string[] topics, ConsumerConfig config, CancellationToken token)
@@ -64,6 +75,7 @@ namespace Node
                 }
             });
             Logger.Log(this.GetType().Name, "Consumer has stopped", Logger.LogLevel.WARN);
+            _running = false;
         }
 
         private void Clean(IConsumer<Ignore, string> consumer)

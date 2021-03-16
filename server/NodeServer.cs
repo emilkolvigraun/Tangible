@@ -28,7 +28,7 @@ namespace Node
                 Logger.Log("NodeServer", "Waiting for a client to connect..", Logger.LogLevel.DEBUG);
                 // Application blocks while waiting for an incoming connection.
                 // Type CNTL-C to terminate the server.
-
+  
                 try 
                 {
                     TcpClient client = listener.AcceptTcpClient();
@@ -38,6 +38,8 @@ namespace Node
                     Logger.Log("NodeServer",  e.Message, Logger.LogLevel.ERROR);
                 }
             }
+            Logger.Log("NodeServer",  "SERVER STOPPED RUNNING", Logger.LogLevel.ERROR);
+
         }
         static void ProcessClient (TcpClient client)
         {
@@ -51,8 +53,8 @@ namespace Node
                 sslStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired: false, checkCertificateRevocation: true);
 
                 // Set timeouts for the read and write to 200 ms.
-                sslStream.ReadTimeout = 200;
-                sslStream.WriteTimeout = 200;
+                sslStream.ReadTimeout = 500;
+                sslStream.WriteTimeout = 500;
 
                 // Read a message from the client.
                 byte[] response = Handler.ProcessRequest(sslStream.ReadRequest());

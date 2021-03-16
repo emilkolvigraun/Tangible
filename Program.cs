@@ -21,14 +21,14 @@ namespace Node
 
         static void Main(string[] args)
         {
-            // DEBUGGING
-            // Environment.SetEnvironmentVariable("KAFKA_BROKERS", "192.168.1.237:9092");
-            // Environment.SetEnvironmentVariable("CLUSTER_ID", "Tangible#1");
-            // Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
-            // Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
-            // Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
-            // Environment.SetEnvironmentVariable("PORT_NUMBER", "5001");
-            // Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
+            // DEBUGGING 
+            Environment.SetEnvironmentVariable("KAFKA_BROKERS", "192.168.1.237:9092");
+            Environment.SetEnvironmentVariable("CLUSTER_ID", "Tangible#1");
+            Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
+            Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
+            Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
+            Environment.SetEnvironmentVariable("PORT_NUMBER", "5001");
+            Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
             
             // load environment variables
             Params.LoadConfig();
@@ -50,8 +50,6 @@ namespace Node
             // running internal comunication 
             serverThread.Start();
 
-            // running orchestration/raft 
-            orchestratorThread.Start();
             
             Utils.Wait(1);
 
@@ -65,6 +63,10 @@ namespace Node
             }
             Logger.Log("Main", "Transmitted broadcast", Logger.LogLevel.INFO);
             Utils.Wait();
+
+            // running orchestration/raft 
+            orchestratorThread.Start();
+            
             if (Ledger.Instance.ClusterCopy.Count == 0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
             Logger.Log("Main", "Successfully started Node", Logger.LogLevel.INFO);
         }
