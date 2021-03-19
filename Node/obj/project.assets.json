@@ -261,11 +261,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node\\Node.csproj",
+      "projectUniqueName": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\n1\\Node.csproj",
       "projectName": "Node",
-      "projectPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node\\Node.csproj",
+      "projectPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\n1\\Node.csproj",
       "packagesPath": "C:\\Users\\emilk\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node\\obj\\",
+      "outputPath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\n1\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\emilk\\AppData\\Roaming\\NuGet\\NuGet.Config",

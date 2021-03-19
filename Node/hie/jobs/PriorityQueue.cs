@@ -26,13 +26,13 @@ namespace Node
             {
                 try 
                 {
+                    if (_Queue.Any(j => j.ID == job.ID)) return;
                     int index = -1;
                     if (_Queue.Count > 0) index = LastIndexOf(job);
-                    if (!_Queue.Any(j => j.ID == job.ID)) 
-                    {
-                        _Queue.Insert(index+1, job);
-                        Logger.Log("PriorityQueue", "Added " + job.Request.TypeOf + " to priority queue", Logger.LogLevel.INFO);
-                    }
+
+                    _Queue.Insert(index+1, job);
+                    Logger.Log("PriorityQueue", "Added " + job.Request.TypeOf + " to priority queue", Logger.LogLevel.INFO);
+                    
                 } catch (Exception e)
                 {
                     Logger.Log("PriorityQueue", e.Message, Logger.LogLevel.ERROR);

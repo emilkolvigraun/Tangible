@@ -31,41 +31,44 @@ namespace Node
 
         private void ProcessAction(ActionRequest request)
         {
-            Console.WriteLine(request.EncodeRequestStr());
-            Coordinator.Instance.ScheduleJobToNodes(new Job(){
+            string id = Utils.GetUniqueKey(size:10);
+            Job job = new Job(){
+                ID = id,
                 TypeOf = Job.Type.OP,
                 StatusOf = Job.Status.NS,
                 Request = request
-            });
-            // Console.WriteLine("node:" + (n0!=null?n0.Name:Params.NODE_NAME));
+            };
+            Scheduler.Instance.ScheduleJob(job);
+            Logger.Log("ProcessAction", "Processed new job " + job.ID, Logger.LogLevel.IMPOR);
         }
 
         private void ProcessBroadcast(BroadcastRequest request)
         {           
-            if (request.Node.Name != Params.NODE_NAME && request.Node.Port != Params.PORT_NUMBER)
+            if (request.Name != Params.NODE_NAME && request.Port != Params.PORT_NUMBER)
             {
-                Logger.Log("ProcessBroadcast", "Received BC request from [node:" + request.Node.Name + "] [1]", Logger.LogLevel.INFO);
+                Logger.Log("ProcessBroadcast", "Received BC request from [node:" + request.Name + "] [1]", Logger.LogLevel.INFO);
                 IRequest Response = null;
                 byte[] _cert_b = null;
                 try 
                 {
-                    Response = NodeClient.RunClient(request.Node.Host, request.Node.Port, request.Node.Name, RequestType.RS, RequestType.CT);
+                    Response = NodeClient.RunClient(request.Host, request.Port, request.Name, RequestType.RS, RequestType.CT);
                     if(Response.TypeOf == RequestType.EMPTY) 
                     {
                         return;
                     }
-                    _cert_b  = ((CertificateResponse) Response).Cert;
+                    CertificateResponse r0 = ((CertificateResponse) Response);
+                    _cert_b  = r0.Cert;
+                    Ledger.Instance.AddNode(r0.Node.Name, r0.Node);
 
+                    Task.Run(()=>{Params.StoreCertificate(_cert_b);});
+                    Logger.Log("ProcessBroadcast", "Processed BC request from [node:" + request.Name + "] [2]", Logger.LogLevel.INFO);
                     // if the connection was successful, add the nodes jobs (it was gossiping)
-                    Ledger.Instance.SetNodesJobs(request.Node.Name, ((CertificateResponse)Response).Jobs);
+                    // Ledger.Instance.SetNodesJobs(request.Node.Name, ((CertificateResponse)Response).Jobs);
                 } catch (Exception e)
                 {
                     Logger.Log("ProcessBroadcast", e.Message, Logger.LogLevel.ERROR);
                     return;
                 }
-                Task.Run(()=>{Params.StoreCertificate(_cert_b);});
-                Ledger.Instance.AddNode(request.Node.Name, request.Node);
-                Logger.Log("ProcessBroadcast", "Processed BC request from [node:" + request.Node.Name + "] [2]", Logger.LogLevel.INFO);
             }
         }  
     }

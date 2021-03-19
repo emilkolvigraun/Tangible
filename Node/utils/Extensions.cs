@@ -122,6 +122,8 @@ namespace Node
                     // Intercom requests
                     case RequestType.AE:
                         return JsonConvert.DeserializeObject<AppendEntriesRequest>(request);
+                    case RequestType.AR:
+                        return JsonConvert.DeserializeObject<AppendEntriesResponse>(request);
                     case RequestType.RS:
                         return JsonConvert.DeserializeObject<RegistrationRequest>(request);
                     case RequestType.CT:
@@ -161,6 +163,7 @@ namespace Node
                 // Intercom requests
                 case RequestType.RS: return new RegistrationRequest();
                 case RequestType.AE: return new AppendEntriesRequest();
+                case RequestType.AR: return new AppendEntriesResponse();
                 case RequestType.BC: return new BroadcastRequest();
                 case RequestType.CT: return new CertificateResponse();
                 case RequestType.ST: return new StatusResponse();
@@ -221,6 +224,40 @@ namespace Node
                 sl.Add(n.Name);
             }
             return sl;
+        }
+
+        public static List<BasicNode> AsBasicNodes (this MetaNode[] nodes)
+        {
+            List<BasicNode> basicNodes = new List<BasicNode>();
+            foreach(MetaNode node in nodes)
+                basicNodes.Add(BasicNode.MakeBasicNode(node));
+            return basicNodes;
+        }
+
+        public static bool ContainsKey(this List<BasicNode> nodes, string n0)
+        {
+            foreach(BasicNode n1 in nodes)
+            {
+                if (n1.Name == n0) return true;
+            }
+            return false;
+        }
+        public static bool ContainsKey(this List<Job> jobs, Job j0)
+        {
+            foreach(Job j1 in jobs)
+            {
+                if (j1.ID == j0.ID) return true;
+            }
+            return false;
+        }
+
+        public static BasicNode GetByName(this List<BasicNode> nodes, string name)
+        {
+            foreach(BasicNode n in nodes)
+            {
+                if (n.Name == name) return n;
+            }
+            return null;
         }
     }
 }

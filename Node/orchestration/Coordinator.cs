@@ -2,20 +2,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-namespace Node
+namespace Node 
 {
     public class Coordinator
     {
         private StateActor _actor = new StateActor();
         private ChangeQueue queue = new ChangeQueue();
-        private Dictionary<string, Job[]> JobUpdates = new Dictionary<string, Job[]>();
         private bool _isLeader = false;
         private int _electionTimeout = Utils.GetRandomInt(0, 300);
         private long _lastHeartBeat = Utils.Millis;
         private long _previousHeartbeat = Utils.Millis;
         private string _currentLeader = "";
         private bool electionTerm = false;
-
         public enum State 
         {
             LEADER,
@@ -49,7 +47,6 @@ namespace Node
                 return queue;
             }
         }
-
         public void SetCurrentLeader(string n)
         {
             lock(_leader_lock)
@@ -57,7 +54,6 @@ namespace Node
                 _currentLeader = n;
             }
         }
-
         public string CurrentLeader
         {
             get 
@@ -68,7 +64,6 @@ namespace Node
                 }
             }
         }
-
         private State GetState
         {
             get 
@@ -76,7 +71,7 @@ namespace Node
                 State _state = State.SLEEPING;
                 while (_state == State.SLEEPING)
                 {
-                    if (Ledger.Instance.ClusterCopy.Count < 1) _state = State.SLEEPING;
+                    if (Ledger.Instance.Cluster.Count < 1) _state = State.SLEEPING;
                     else if (_isLeader) _state = State.LEADER;
                     else if (Utils.Millis > _lastHeartBeat + Params.HEARTBEAT_MS + _electionTimeout)
                     {
@@ -87,7 +82,6 @@ namespace Node
                 return _state;
             }
         }
-
         public bool IsLeader 
         {
             get 
@@ -98,7 +92,6 @@ namespace Node
                 }
             }
         }
-
         public void ToggleLeadership(bool b)
         {
             lock(_isLeader_lock)
@@ -117,7 +110,6 @@ namespace Node
                 _isLeader = b;
             }
         }
-
         public void ResetHeartbeat()
         {
             lock (_hb_lock)
@@ -126,7 +118,6 @@ namespace Node
                 _lastHeartBeat = Utils.Millis;
             }
         }
-        
         public long LeaderHeartbeat
         {
             get
@@ -161,108 +152,7 @@ namespace Node
                 }
             }
         }
-
-        public Dictionary<string, Job[]> NewJobs
-        {
-            get 
-            {
-                lock(_jobs_lock)
-                {
-                    return JobUpdates;
-                }
-            }
-        }
-
-        public Job[] GetNewJobs(string node)
-        {
-            lock(_jobs_lock)
-            {
-                if (NewJobs.ContainsKey(node))
-                {
-                    Job[] Jobs = NewJobs[node];
-                    return Jobs;
-                } 
-                return new Job[]{};
-            }
-        }
-        public Job[] GetRemoveNewJobs(string node)
-        {
-            lock(_jobs_lock)
-            {
-                if (NewJobs.ContainsKey(node))
-                {
-                    Job[] Jobs = NewJobs[node];
-                    NewJobs.Remove(node);
-                    return Jobs;
-                } 
-                return new Job[]{};
-            }
-        }
-
-        public void UpdateNewJobs(string node)
-        {
-            lock(_jobs_lock)
-            {
-                if (NewJobs.ContainsKey(node) && Ledger.Instance.GetStatus(node) == 0)
-                {
-                    bool status = true;
-                    foreach (Job job in NewJobs[node])
-                    {
-                        if (!Ledger.Instance.ClusterCopy[node].Jobs.Any(j => j.ID == job.ID))
-                        {
-                            status = false;
-                            break;
-                        }
-                    }
-                    if (status)
-                    {
-                        NewJobs.Remove(node);
-                    }
-                    
-                }
-            }
-        }
-
-        public void ScheduleJobToNodes(Job job)
-        {
-            ScheduleJobsToNodes(new Job[]{job});
-        }
-
-        public void AddNewJob(string name, Job[] jobs)
-        {
-            lock(_jobs_lock)
-            {
-                NewJobs.Add(name, jobs);
-                Logger.Log("AddNewJob", "Added job to [node:"+name+"]", Logger.LogLevel.INFO);
-            }
-        }
-        
-        public void ScheduleJobsToNodes(Job[] jobs)
-        {
-            Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
-            lock(_jobs_lock)
-            {
-                if (cluster.Count == 0)
-                {
-                    Scheduler.Instance.QueueJobs(jobs);
-                } else if (cluster.Count == 1)
-                {
-                    if (Ledger.Instance.GetNodeJobs(cluster.ElementAt(0).Key).Length >= Scheduler.Instance.Jobs.Length)
-                        AddNewJob(cluster.ElementAt(0).Key, jobs);
-                    else 
-                    {
-                        Scheduler.Instance.QueueJobs(jobs);
-                    }
-                } else {
-                    string node = Ledger.Instance.NodeWithLeastJobs();
-                    if (node != null ) AddNewJob(node, jobs);
-                    else Scheduler.Instance.QueueJobs(jobs);
-                }
-            }
-        }
-
         private static readonly object _lock = new object();
-        private readonly object _jobs_lock = new object();
         private readonly object _hb_lock = new object();
         private readonly object _isLeader_lock = new object();
         private readonly object _leader_lock = new object();

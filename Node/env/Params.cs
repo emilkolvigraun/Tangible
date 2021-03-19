@@ -9,6 +9,8 @@ namespace Node
     {
         // boot variable
         public static int WAIT_TIME_MS;
+        public static int TIMEOUT_LIMIT;
+        public static string UNIQUE_KEY;
 
         // kafka variables
         public static string KAFKA_BROKERS;
@@ -38,7 +40,9 @@ namespace Node
             REQUEST_TOPIC       = GetStrVar("REQUEST_TOPIC");
             ADVERTISED_HOST_NAME= GetStrVar("ADVERTISED_HOST_NAME");
             PORT_NUMBER         = GetIntVar("PORT_NUMBER");
+            TIMEOUT_LIMIT       = GetIntVar("TIMEOUT_LIMIT", alternative:30, minimum:20);
             HEARTBEAT_MS        = Utils.GetRandomInt(500, 900);
+            UNIQUE_KEY          = Utils.GetUniqueKey(size: 10);
             NODE_NAME           = GetStrVar("NODE_NAME", Utils.GetUniqueKey(size:10));
 
             string CERT_NAME    = NODE_NAME+".pfx";

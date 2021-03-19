@@ -2,38 +2,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-namespace Node
+namespace Node 
 {
     class Ledger 
     {
-        private Dictionary<string, MetaNode> Nodes {get;}
-        private Dictionary<string, List<string>> _NodesFlags {get;}
-        private Dictionary<string, List<string>> _NodesCluster {get;}
-        private Dictionary<string, int> NodesStatus {get;}
+        // The nodes in the cluster which THIS node knows about
+        private Dictionary<string, MetaNode> Nodes {get;} = new Dictionary<string, MetaNode>();
+        
+        // The nodes which the OTHER nodes knows about
+        private Dictionary<string, MetaNode> temp_Nodes {get;} = new Dictionary<string, MetaNode>();
 
+        // If THIS is the Leader: This is the status of all other nodes that THIS node knows about
+        private Dictionary<string, int> NodesStatus {get;} = new Dictionary<string, int>();
+
+        // Cluster stuff
         public int Quorum {
             get => ClusterCopy.Count <= 2 ? ClusterCopy.Count : (ClusterCopy.Count / 2) + 2;
         }
-
         public void AddNode(string name, MetaNode node)
         {
             lock (_cluster_lock)
             {
                 try
                 {
-                    if (ContainsKey(name)) 
+                    if (Cluster.ContainsKey(name)) 
                     {
                         Cluster[name] = node;
-                        Logger.Log(this.GetType().Name, "Added " + node.Name + " to cluster", Logger.LogLevel.INFO);
                     }
                     else Cluster.Add(name, node);
+                    Logger.Log(this.GetType().Name, "Added " + node.Name + " to cluster: " + string.Join(",",Cluster.GetAsToString()), Logger.LogLevel.INFO);
                 } catch (Exception e)
                 {
                     Logger.Log("AddNode", e.Message, Logger.LogLevel.ERROR);
                 }
             }
         }
-
         public void RemoveNode(string name)
         {
             lock (_cluster_lock)
@@ -47,15 +50,6 @@ namespace Node
                 }
             }
         }
-
-        public bool ContainsKey(string key)
-        {   
-            lock (_cluster_lock)
-            {
-                return Cluster.ContainsKey(key);
-            }
-        }
-
         public Dictionary<string, MetaNode> Cluster
         {
             get 
@@ -66,48 +60,6 @@ namespace Node
                 }
             }
         }
-
-        public Job[] GetNodeJobs(string name)
-        {
-            lock(_nodes_objectives_lock)
-            {
-                if (Nodes.ContainsKey(name))
-                {
-                    return Nodes[name].Jobs;
-                } else {
-                    return new Job[]{};
-                }
-            }
-        }
-
-        public void SetNodesJobs(string name, Job[] jobs)
-        {
-            if (jobs != null)
-            {
-                lock (_nodes_objectives_lock)
-                {
-                    if (Nodes.ContainsKey(name))
-                    {
-                        Nodes[name].Jobs = jobs;
-                    } 
-                }
-            }
-        }
-
-        public string NodeWithLeastJobs()
-        {
-            try 
-            {
-                if (Cluster.Count == 0) return null;
-                else return Nodes.Aggregate((l, r) => l.Value.Jobs.Length < r.Value.Jobs.Length ? l : r).Key;
-            } catch(Exception e)
-            {
-                Logger.Log("NodesJobs", e.Message, Logger.LogLevel.WARN);
-                if (Cluster.Count > 0) return Cluster.ElementAt(0).Key;
-                return null;
-            }
-        }
-
         public Dictionary<string, MetaNode> ClusterCopy
         {
             get 
@@ -118,134 +70,6 @@ namespace Node
                 }
             }
         }
-        public Dictionary<string, List<string>> NodesCluster
-        {
-            get 
-            {
-                lock(_cluster_nodes_lock)
-                {
-                    return _NodesCluster;
-                }
-            }
-        }
-        public Dictionary<string, List<string>> NodesFlags
-        {
-            get 
-            {
-                lock(_cluster_flags_lock)
-                {
-                    return _NodesFlags;
-                }
-            }
-        }
-
-        public void ResetNodesNCluster(string name)
-        {
-            bool s1 = false;
-            bool s2 = false;
-            lock(_cluster_flags_lock)
-            {
-                if (!_NodesFlags.ContainsKey(name))
-                {
-                    _NodesFlags.Add(name, new List<string>());
-                    s1 = true;
-                }
-            }
-            lock(_cluster_nodes_lock)
-            {
-                if (!_NodesCluster.ContainsKey(name))
-                {
-                    _NodesCluster.Add(name, new List<string>());
-                    s2 = true;
-                }
-            }
-            if(GetStatus(name) == 0)
-            {
-                // if hb is 0, then everything has already been sent 
-                lock(_cluster_nodes_lock)
-                {
-                    if(!s2)_NodesCluster[name].Clear();
-                }
-                lock(_cluster_flags_lock)
-                {
-                    if(!s1)_NodesFlags[name].Clear();
-                }
-            }
-        }
-
-        public void UpdateNodesCluster(string name, MetaNode node)
-        {
-            lock(_cluster_nodes_lock)
-            {
-                if (node == null || node.Name == name) return;
-
-                if (!NodesCluster.ContainsKey(name))
-                {
-                    NodesCluster.Add(name, new List<string>(){node.Name});
-                } else if (!NodesCluster[name].Contains(node.Name))
-                {
-                    NodesCluster[name].Add(node.Name);
-                }
-            }
-        }
-
-        public void UpdateAllNodesNFlags(string ignore, Dictionary<string, MetaNode> cluster, string flag = null, MetaNode node = null)
-        {
-            foreach(KeyValuePair<string, MetaNode> n0 in cluster)
-            {
-                if (n0.Key == ignore) continue;
-                lock(_cluster_flags_lock)
-                {
-                    if (flag != null && !_NodesFlags.ContainsKey(n0.Key))
-                    {
-                        _NodesFlags.Add(n0.Key, new List<string>(){flag});
-                    } else if (flag != null)
-                    {
-                        _NodesFlags[n0.Key].Add(flag);
-                    }
-                }
-                lock(_cluster_nodes_lock)
-                {
-                    if (node != null && !_NodesCluster.ContainsKey(n0.Key))
-                    {
-                        _NodesCluster.Add(n0.Key, new List<string>(){node.Name});
-                    } else if (node != null)
-                    {
-                        _NodesCluster[n0.Key].Add(node.Name);
-                    }
-                }
-            }
-        }
-
-        public string[] GetNodesFlags(string name)
-        {
-            lock(_cluster_flags_lock)
-            {
-                if (_NodesFlags.ContainsKey(name)) return _NodesFlags[name].ToArray();
-                else return new string[]{};
-            }
-        }
-
-        public MetaNode[] GetNodesCluster(string name)
-        {
-            lock(_cluster_nodes_lock)
-            {
-                if (NodesCluster.ContainsKey(name) && Cluster.ContainsKey(name))
-                {
-                    List<MetaNode> nodes = new List<MetaNode>();
-                    foreach(string node in NodesCluster[name])
-                    {
-                        if (Cluster.ContainsKey(node))
-                        {
-                            nodes.Add(Cluster[node]);
-                        } 
-                    }
-                    return nodes.ToArray();
-                } 
-                return new MetaNode[]{};
-            }
-        }
-
         public void IncrementAll()
         {
             lock (_cluster_state_lock)
@@ -256,7 +80,6 @@ namespace Node
                 }
             }
         }
-
         public int GetStatus(string n)
         {
             lock (_cluster_state_lock)
@@ -270,12 +93,11 @@ namespace Node
                 }
             }
         }
-
         public void ResetStatus(string n)
         {
             lock (_cluster_state_lock)
             {
-                if (NodesStatus.Copy().ContainsKey(n))
+                if (NodesStatus.ContainsKey(n))
                 {
                     NodesStatus[n] = 0;
                 } else {
@@ -283,35 +105,161 @@ namespace Node
                 }
             }
         }
-
-        public bool IfRemove(string n)
+        public void ValidateIfRemove(string n)
         {
             lock (_cluster_state_lock)
             {
-                if(GetStatus(n)>30)
+                if(GetStatus(n)>Params.TIMEOUT_LIMIT)
                 {
                     lock(_cluster_lock)
                     {
                         RemoveNode(n);
                     }
                     NodesStatus.Remove(n);
-                    return true;
                 }
-                return false;
             }
 
         }
 
-        Ledger()
+
+        // When the leader receives a response, it stores the current state of the node
+        public void UpdateTemporaryNodes(string n0, MetaNode node)
         {
-            Nodes = new Dictionary<string, MetaNode>();
-            NodesStatus = new Dictionary<string, int>();
-            _NodesCluster = new Dictionary<string, List<string>>();
-            _NodesFlags = new Dictionary<string, List<string>>();
+            lock (_cluster_entry_lock)
+            {
+                if (temp_Nodes.ContainsKey(n0))
+                {
+                    temp_Nodes[n0] = node;
+                } else {
+                    temp_Nodes.Add(n0, node);
+                }
+            }
         }
-        private static readonly object _nodes_objectives_lock = new object();
-        private static readonly object _cluster_flags_lock = new object();
-        private static readonly object _cluster_nodes_lock = new object();
+        public (MetaNode[] Nodes, string[] Remove, Job[] Jobs) GetNodeUpdates(string n0)
+        {
+            lock(_cluster_entry_lock)
+            {
+
+                Dictionary<string, MetaNode> tempCluster;
+                lock (_cluster_lock)
+                {
+                    tempCluster = ClusterCopy;
+                }
+                // If temp nodes includes the key, then we have done this before
+                // if temp cluster does not contain the key, then something is wrong
+                if (temp_Nodes.ContainsKey(n0) && tempCluster.ContainsKey(n0))
+                {
+                    // Init the lists to return as arrays
+                    List<MetaNode> _nodes = new List<MetaNode>();
+                    List<string> _remove = new List<string>();
+                    List<Job> _jobs = new List<Job>();    
+
+                    List<BasicNode> tempNodes = temp_Nodes[n0].Nodes.ToList();
+                    foreach(MetaNode n1 in tempCluster.Values)
+                    {
+                        // Adds the node, if it is not the same node as this
+                        // if it is not already added
+                        // or if there is a difference in the jobs
+                        if ( n0 != n1.Name && (!tempNodes.ContainsKey(n1.Name) || n1.Jobs.Length != temp_Nodes[n1.Name].Jobs.Length))
+                        {
+                            _nodes.Add(n1);
+                        }
+                    }
+
+                    // if the leader node as received a new job
+                    // or if the follower node for some reason does not have the leader node
+                    // add it
+                    BasicNode leaderNode = tempNodes.GetByName(Params.NODE_NAME);
+                    if (leaderNode == null || leaderNode.Jobs.Length != Scheduler.Instance._Jobs.Length)
+                    {
+                        _nodes.Add(new MetaNode());
+                    }
+
+                    foreach(BasicNode n1 in tempNodes)
+                    {
+                        if (n1.Name != Params.NODE_NAME && !Cluster.ContainsKey(n1.Name))
+                        {
+                            _remove.Add(n1.Name);
+                        }
+                    } 
+                    List<Job> tempJobs = temp_Nodes[n0].Jobs.ToList();
+                    foreach(Job job in tempCluster[n0].Jobs)
+                    {
+                        if (!tempJobs.ContainsKey(job))
+                        {
+                            _jobs.Add(job);
+                        }
+                    }
+
+                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray());
+                } else { 
+                    (MetaNode[] Nodes, Job[] Jobs) info = GetNodesAndJobs(n0);
+                    return (info.Nodes, new string[]{}, info.Jobs);
+                }
+            }
+        }
+        private (MetaNode[] Nodes, Job[] Jobs) GetNodesAndJobs(string n0)
+        {
+            // Init empty list and array
+            List<MetaNode> _nodes = new List<MetaNode>();
+            Job[] _jobs = new Job[]{};
+        
+            // Iterate the cluster
+            foreach (MetaNode node in ClusterCopy.Values)
+            {
+                // If a node in the cluster is not the same as n0
+                // add it to the list
+                if (node.Name != n0) _nodes.Add(node);
+            }
+            // if the node is in the cluster, return its jobs
+            if (Cluster.ContainsKey(n0))
+            {
+                _jobs = Cluster[n0].Jobs;
+            }
+            // return all other nodes than the one asking
+            // and the jobs of the one asking
+            return (_nodes.ToArray(), _jobs);
+        }
+
+        // When the follower receives the Nodes and Remove
+        public void UpdateNodes(MetaNode[] nodes, string[] remove)
+        {
+            lock (_cluster_lock)
+            {
+                foreach(MetaNode n0 in nodes)
+                {
+                    if (Cluster.ContainsKey(n0.Name))
+                    {
+                        Cluster[n0.Name] = n0;
+                    } else Cluster.Add(n0.Name, n0);
+                }
+                foreach(string s0 in remove)
+                {
+                    if (Cluster.ContainsKey(s0))
+                    {
+                        Cluster.Remove(s0);
+                    }
+                }
+            }
+        }
+
+        // add job to follower node
+        public bool AddJob(string node, Job job)
+        {
+            lock(_cluster_lock)
+            {
+                if (Cluster.ContainsKey(node) && !Nodes[node].Jobs.Any(j => j.ID == job.ID))
+                {
+                    List<Job> Jobs = Nodes[node].Jobs.ToList();
+                    Jobs.Add(job);
+                    Nodes[node].Jobs = Jobs.ToArray();
+                    Logger.Log("Schedule/AddJob", "Assigned [job:" + job.ID + "] to [node:" + node + "]", Logger.LogLevel.IMPOR);
+                    return true;
+                } 
+                return false;
+            }
+        }
+        private static readonly object _cluster_entry_lock = new object();
         private static readonly object _cluster_state_lock = new object();
         private static readonly object _cluster_lock = new object();
         private static readonly object _lock = new object();

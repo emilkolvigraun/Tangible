@@ -22,7 +22,7 @@ namespace Node
                     Logger.Log("RequestHandler", "Received malformed request", Logger.LogLevel.ERROR);
                     return new EmptyRequest().EncodeRequest();
             }
-        }
+        } 
 
         private byte[] ProcessAppendEntry(AppendEntriesRequest request)
         {
@@ -32,26 +32,23 @@ namespace Node
                 Coordinator.Instance.SetCurrentLeader(request.Name);
                 if(Coordinator.Instance.IsLeader) Coordinator.Instance.ToggleLeadership(false);
                 if(Consumer.Instance.IsRunning) Consumer.Instance.Stop();
-                Coordinator.Instance.ChangeQueue.EnqueueRange(_add:request.Add, _del:request.Flag);
-
-                // QUEUE NEW JOBS
-                if(request.Jobs != null && request.Jobs.Length > 0)
+                if(request.Jobs.Length > 0)
                 {
-                    Logger.Log("AppendEntry", "Received job.", Logger.LogLevel.IMPOR);
-                    Scheduler.Instance.QueueJobs(request.Jobs);
+                    Scheduler.Instance.UpdateJobs(request.Jobs);
                 } 
+                if(request.Nodes.Length > 0 || request.Remove.Length > 0)
+                {
+                    Ledger.Instance.UpdateNodes(request.Nodes, request.Remove);
+                    // Logger.Log("AppendEntry", "Received cluster update", Logger.LogLevel.IMPOR);
+                }
+
                 Coordinator.Instance.ResetHeartbeat();
             } catch (Exception e)
             {
                 Logger.Log("AppendEntry", e.Message, Logger.LogLevel.ERROR);
             }
 
-            return new AppendEntriesRequest(){
-                Add = Ledger.Instance.Cluster.AsNodeArray(),
-                Flag = null,
-                Jobs = Scheduler.Instance.Jobs
-                // RETURN ALL MY JOBS
-            }.EncodeRequest();
+            return new AppendEntriesResponse().EncodeRequest();
         }
         private byte[] ProcessRegistration(RegistrationRequest request)
         {
@@ -69,9 +66,6 @@ namespace Node
                 // From the registration, a node gossips its current jobs
                 // Ledger.Instance.SetNodesJobs(request.Name, request.Jobs);
                 if (request.Add != null) Logger.Log("Registration", "Received quorum: " + request.Add.Length.ToString(), Logger.LogLevel.INFO);
-                
-                // a node also tells about whatever nodes it is connected to
-                Coordinator.Instance.ChangeQueue.EnqueueRange(_add:request.Add);
 
                 // and for good measure, the hb is reset
                 Coordinator.Instance.ResetHeartbeat();

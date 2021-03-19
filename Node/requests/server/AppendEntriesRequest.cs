@@ -7,8 +7,8 @@ namespace Node
         public string Name {get; set;} = Params.NODE_NAME;
 
         // Used for organizing the cluster
-        public MetaNode[] Add {get; set;} = null;
-        public string[] Flag {get; set;} = null;
+        public MetaNode[] Nodes {get; set;} = null;
+        public string[] Remove {get; set;} = null;
 
         // Jobs that are disitrubted
         // and returned completed

@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace Node
+namespace Node 
 {
     class StateActor
     {
@@ -29,8 +29,8 @@ namespace Node
 
             if (_updater+4000 < Utils.Millis)
             {
-                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"ms, " + Scheduler.Instance.Jobs.Length.ToString(), Logger.LogLevel.INFO);
-                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], " + Scheduler.Instance.Jobs.Length.ToString(), Logger.LogLevel.INFO);
+                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"ms, " + Scheduler.Instance._Jobs.Length.ToString(), Logger.LogLevel.INFO);
+                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], " + Scheduler.Instance._Jobs.Length.ToString(), Logger.LogLevel.INFO);
                 _updater = Utils.Millis;
             }
         }
@@ -44,7 +44,7 @@ namespace Node
                 {
                     if (item.TypeOf == Change.Type.ADD)
                     {
-                        Ledger.Instance.AddNode(item.Name, new MetaNode(){Name=item.Name, Host=item.Host, Port=item.Port});
+                        Ledger.Instance.AddNode(item.Name, new MetaNode(){Name=item.Name, Host=item.Host, Port=item.Port, Jobs=item.Jobs});
                     } else if (item.TypeOf == Change.Type.DEL)
                     {
                         Ledger.Instance.RemoveNode(item.Name);
@@ -121,20 +121,10 @@ namespace Node
         private void ActAsLeader()
         {
             Ledger.Instance.IncrementAll();
-            List<string> flagged = new List<string>();
             Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
             foreach(KeyValuePair<string, MetaNode> n0 in cluster)
             {
-                if(Ledger.Instance.IfRemove(n0.Key))
-                {
-                    flagged.Add(n0.Key);
-                    Ledger.Instance.UpdateAllNodesNFlags(n0.Key, cluster, flag:n0.Key);
-
-                    // GET ALL THE JOBS AND SCHEDULE THEM
-                    List<Job> jobs = Coordinator.Instance.GetRemoveNewJobs(n0.Key).ToList();
-                    jobs.AddRange(Ledger.Instance.GetNodeJobs(n0.Key));
-                    Coordinator.Instance.ScheduleJobsToNodes(jobs.ToArray());
-                } 
+                Ledger.Instance.ValidateIfRemove(n0.Key);
             }
 
             // Retrieve a copy of all the nodes in the cluster 
@@ -147,42 +137,27 @@ namespace Node
             {
                 tasks[i] = new Task(() =>
                 {
+                    (MetaNode[] Nodes, string[] Remove, Job[] Jobs) info = Ledger.Instance.GetNodeUpdates(n0.Key);
                     AppendEntriesRequest ae = new AppendEntriesRequest(){
-                        Add = Ledger.Instance.GetNodesCluster(n0.Key),
-                        Flag = Ledger.Instance.GetNodesFlags(n0.Key),
+
+                        // Get the new nodes, or updated nodes relevant to this node
+                        Nodes = info.Nodes,
+
+                        // Get the nodes that are flagged for deletion
+                        Remove = info.Remove,
 
                         // Get the jobs assigned to this node
-                        // Jobs = Ledger.Instance.GetNodeJobs(n0.Key)
-                        Jobs = Coordinator.Instance.GetNewJobs(n0.Key)
+                        Jobs = info.Jobs
 
                     };
 
                     IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, ae, timeout:true);
-                    // Console.WriteLine(n0.Key + " " + Ledger.Instance.GetNodesCluster(n0.Key).Length);
-                    if (r0.TypeOf == RequestType.AE) 
+                    if (r0.TypeOf == RequestType.AR) 
                     {
                         Ledger.Instance.ResetStatus(n0.Key);
-                        Ledger.Instance.ResetNodesNCluster(n0.Key);
-
-                        AppendEntriesRequest response = ((AppendEntriesRequest) r0);
-
-                        if (ae.Flag.Length > 0)
-                        {
-
-                        } 
-                        List<string> AddResponse = response.Add.GetAsToStringName();
-                        foreach (MetaNode n in Ledger.Instance.Cluster.AsNodeArray())
-                        {
-                            if (!AddResponse.Contains(n.Name))
-                            {
-                                Ledger.Instance.UpdateNodesCluster(n0.Value.Name, n);
-                            }
-                        }                       
-
-                        Ledger.Instance.SetNodesJobs(n0.Key, response.Jobs);
+                        AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
+                        Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.Node);
                     }
-                    // If the jobs were sent, then remove them from the list
-                    Coordinator.Instance.UpdateNewJobs(n0.Value.Name);
                 });
                 i++;
             }

@@ -6,7 +6,8 @@ namespace Node
     [JsonConverter(typeof(StringEnumConverter))] 
     public enum RequestType 
     {
-        AE, // Append entries
+        AE, // Append entries request
+        AR, // Append entries response
         BC, // Broadcast
         RS, // register
         CT, // certificate

@@ -14,7 +14,7 @@ namespace Node
             OG, // Ongoing
             NS // Not started
         }
-        public string ID {get;} = Utils.GetUniqueKey(size:10);
+        public string ID {get; set;}
         public Status StatusOf {get; set;}
         
         public Type TypeOf {get; set;}
