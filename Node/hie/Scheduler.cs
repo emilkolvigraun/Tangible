@@ -8,22 +8,6 @@ namespace Node
         private Dictionary<string, Job> RunningJobs {get;} = new Dictionary<string, Job>();
         private PriorityQueue JobsNotStarted {get;} = new PriorityQueue();
 
-
-        // public void QueueJobs(Job[] jobs)
-        // {
-        //     lock(_not_started_lock)
-        //     {
-        //         foreach(Job job in jobs)
-        //             QueueJob(job);
-        //     }
-        // }
-        // public void QueueJob(Job job)
-        // {
-        //     lock(_not_started_lock)
-        //     {
-        //         JobsNotStarted.EnqueueJob(job);
-        //     }
-        // }
         public Job[] _Jobs
         {
             get 
@@ -35,6 +19,17 @@ namespace Node
                     Jobs.AddRange(RunningJobs.Values);
                 }
                 return Jobs.ToArray();
+            }
+        }
+
+        public int NumberOfJobs
+        {
+            get 
+            {
+                lock (_not_started_lock) lock (_running_jobs_lock)
+                {
+                    return _Jobs.Length;
+                }
             }
         }
 
@@ -60,19 +55,19 @@ namespace Node
                 foreach (MetaNode nN in cluster.Values)
                 {
                     if (nN.Name != n0.Name && nN.Jobs.Length < n0.Jobs.Length 
-                        && nN.Jobs.Length <= _Jobs.Length)
+                        && nN.Jobs.Length <= AdjustedNumberOfJobs)
                     {
                         node = nN.Name;
                     }
                 }
-                if (node == null && n0.Jobs.Length <= _Jobs.Length)
+                if (node == null && n0.Jobs.Length <= AdjustedNumberOfJobs)
                 {
                     node = n0.Name;
                 } else if (node == null) node = Params.NODE_NAME;
             } else if (cluster.Count == 1)
             {
                 MetaNode n0 = cluster.ElementAt(0).Value;
-                if (n0.Jobs.Length <= _Jobs.Length)
+                if (n0.Jobs.Length <= AdjustedNumberOfJobs)
                 {
                     node = n0.Name;
                 } else node = Params.NODE_NAME;
@@ -92,7 +87,22 @@ namespace Node
 
                 // if the follower has stopped responding in the meantime
                 // do all of this again
-                if(!status) ScheduleJob(job);
+                if(!status)
+                { 
+                    Logger.Log("ScheduleJob", "Failed to schedule job.... Retrying", Logger.LogLevel.WARN);
+                    ScheduleJob(job);
+                }
+            }
+        }
+
+        private int AdjustedNumberOfJobs
+        {
+            get 
+            {
+                lock (_not_started_lock) lock (_running_jobs_lock)
+                {
+                    return ((int)(_Jobs.Length+1)*2);
+                }
             }
         }
 

@@ -105,7 +105,13 @@ namespace Node
                 }
             }
         }
-        public void ValidateIfRemove(string n)
+
+        ///<summary>
+        ///<para>returns true if the node is unhealthy</para>
+        ///<para>if true: removed node from cluster</para>
+        ///<para>if false: kept</para>
+        ///</summary>
+        public bool ValidateIfRemove(string n)
         {
             lock (_cluster_state_lock)
             {
@@ -116,22 +122,63 @@ namespace Node
                         RemoveNode(n);
                     }
                     NodesStatus.Remove(n);
+                    return true;
                 }
+                return false;
             }
-
         }
 
-
         // When the leader receives a response, it stores the current state of the node
-        public void UpdateTemporaryNodes(string n0, MetaNode node)
+        public void UpdateTemporaryNodes(string n0, string[] nodes, string[] jobs, bool updateSelf)
         {
             lock (_cluster_entry_lock)
             {
+                Dictionary<string, MetaNode> tempCluster;
+                lock (_cluster_lock)
+                {
+                    tempCluster = ClusterCopy;
+                }
+
+                List<string> jobIds = jobs.ToList();
+                List<Job> newJobs = new List<Job>();
+                Job[] _jobs = tempCluster[n0].Jobs;
+                foreach(Job j0 in _jobs)
+                {
+                    if (jobIds.Contains(j0.ID))
+                    {
+                        newJobs.Add(j0);
+                    } 
+                }
+                List<string> nodeIds = nodes.ToList();
+                List<BasicNode> newNodes = new List<BasicNode>();
+                List<BasicNode> _nodes = tempCluster.AsNodeArray().AsBasicNodes();
+                foreach(BasicNode b0 in _nodes)
+                {
+                    if (nodeIds.Contains(b0.ID))
+                    {
+                        newNodes.Add(b0);   
+                    } 
+                }
+
+                if (!updateSelf && temp_Nodes.ContainsKey(n0) && temp_Nodes[n0].Nodes.ContainsID(Params.UNIQUE_KEY))
+                {
+                    BasicNode nx = temp_Nodes[n0].Nodes.GetByID(Params.UNIQUE_KEY);
+                    newNodes.Add(nx);
+                } else 
+                {
+                    newNodes.Add(BasicNode.MakeBasicNode(new MetaNode()));
+                }  
+                
                 if (temp_Nodes.ContainsKey(n0))
                 {
-                    temp_Nodes[n0] = node;
-                } else {
-                    temp_Nodes.Add(n0, node);
+                    temp_Nodes[n0].Nodes = newNodes.ToArray();
+                    temp_Nodes[n0].Jobs = newJobs.ToArray();
+                } else 
+                {
+                    MetaNode n1 = tempCluster[n0].Copy();
+                    n1.Nodes = newNodes.ToArray();
+                    n1.Jobs = newJobs.ToArray();
+                    temp_Nodes.Add(n0, n1);
                 }
             }
         }
@@ -155,44 +202,71 @@ namespace Node
                     List<Job> _jobs = new List<Job>();    
 
                     List<BasicNode> tempNodes = temp_Nodes[n0].Nodes.ToList();
-                    foreach(MetaNode n1 in tempCluster.Values)
+
+                    try 
                     {
-                        // Adds the node, if it is not the same node as this
-                        // if it is not already added
-                        // or if there is a difference in the jobs
-                        if ( n0 != n1.Name && (!tempNodes.ContainsKey(n1.Name) || n1.Jobs.Length != temp_Nodes[n1.Name].Jobs.Length))
+                        foreach(MetaNode n1 in tempCluster.Values)
                         {
-                            _nodes.Add(n1);
+                            // Adds the node, if it is not the same node as this
+                            // if it is not already added
+                            // or if there is a difference in the jobs
+                            if ( n0 != n1.Name && (!tempNodes.ContainsKey(n1.Name) || temp_Nodes.ContainsKey(n1.Name) && n1.Jobs.Length != temp_Nodes[n1.Name].Jobs.Length))
+                            {
+                                _nodes.Add(n1);
+                            }
                         }
+                    } catch(Exception e)
+                    {
+                        Logger.Log("TemperaryNodes", "[0] " + e.Message, Logger.LogLevel.ERROR);
                     }
 
                     // if the leader node as received a new job
                     // or if the follower node for some reason does not have the leader node
                     // add it
-                    BasicNode leaderNode = tempNodes.GetByName(Params.NODE_NAME);
-                    if (leaderNode == null || leaderNode.Jobs.Length != Scheduler.Instance._Jobs.Length)
+                    try 
                     {
-                        _nodes.Add(new MetaNode());
+                        BasicNode leaderNode = tempNodes.GetByName(Params.NODE_NAME);
+                        if (leaderNode == null || leaderNode.Jobs.Length != Scheduler.Instance._Jobs.Length)
+                        {
+                            _nodes.Add(new MetaNode());
+                        }
+                    } catch(Exception e)
+                    {
+                        Logger.Log("TemperaryNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
                     }
 
-                    foreach(BasicNode n1 in tempNodes)
+                    try 
                     {
-                        if (n1.Name != Params.NODE_NAME && !Cluster.ContainsKey(n1.Name))
+                        foreach(BasicNode n1 in tempNodes)
                         {
-                            _remove.Add(n1.Name);
-                        }
-                    } 
-                    List<Job> tempJobs = temp_Nodes[n0].Jobs.ToList();
-                    foreach(Job job in tempCluster[n0].Jobs)
+                            if (n1.Name != Params.NODE_NAME && !Cluster.ContainsKey(n1.Name))
+                            {
+                                _remove.Add(n1.Name);
+                            }
+                        } 
+                    } catch(Exception e)
                     {
-                        if (!tempJobs.ContainsKey(job))
-                        {
-                            _jobs.Add(job);
-                        }
+                        Logger.Log("TemperaryNodes", "[2] " + e.Message, Logger.LogLevel.ERROR);
                     }
 
+                    try 
+                    {
+                        List<Job> tempJobs = temp_Nodes[n0].Jobs.ToList();
+                        foreach(Job job in tempCluster[n0].Jobs)
+                        {
+                            if (!tempJobs.ContainsKey(job))
+                            {
+                                _jobs.Add(job);
+                            } 
+                        }
+                    } catch(Exception e)
+                    {
+                        Logger.Log("TemperaryNodes", "[3] " + e.Message, Logger.LogLevel.ERROR);
+                    }
+                    if (_jobs.Count > 0) Console.WriteLine("send job to " + n0);
                     return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray());
                 } else { 
+                    Logger.Log("NodeUpdates", "Did not contain [node:"+n0+"]", Logger.LogLevel.WARN);
                     (MetaNode[] Nodes, Job[] Jobs) info = GetNodesAndJobs(n0);
                     return (info.Nodes, new string[]{}, info.Jobs);
                 }
@@ -228,16 +302,32 @@ namespace Node
             {
                 foreach(MetaNode n0 in nodes)
                 {
-                    if (Cluster.ContainsKey(n0.Name))
+                    try
                     {
-                        Cluster[n0.Name] = n0;
-                    } else Cluster.Add(n0.Name, n0);
+                        int temp = Cluster.Count;
+                        if (Cluster.ContainsKey(n0.Name))
+                        {
+                            Cluster[n0.Name] = n0;
+                        } else Cluster.Add(n0.Name, n0);
+                        Logger.Log("UpdateNodes", "Received cluster APPEND: [node:" + n0.ID + "]", Logger.LogLevel.IMPOR);
+                    } catch(Exception e)
+                    {
+                        Logger.Log("UpdateNodes", "[0] " + e.Message, Logger.LogLevel.ERROR);
+                    }
                 }
                 foreach(string s0 in remove)
                 {
-                    if (Cluster.ContainsKey(s0))
+                    try
                     {
-                        Cluster.Remove(s0);
+                        if (Cluster.ContainsKey(s0))
+                        {
+                            Cluster.Remove(s0);
+                            Logger.Log("UpdateNodes", "Received cluster REMOVE: [node:" + s0 + "]", Logger.LogLevel.IMPOR);
+                        }
+
+                    } catch(Exception e)
+                    {
+                        Logger.Log("UpdateNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
                     }
                 }
             }
@@ -248,12 +338,14 @@ namespace Node
         {
             lock(_cluster_lock)
             {
-                if (Cluster.ContainsKey(node) && !Nodes[node].Jobs.Any(j => j.ID == job.ID))
+                if (Cluster.ContainsKey(node) && !Cluster[node].Jobs.Any(j => j.ID == job.ID))
                 {
-                    List<Job> Jobs = Nodes[node].Jobs.ToList();
+                    int nr_jobs = Cluster[node].Jobs.Length;
+                    List<Job> Jobs = Cluster[node].Jobs.ToList();
                     Jobs.Add(job);
-                    Nodes[node].Jobs = Jobs.ToArray();
-                    Logger.Log("Schedule/AddJob", "Assigned [job:" + job.ID + "] to [node:" + node + "]", Logger.LogLevel.IMPOR);
+                    Cluster[node].Jobs = Jobs.ToArray();
+                    if (Cluster[node].Jobs.Length > nr_jobs) Logger.Log("Schedule/AddJob", "Assigned [job:" + job.ID + "] to [node:" + node + "]", Logger.LogLevel.IMPOR);
+                    Logger.Log("DEBUG", string.Join(",", Cluster.GetAsToString()), Logger.LogLevel.ERROR);
                     return true;
                 } 
                 return false;

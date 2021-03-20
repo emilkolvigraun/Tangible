@@ -63,7 +63,6 @@ namespace Node
                 if (bytes < 2048) break;
 
             } while (bytes != 0);
-
             return cb;
         }
 
@@ -163,9 +162,7 @@ namespace Node
                 // Intercom requests
                 case RequestType.RS: return new RegistrationRequest();
                 case RequestType.AE: return new AppendEntriesRequest();
-                case RequestType.AR: return new AppendEntriesResponse();
                 case RequestType.BC: return new BroadcastRequest();
-                case RequestType.CT: return new CertificateResponse();
                 case RequestType.ST: return new StatusResponse();
                 case RequestType.VT: return new VotingRequest();
                 // Action requests
@@ -234,7 +231,7 @@ namespace Node
             return basicNodes;
         }
 
-        public static bool ContainsKey(this List<BasicNode> nodes, string n0)
+        public static bool ContainsKey(this IEnumerable<BasicNode> nodes, string n0)
         {
             foreach(BasicNode n1 in nodes)
             {
@@ -242,11 +239,35 @@ namespace Node
             }
             return false;
         }
-        public static bool ContainsKey(this List<Job> jobs, Job j0)
+        public static bool ContainsID(this IEnumerable<BasicNode> nodes, string n0)
+        {
+            foreach(BasicNode n1 in nodes)
+            {
+                if (n1.ID == n0) return true;
+            }
+            return false;
+        }
+        public static BasicNode GetByID(this IEnumerable<BasicNode> nodes, string n0)
+        {
+            foreach(BasicNode n1 in nodes)
+            {
+                if (n1.ID == n0) return n1;
+            }
+            return null;
+        }
+        public static bool ContainsKey(this IEnumerable<Job> jobs, Job j0)
         {
             foreach(Job j1 in jobs)
             {
                 if (j1.ID == j0.ID) return true;
+            }
+            return false;
+        }
+        public static bool ContainsKey(this IEnumerable<MetaNode> nodes, string key)
+        {
+            foreach(MetaNode n0 in nodes)
+            {
+                if (n0.Name == key) return true;
             }
             return false;
         }
@@ -258,6 +279,38 @@ namespace Node
                 if (n.Name == name) return n;
             }
             return null;
+        }
+
+        public static string[] GetIds(this Job[] jobs)
+        {
+            List<string> _ids = new List<string>();
+            foreach (Job j0 in jobs)
+            {
+                _ids.Add(j0.ID);
+            }
+            return _ids.ToArray();
+        }
+
+        public static string[] GetIds(this Dictionary<string, MetaNode> nodes)
+        {
+            List<string> _ids = new List<string>();
+            foreach (MetaNode n0 in nodes.Values)
+            {
+                _ids.Add(n0.ID);
+            }
+            return _ids.ToArray();
+        }
+
+        public static MetaNode Copy(this MetaNode n1)
+        {
+            return new MetaNode(){
+                ID = n1.ID,
+                Host = n1.Host,
+                Port = n1.Port,
+                Name = n1.Name,
+                Jobs = n1.Jobs,
+                Nodes = n1.Nodes
+            };
         }
     }
 }

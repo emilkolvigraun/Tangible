@@ -41,7 +41,7 @@ namespace Node
             ADVERTISED_HOST_NAME= GetStrVar("ADVERTISED_HOST_NAME");
             PORT_NUMBER         = GetIntVar("PORT_NUMBER");
             TIMEOUT_LIMIT       = GetIntVar("TIMEOUT_LIMIT", alternative:30, minimum:20);
-            HEARTBEAT_MS        = Utils.GetRandomInt(500, 900);
+            HEARTBEAT_MS        = Utils.GetRandomInt(300, 500);
             UNIQUE_KEY          = Utils.GetUniqueKey(size: 10);
             NODE_NAME           = GetStrVar("NODE_NAME", Utils.GetUniqueKey(size:10));
 

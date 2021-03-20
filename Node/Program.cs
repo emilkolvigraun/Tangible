@@ -15,6 +15,7 @@ namespace Node
             Logger.Log("Main", "- CLUSTER_ID: " + Params.CLUSTER_ID, Logger.LogLevel.INFO);
             Logger.Log("Main", "- BROADCAST_TOPIC: " + Params.BROADCAST_TOPIC, Logger.LogLevel.INFO);
             Logger.Log("Main", "- REQUEST_TOPIC: " + Params.REQUEST_TOPIC, Logger.LogLevel.INFO);
+            Logger.Log("Main", "- UNIQUE_ID: " + Params.UNIQUE_KEY, Logger.LogLevel.INFO);
             Logger.Log("Main", "- ELECTION_TIMEOUT: " + Params.HEARTBEAT_MS +"ms", Logger.LogLevel.INFO);
             // Logger.Log("Main", "% Processor Time: " + Params.USAGE, Logger.LogLevel.INFO);
         }

@@ -39,14 +39,13 @@ namespace Node
                 Request = request
             };
             Scheduler.Instance.ScheduleJob(job);
-            Logger.Log("ProcessAction", "Processed new job " + job.ID, Logger.LogLevel.IMPOR);
+            Logger.Log("ProcessAction", "Processed new job " + job.ID, Logger.LogLevel.INFO);
         }
 
         private void ProcessBroadcast(BroadcastRequest request)
         {           
             if (request.Name != Params.NODE_NAME && request.Port != Params.PORT_NUMBER)
             {
-                Logger.Log("ProcessBroadcast", "Received BC request from [node:" + request.Name + "] [1]", Logger.LogLevel.INFO);
                 IRequest Response = null;
                 byte[] _cert_b = null;
                 try 
@@ -61,7 +60,7 @@ namespace Node
                     Ledger.Instance.AddNode(r0.Node.Name, r0.Node);
 
                     Task.Run(()=>{Params.StoreCertificate(_cert_b);});
-                    Logger.Log("ProcessBroadcast", "Processed BC request from [node:" + request.Name + "] [2]", Logger.LogLevel.INFO);
+                    Logger.Log("ProcessBroadcast", "Processed BC request from [node:" + request.Name + ", id:"+r0.Node.ID+"]", Logger.LogLevel.INFO);
                     // if the connection was successful, add the nodes jobs (it was gossiping)
                     // Ledger.Instance.SetNodesJobs(request.Node.Name, ((CertificateResponse)Response).Jobs);
                 } catch (Exception e)

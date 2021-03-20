@@ -27,10 +27,10 @@ namespace Node
                     break;
             }
 
-            if (_updater+4000 < Utils.Millis)
+            if (_updater+2000 < Utils.Millis)
             {
-                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"ms, " + Scheduler.Instance._Jobs.Length.ToString(), Logger.LogLevel.INFO);
-                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], " + Scheduler.Instance._Jobs.Length.ToString(), Logger.LogLevel.INFO);
+                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"ms, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
+                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
                 _updater = Utils.Millis;
             }
         }
@@ -39,20 +39,9 @@ namespace Node
         {
             try 
             {
-                Change item = Coordinator.Instance.ChangeQueue.DequeueChange();
-                while (item != null)
-                {
-                    if (item.TypeOf == Change.Type.ADD)
-                    {
-                        Ledger.Instance.AddNode(item.Name, new MetaNode(){Name=item.Name, Host=item.Host, Port=item.Port, Jobs=item.Jobs});
-                    } else if (item.TypeOf == Change.Type.DEL)
-                    {
-                        Ledger.Instance.RemoveNode(item.Name);
-                    }
-                    item = Coordinator.Instance.ChangeQueue.DequeueChange();
-                }
+                
+                // EXECUTE AND MAINTAIN JOBS
 
-                // EXECUTE JOBS
             } catch(Exception e)
             {
                 Logger.Log("ActAsFollower", e.Message, Logger.LogLevel.ERROR);
@@ -61,111 +50,147 @@ namespace Node
 
         private void ActAsCandidate()
         {
-            
             try 
             {
-                // Starting the Election term
+                // Start current election term
                 Coordinator.Instance.StartElectionTerm();
 
                 // Retrieving a copy of all the nodes within the cluster
                 Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
 
-                var tasks = new Task[]{};
+                // Init a list of tasks to reach out to all other nodes in parallel
+                List<Task> tasks = new List<Task>();
 
-                try 
+                // Create vote request
+                VotingRequest vote = new VotingRequest();
+
+                foreach(MetaNode n0 in cluster.Values)
                 {
-                    // Sending a Vote request to all known nodes
-                    foreach(KeyValuePair<string, MetaNode> n0 in cluster)
+                    try 
                     {
-                        if (n0.Key == Coordinator.Instance.CurrentLeader) continue;
-
-                        tasks.Append(new Task(() =>
-                        {
-                            try 
+                        if (n0.Name == Coordinator.Instance.CurrentLeader || !Coordinator.Instance.IsElectionTerm) continue;
+                        tasks.Add(new Task(() => {
+                            IRequest r0 = NodeClient.RunClient(n0.Host, n0.Port, n0.Name, vote, timeout:true);
+                        
+                            if (r0.TypeOf == RequestType.VT && ((VotingRequest)r0).Vote != vote.Vote)
                             {
-                                IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, RequestType.VT);
-                                if (r0.TypeOf == RequestType.VT && ((VotingRequest)r0).Vote != Params.NODE_NAME )//&& n0.Key != Coordinator.Instance.CurrentLeader)
-                                {
-                                    Coordinator.Instance.StopElectionTerm();
-                                }
+                                Coordinator.Instance.StopElectionTerm();
                             }
-                            catch(Exception e){Logger.Log("election term 3", e.Message, Logger.LogLevel.ERROR);}
-                            }));
+
+                            Logger.Log("ActAsCandidate", "Send vote to [node:" + n0.Name+"]", Logger.LogLevel.INFO);
+                        }));
+                    } catch(Exception e)
+                    {
+                        Logger.Log("ActAsCandidate", "[1] " + e.Message, Logger.LogLevel.ERROR);
                     }
-                } catch(Exception e)
-                {
-                    Logger.Log("election term 1", e.Message, Logger.LogLevel.ERROR);
                 }
-                
-                try {
-                    // Try to send heartbeat to all nodes in parallel
-                    Parallel.ForEach<Task>(tasks, (t) => { t.Start(); }); 
-                    Task.WaitAll(tasks);
-                }catch(Exception e)
-                {
-                    Logger.Log("election term 2", e.Message, Logger.LogLevel.ERROR);
-                }
+
+                Task[] _tasks = tasks.ToArray();
+                Parallel.ForEach<Task>(_tasks, (t) => { t.Start(); });
+                Task.WaitAll(_tasks, 400);
                 
                 if (Coordinator.Instance.IsElectionTerm) Coordinator.Instance.ToggleLeadership(true);
                 else Coordinator.Instance.ToggleLeadership(false);
 
-                // Resetting heartbeat (also works as a penalty)
+                // Reset heartbeat
                 Coordinator.Instance.ResetHeartbeat();
-
             } catch(Exception e)
             {
-                Logger.Log("election term 0", e.Message, Logger.LogLevel.ERROR);
-            }    
+                Logger.Log("ActAsCandidate", "[0] " + e.Message, Logger.LogLevel.ERROR);
+            }
+            
+            Logger.Log("ActAsCandidate", "Acted as candidate", Logger.LogLevel.INFO);
         }
 
         private void ActAsLeader()
         {
-            Ledger.Instance.IncrementAll();
-            Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
-            foreach(KeyValuePair<string, MetaNode> n0 in cluster)
+            try 
             {
-                Ledger.Instance.ValidateIfRemove(n0.Key);
-            }
-
-            // Retrieve a copy of all the nodes in the cluster 
-            cluster = Ledger.Instance.ClusterCopy;
-                        
-            // create a task for each node
-            var tasks = new Task[cluster.Count];
-            int i = 0;
-            foreach(KeyValuePair<string, MetaNode> n0 in cluster)
-            {
-                tasks[i] = new Task(() =>
+                Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
+                
+                try 
                 {
-                    (MetaNode[] Nodes, string[] Remove, Job[] Jobs) info = Ledger.Instance.GetNodeUpdates(n0.Key);
-                    AppendEntriesRequest ae = new AppendEntriesRequest(){
-
-                        // Get the new nodes, or updated nodes relevant to this node
-                        Nodes = info.Nodes,
-
-                        // Get the nodes that are flagged for deletion
-                        Remove = info.Remove,
-
-                        // Get the jobs assigned to this node
-                        Jobs = info.Jobs
-
-                    };
-
-                    IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, ae, timeout:true);
-                    if (r0.TypeOf == RequestType.AR) 
+                    Ledger.Instance.IncrementAll();
+                    foreach(MetaNode n0 in cluster.Values)
                     {
-                        Ledger.Instance.ResetStatus(n0.Key);
-                        AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
-                        Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.Node);
+                        bool status = Ledger.Instance.ValidateIfRemove(n0.Name);
+                        if (status)
+                        {
+                            foreach(Job job in n0.Jobs)
+                            {
+                                Scheduler.Instance.ScheduleJob(job);
+                            }
+                        }
                     }
-                });
-                i++;
-            }
+                } catch(Exception e)
+                {
+                    Logger.Log("Leader:IfRemove", "[1]" + e.Message, Logger.LogLevel.ERROR);
+                }
 
-            // Try to send heartbeat to all nodes in parallel
-            Parallel.ForEach<Task>(tasks, (t) => { t.Start(); }); 
-            bool success = Task.WaitAll(tasks, 500);
-            // Logger.Log(Params.NODE_NAME, "Send heartbeats [status:"+success+"]", success?Logger.LogLevel.INFO:Logger.LogLevel.WARN);
+                // Retrieve a copy of all the nodes in the cluster 
+                cluster = Ledger.Instance.ClusterCopy;
+                            
+                // create a task for each node
+                var tasks = new Task[cluster.Count];
+                int i = 0;
+                foreach(KeyValuePair<string, MetaNode> n0 in cluster)
+                {
+                    tasks[i] = new Task(() =>
+                    {
+                        (MetaNode[] Nodes, string[] Remove, Job[] Jobs) info = (new MetaNode[]{}, new string[]{}, new Job[]{});
+                        try 
+                        {
+                            info = Ledger.Instance.GetNodeUpdates(n0.Key);
+                        } catch (Exception e)
+                        {
+                            Logger.Log("Leader:Updates", "[2]" + e.Message, Logger.LogLevel.ERROR);
+                        }
+
+                        AppendEntriesRequest ae = new AppendEntriesRequest(){
+
+                            // Get the new nodes, or updated nodes relevant to this node
+                            Nodes = info.Nodes,
+
+                            // Get the nodes that are flagged for deletion
+                            Remove = info.Remove,
+
+                            // Get the jobs assigned to this node
+                            Jobs = info.Jobs
+
+                        };
+
+                        IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, ae, timeout:true);
+                        if (r0.TypeOf == RequestType.AR) 
+                        {
+                            try 
+                            {
+                                Ledger.Instance.ResetStatus(n0.Key);
+                            } catch(Exception e)
+                            {
+                                Logger.Log("Leader:Reset", "[3]" + e.Message, Logger.LogLevel.ERROR);
+                            }
+                            try 
+                            {
+                                AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
+                                Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.NodeIds, r1.JobIds, info.Nodes.ContainsKey(Params.NODE_NAME));
+                            } catch(Exception e)
+                            {
+                                Logger.Log("Leader:Nodes", "[4]" + e.Message, Logger.LogLevel.ERROR);
+                            }
+                        }
+                    });
+                    i++;
+                }
+
+                // Try to send heartbeat to all nodes in parallel
+                Parallel.ForEach<Task>(tasks, (t) => { t.Start(); }); 
+                bool success = Task.WaitAll(tasks, 400);
+                // Logger.Log(Params.NODE_NAME, "Send heartbeats [status:"+success+"]", success?Logger.LogLevel.INFO:Logger.LogLevel.WARN);
+
+            }catch(Exception e)
+            {
+                Logger.Log("ActAsLeader", "[0}" + e.Message, Logger.LogLevel.INFO);
+            }
         
         }        
     }

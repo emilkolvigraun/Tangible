@@ -22,16 +22,18 @@ namespace Node
                     Logger.Log("RequestHandler", "Received malformed request", Logger.LogLevel.ERROR);
                     return new EmptyRequest().EncodeRequest();
             }
-        } 
+        }
 
         private byte[] ProcessAppendEntry(AppendEntriesRequest request)
         {
             try 
             {
+                Coordinator.Instance.ResetHeartbeat();
                 Coordinator.Instance.StopElectionTerm();
                 Coordinator.Instance.SetCurrentLeader(request.Name);
                 if(Coordinator.Instance.IsLeader) Coordinator.Instance.ToggleLeadership(false);
                 if(Consumer.Instance.IsRunning) Consumer.Instance.Stop();
+                Coordinator.Instance.ResetHeartbeat();
                 if(request.Jobs.Length > 0)
                 {
                     Scheduler.Instance.UpdateJobs(request.Jobs);
@@ -39,16 +41,17 @@ namespace Node
                 if(request.Nodes.Length > 0 || request.Remove.Length > 0)
                 {
                     Ledger.Instance.UpdateNodes(request.Nodes, request.Remove);
-                    // Logger.Log("AppendEntry", "Received cluster update", Logger.LogLevel.IMPOR);
                 }
-
                 Coordinator.Instance.ResetHeartbeat();
             } catch (Exception e)
             {
                 Logger.Log("AppendEntry", e.Message, Logger.LogLevel.ERROR);
             }
 
-            return new AppendEntriesResponse().EncodeRequest();
+            return new AppendEntriesResponse(){
+                NodeIds = Ledger.Instance.Cluster.GetIds(),
+                JobIds = Scheduler.Instance._Jobs.GetIds()
+                }.EncodeRequest();
         }
         private byte[] ProcessRegistration(RegistrationRequest request)
         {
@@ -63,13 +66,10 @@ namespace Node
             try 
             {
                 Ledger.Instance.AddNode(request.Node.Name, request.Node);
-                // From the registration, a node gossips its current jobs
-                // Ledger.Instance.SetNodesJobs(request.Name, request.Jobs);
-                if (request.Add != null) Logger.Log("Registration", "Received quorum: " + request.Add.Length.ToString(), Logger.LogLevel.INFO);
 
                 // and for good measure, the hb is reset
                 Coordinator.Instance.ResetHeartbeat();
-                Logger.Log("RequestHandler", "Processed RS request from [node:" + request.Node.Name +"]", Logger.LogLevel.INFO);
+                Logger.Log("RequestHandler", "Processed RS request from [node:" + request.Node.Name +", id:" + request.Node.ID +"]", Logger.LogLevel.INFO);
                 return new CertificateResponse().EncodeRequest();
             } catch (Exception e)
             {
@@ -83,13 +83,13 @@ namespace Node
             try 
             {
                 Coordinator.Instance.ResetHeartbeat();
+                Coordinator.Instance.StopElectionTerm();
+                Coordinator.Instance.ToggleLeadership(false);
                 string _vote = "";
                 if (Coordinator.Instance.IsElectionTerm)
                 {
                     if (Ledger.Instance.ClusterCopy.Count - 1 < 2) _vote = request.Vote;
                     else _vote = Params.NODE_NAME;
-                    Coordinator.Instance.StopElectionTerm();
-                    Coordinator.Instance.ToggleLeadership(false);
                     Logger.Log(this.GetType().Name, "Received VT request and stopped election term.", Logger.LogLevel.INFO);
                 } 
                 else 
@@ -97,6 +97,7 @@ namespace Node
                     _vote = request.Vote;
                     Logger.Log(this.GetType().Name, "Received VT request [from:" + request.Vote + "]", Logger.LogLevel.INFO);
                 }
+                Coordinator.Instance.ResetHeartbeat();
                 return new VotingRequest(){
                     Vote = _vote
                 }.EncodeRequest();

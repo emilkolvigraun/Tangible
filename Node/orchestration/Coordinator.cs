@@ -7,7 +7,6 @@ namespace Node
     public class Coordinator
     {
         private StateActor _actor = new StateActor();
-        private ChangeQueue queue = new ChangeQueue();
         private bool _isLeader = false;
         private int _electionTimeout = Utils.GetRandomInt(0, 300);
         private long _lastHeartBeat = Utils.Millis;
@@ -32,19 +31,12 @@ namespace Node
                     Utils.Wait(5);
                     State _State = GetState; 
                     _actor.Process(_State);
+                    _electionTimeout = Utils.GetRandomInt(0, 200);
                 
                 } catch(Exception e)
                 {
                     Logger.Log("RunCoordinator", e.Message, Logger.LogLevel.WARN);
                 }
-            }
-        }
-
-        public ChangeQueue ChangeQueue
-        {
-            get 
-            {
-                return queue;
             }
         }
         public void SetCurrentLeader(string n)
@@ -115,7 +107,7 @@ namespace Node
             lock (_hb_lock)
             {
                 _previousHeartbeat = _lastHeartBeat;
-                _lastHeartBeat = Utils.Millis;
+                _lastHeartBeat = Utils.Millis;// + Utils.GetRandomInt(0, 300);
             }
         }
         public long LeaderHeartbeat
