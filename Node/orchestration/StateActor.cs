@@ -27,10 +27,10 @@ namespace Node
                     break;
             }
 
-            if (_updater+2000 < Utils.Millis)
+            if (_updater+1000 < Utils.Millis)
             {
-                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"ms, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
-                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
+                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
+                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
                 _updater = Utils.Millis;
             }
         }
@@ -70,8 +70,10 @@ namespace Node
                     {
                         if (n0.Name == Coordinator.Instance.CurrentLeader || !Coordinator.Instance.IsElectionTerm) continue;
                         tasks.Add(new Task(() => {
-                            IRequest r0 = NodeClient.RunClient(n0.Host, n0.Port, n0.Name, vote, timeout:true);
-                        
+                            IRequest r0 = Coordinator.Instance.GetClient(n0.Name).Run(n0.Host, n0.Port, n0.Name, vote, timeout:true);
+                            
+                            // NodeClient.RunClient(n0.Host, n0.Port, n0.Name, vote, timeout:true);
+                    
                             if (r0.TypeOf == RequestType.VT && ((VotingRequest)r0).Vote != vote.Vote)
                             {
                                 Coordinator.Instance.StopElectionTerm();
@@ -159,7 +161,7 @@ namespace Node
 
                         };
 
-                        IRequest r0 = NodeClient.RunClient(n0.Value.Host, n0.Value.Port, n0.Value.Name, ae, timeout:true);
+                        IRequest r0 = Coordinator.Instance.GetClient(n0.Value.Name).Run(n0.Value.Host, n0.Value.Port, n0.Value.Name, ae, timeout:true);
                         if (r0.TypeOf == RequestType.AR) 
                         {
                             try 
@@ -172,7 +174,7 @@ namespace Node
                             try 
                             {
                                 AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
-                                Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.NodeIds, r1.JobIds, info.Nodes.ContainsKey(Params.NODE_NAME));
+                                Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.NodeIds, r1.JobIds, info.Nodes.ContainsKey(Params.NODE_NAME));// || 1 > Ledger.Instance.GetStatus(n0.Key)));
                             } catch(Exception e)
                             {
                                 Logger.Log("Leader:Nodes", "[4]" + e.Message, Logger.LogLevel.ERROR);

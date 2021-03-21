@@ -33,7 +33,6 @@ namespace Node
                 Coordinator.Instance.SetCurrentLeader(request.Name);
                 if(Coordinator.Instance.IsLeader) Coordinator.Instance.ToggleLeadership(false);
                 if(Consumer.Instance.IsRunning) Consumer.Instance.Stop();
-                Coordinator.Instance.ResetHeartbeat();
                 if(request.Jobs.Length > 0)
                 {
                     Scheduler.Instance.UpdateJobs(request.Jobs);
@@ -42,7 +41,7 @@ namespace Node
                 {
                     Ledger.Instance.UpdateNodes(request.Nodes, request.Remove);
                 }
-                Coordinator.Instance.ResetHeartbeat();
+                // Coordinator.Instance.ResetHeartbeat();
             } catch (Exception e)
             {
                 Logger.Log("AppendEntry", e.Message, Logger.LogLevel.ERROR);

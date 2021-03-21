@@ -10,9 +10,12 @@ namespace Node
         private bool _isLeader = false;
         private int _electionTimeout = Utils.GetRandomInt(0, 300);
         private long _lastHeartBeat = Utils.Millis;
+        private long _micro_lastHeartBeat = Utils.Micros;
         private long _previousHeartbeat = Utils.Millis;
         private string _currentLeader = "";
         private bool electionTerm = false;
+        private readonly object _client_lock = new object();
+        private Dictionary<string, NodeClient> NodeClients {get;} = new Dictionary<string, NodeClient>();
         public enum State 
         {
             LEADER,
@@ -28,7 +31,7 @@ namespace Node
             {
                 try 
                 {
-                    Utils.Wait(5);
+                    // Utils.Wait(5);
                     State _State = GetState; 
                     _actor.Process(_State);
                     _electionTimeout = Utils.GetRandomInt(0, 200);
@@ -39,6 +42,33 @@ namespace Node
                 }
             }
         }
+
+        public NodeClient GetClient(string n0)
+        {
+            try 
+            {
+                lock(_client_lock)
+                {
+                    if(!NodeClients.ContainsKey(n0))
+                    {
+                        NodeClients.Add(n0, new NodeClient());
+                    }
+                    NodeClient client = null;
+                    NodeClients.TryGetValue(n0, out client);
+                    if (client == null) 
+                    {
+                        Logger.Log("GetClient", "Client was null", Logger.LogLevel.WARN);
+                        return new NodeClient();
+                    }
+                    return client;
+                }
+            } catch(Exception e)
+            {
+                Logger.Log("GetClient", e.Message, Logger.LogLevel.WARN);
+                return new NodeClient();
+            }
+        }
+
         public void SetCurrentLeader(string n)
         {
             lock(_leader_lock)
@@ -106,8 +136,9 @@ namespace Node
         {
             lock (_hb_lock)
             {
-                _previousHeartbeat = _lastHeartBeat;
                 _lastHeartBeat = Utils.Millis;// + Utils.GetRandomInt(0, 300);
+                _previousHeartbeat = _micro_lastHeartBeat;
+                _micro_lastHeartBeat = Utils.Micros;
             }
         }
         public long LeaderHeartbeat
@@ -116,7 +147,7 @@ namespace Node
             {
                 lock(_hb_lock)
                 {
-                    return _lastHeartBeat - _previousHeartbeat;
+                    return _micro_lastHeartBeat - _previousHeartbeat;
                 }
             }
         }        

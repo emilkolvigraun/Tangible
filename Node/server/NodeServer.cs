@@ -19,6 +19,8 @@ namespace Node
             serverCertificate = Params.X509CERT;
             // Create a TCP/IP (IPv4) socket and listen for incoming connections.
             TcpListener listener = new TcpListener(IPAddress.Any, Params.PORT_NUMBER);
+            listener.Server.ReceiveTimeout = 150;
+            listener.Server.SendTimeout = 150;
             listener.Start();
             Logger.Log("NodeServer", "Server is running.", Logger.LogLevel.INFO);
             while (true)

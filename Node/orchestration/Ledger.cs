@@ -263,7 +263,6 @@ namespace Node
                     {
                         Logger.Log("TemperaryNodes", "[3] " + e.Message, Logger.LogLevel.ERROR);
                     }
-                    if (_jobs.Count > 0) Console.WriteLine("send job to " + n0);
                     return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray());
                 } else { 
                     Logger.Log("NodeUpdates", "Did not contain [node:"+n0+"]", Logger.LogLevel.WARN);
@@ -345,7 +344,6 @@ namespace Node
                     Jobs.Add(job);
                     Cluster[node].Jobs = Jobs.ToArray();
                     if (Cluster[node].Jobs.Length > nr_jobs) Logger.Log("Schedule/AddJob", "Assigned [job:" + job.ID + "] to [node:" + node + "]", Logger.LogLevel.IMPOR);
-                    Logger.Log("DEBUG", string.Join(",", Cluster.GetAsToString()), Logger.LogLevel.ERROR);
                     return true;
                 } 
                 return false;

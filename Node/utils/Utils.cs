@@ -39,7 +39,7 @@ namespace Node
         private static readonly DateTime Jan1St1970 = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         /// <summary>Get extra long current timestamp</summary>
         public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
-
+        public static long Micros { get { return (long)(DateTime.UtcNow.Ticks / (TimeSpan.TicksPerMillisecond / 1000));}}
         public static void Wait(int time = -1)
         {
             if (time == -1) time = Params.WAIT_TIME_MS;

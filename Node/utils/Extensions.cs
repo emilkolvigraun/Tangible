@@ -4,7 +4,8 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Dynamic;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
+using System.Net.Sockets;
+using System.Net.NetworkInformation;
 
 namespace Node
 {
@@ -311,6 +312,14 @@ namespace Node
                 Jobs = n1.Jobs,
                 Nodes = n1.Nodes
             };
+        }
+
+        public static TcpState GetState(this TcpClient tcpClient)
+        {
+        var foo = IPGlobalProperties.GetIPGlobalProperties()
+            .GetActiveTcpConnections()
+            .FirstOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
+        return foo != null ? foo.State : TcpState.Unknown;
         }
     }
 }
