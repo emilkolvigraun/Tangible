@@ -76,7 +76,7 @@ namespace Node
         public static void LogState(Coordinator.State state)
         {
             if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
-            else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
+            else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs + ", total:" + Coordinator.Instance.TotalJobs, Logger.LogLevel.INFO);
         }
     }
 }

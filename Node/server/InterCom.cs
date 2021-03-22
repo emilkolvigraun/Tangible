@@ -26,6 +26,8 @@ namespace Node
 
         private byte[] ProcessAppendEntry(AppendEntriesRequest request)
         {
+            (string node, string[] jobs)[] _syncRequest = new (string node, string[] jobs)[]{};
+            (string node, Job[] jobs)[] _syncResponse = new (string node, Job[] jobs)[]{};
             try 
             {
                 Coordinator.Instance.ResetHeartbeat();
@@ -41,6 +43,15 @@ namespace Node
                 {
                     Ledger.Instance.UpdateNodes(request.Ledger, request.Nodes, request.Remove);
                 }
+                if (request.Ledger.Length == 0) 
+                {
+                    _syncRequest = Ledger.Instance.ValidateFactSheet(request.FactSheet);
+                }
+                if (request.Sync.Length > 0)
+                {
+                    _syncResponse = Ledger.Instance.RespondWithJobs(request.Sync);
+                }
+                
                 // Coordinator.Instance.ResetHeartbeat();
             } catch (Exception e)
             {
@@ -50,7 +61,9 @@ namespace Node
             return new AppendEntriesResponse(){
                 // NodeIds = Ledger.Instance.Cluster.GetIds(),
                 JobIds = Scheduler.Instance._Jobs.GetIds(),
-                Ledger = Ledger.Instance.Cluster.GetLedger()
+                Ledger = Ledger.Instance.Cluster.GetLedger(),
+                SyncRequest = _syncRequest,
+                SyncResponse = _syncResponse
                 }.EncodeRequest();
         }
         private byte[] ProcessRegistration(RegistrationRequest request)

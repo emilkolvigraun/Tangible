@@ -15,6 +15,8 @@ namespace Node
         // If THIS is the Leader: This is the status of all other nodes that THIS node knows about
         private Dictionary<string, int> NodesStatus {get;} = new Dictionary<string, int>();
 
+        private Dictionary<string, (string, string[])[]> SyncRequests {get;} = new Dictionary<string, (string, string[])[]>();
+
         // Cluster stuff
         public int Quorum {
             get => ClusterCopy.Count <= 2 ? ClusterCopy.Count : (ClusterCopy.Count / 2) + 2;
@@ -128,8 +130,141 @@ namespace Node
             }
         }
 
+        public (string, string[])[] GetSyncRequests(string node)
+        {
+            lock(_sync_lock)
+            {
+                if (!SyncRequests.ContainsKey(node))
+                {
+                    SyncRequests.Add(node, new (string, string[])[]{});
+                }
+                return SyncRequests[node];
+            }
+        }
+
+        public void UpdateSyncRequests(string node, (string node, string[] jobs)[] request, (string node, Job[] jobs)[] response)
+        {
+            if (response.Length > 0)
+            {
+                lock (_sync_lock) lock (_cluster_entry_lock) lock (_cluster_lock)
+                {
+                    foreach((string node, Job[] jobs) res in response)
+                    {
+                        foreach(Job j0 in res.jobs)
+                        {
+                            if (temp_Nodes.ContainsKey(node))
+                            {
+                                if(!temp_Nodes[node].Jobs.Any(j => j.ID == j0.ID))
+                                {
+                                    int nr_jobs = temp_Nodes[node].Jobs.Length;
+                                    List<Job> Jobs = temp_Nodes[node].Jobs.ToList();
+                                    Jobs.Add(j0);
+                                    temp_Nodes[node].Jobs = Jobs.ToArray();
+                                }
+                            }
+                            AddJob(node, j0);
+                        }
+                        RemoveSyncRequest(node, res.node);
+                    }
+                }
+            }
+            if (request.Length > 0)
+            {
+                lock(_sync_lock) lock(_cluster_lock)
+                {
+                    List<string> missing = new List<string>();
+                    foreach ((string node, string[] jobs) req in request)
+                    {
+                        if (Cluster.ContainsKey(req.node))
+                        {
+                            foreach (string j in req.jobs)
+                            {
+                                if(!Cluster[req.node].Jobs.ContainsKey(j))
+                                {
+                                    missing.Add(j);
+                                }
+                            }
+                            if (SyncRequests.ContainsKey(node))
+                            {
+                                (string n, string[] j)[] c = SyncRequests[node];
+                                (string n, string[] j)[] c1 = c.Append((req.node, missing.ToArray())).ToArray();
+                                SyncRequests[node] = c1;
+                            } else 
+                            {
+                                SyncRequests.Add(node, new (string, string[])[]{(req.node, missing.ToArray())});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void RemoveSyncRequest(string n0, string n1)
+        {
+            lock(_sync_lock)
+            {
+                if (SyncRequests.ContainsKey(n0))
+                {
+                    List<(string node, string[] jobs)> r = new List<(string node, string[] jobs)>();
+                    foreach((string node, string[] jobs) d in SyncRequests[n0])
+                    {
+                        if (d.node != n1)
+                        {
+                            r.Add(d);
+                        }
+                    }  
+                    SyncRequests[n0] = r.ToArray();
+                }
+
+            }
+        }
+
+        public (string node, string[] jobs)[] ValidateFactSheet((string node, int nrjobs)[] sheet)
+        {
+            List<(string node, string[] jobs)> syncRequest= new List<(string node, string[] jobs)>();
+            
+            lock (_cluster_lock)
+            {
+                foreach ((string node, int nrjobs) fact in sheet)
+                {
+                    if(Cluster.ContainsKey(fact.node) && Cluster[fact.node].Jobs.Length != fact.nrjobs)
+                    {
+                        syncRequest.Add((fact.node, Cluster[fact.node].Jobs.GetIds()));
+                    }
+                }
+            }
+            if (syncRequest.Count > 0)
+            {
+                Logger.Log("FactSheet", "Detected SYNC error", Logger.LogLevel.WARN);
+            }
+            return syncRequest.ToArray();
+        }
+
+        public (string node, Job[] jobs)[] RespondWithJobs((string node, string[] jobs)[] syncJobs)
+        {
+            List<(string node, Job[] jobs)> newJobs = new List<(string node, Job[] jobs)>();
+
+            lock(_cluster_lock)
+            {
+                foreach((string node, string[] jobs) request in syncJobs)
+                {
+                    if(Cluster.ContainsKey(request.node))
+                    {
+                        List<Job> jobs = new List<Job>();
+                        foreach(string j0 in request.jobs)
+                        {
+                            Job j1 = Cluster[request.node].Jobs.GetJob(j0);
+                            if (j1 != null) jobs.Add(j1);
+                        }
+                        newJobs.Add((request.node, jobs.ToArray()));
+                    }
+                }
+            }
+            return newJobs.ToArray();
+        }
+
         // When the leader receives a response, it stores the current state of the node
-        public void UpdateTemporaryNodes(string n0, (string node, string[] jobIds)[] nodes, string[] jobs, bool updateSelf)
+        public void UpdateTemporaryNodes(string n0, (string node, string[] jobIds)[] nodes, string[] jobs)
         {
             lock (_cluster_entry_lock)
             {
@@ -177,15 +312,6 @@ namespace Node
                     BasicNode b1 = BasicNode.MakeBasicNode(new MetaNode()).Copy(nodeIds.GetJobIds(Params.UNIQUE_KEY));
                     newNodes.Add(b1);
                 }
-
-                // if (!updateSelf && temp_Nodes.ContainsKey(n0) && temp_Nodes[n0].Nodes.ContainsID(Params.UNIQUE_KEY))
-                // {
-                //     BasicNode nx = temp_Nodes[n0].Nodes.GetByID(Params.UNIQUE_KEY);
-                //     newNodes.Add(nx);
-                // } else 
-                // {
-                //     newNodes.Add(BasicNode.MakeBasicNode(new MetaNode()));
-                // }  
                 
                 if (temp_Nodes.ContainsKey(n0))
                 {
@@ -200,7 +326,7 @@ namespace Node
                 }
             }
         }
-        public (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger) GetNodeUpdates(string n0)
+        public (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger, (string Node, int nrJobs)[] Facts) GetNodeUpdates(string n0)
         {
             lock(_cluster_entry_lock)
             {
@@ -211,6 +337,22 @@ namespace Node
                     // whatever information that this node has about all other nodes in the cluster
                     tempCluster = ClusterCopy;
                 }
+
+                
+                List<(string Node, int nrJobs)> _facts = new List<(string Node, int nrJobs)>();                
+                // update fact sheet
+                try 
+                {
+                    foreach(MetaNode nn in tempCluster.Values)
+                    {
+                        _facts.Add((nn.Name, nn.Jobs.Length));
+                    }
+                    _facts.Add((Params.NODE_NAME, Scheduler.Instance._Jobs.Length));
+                } catch(Exception e)
+                {
+                    Logger.Log("TemperaryNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
+                }
+
                 // If temp nodes includes the key, then we have done this before
                 // if temp cluster does not contain the key, then something is wrong
                 if (temp_Nodes.ContainsKey(n0) && tempCluster.ContainsKey(n0))
@@ -220,29 +362,8 @@ namespace Node
                     List<string> _remove = new List<string>();
                     List<Job> _jobs = new List<Job>();    
                     List<(string Node, Job[] nodeJobs)> _ledger = new List<(string Node, Job[] nodeJobs)>();
-
                     // the current contents and status of the node in question
                     List<BasicNode> tempNodes = temp_Nodes[n0].Nodes.ToList();
-
-                    // if the leader node as received a new job
-                    // or if the follower node for some reason does not have the leader node
-                    // add it
-                    // try 
-                    // {
-                    //     BasicNode leaderNode = tempNodes.GetByName(Params.NODE_NAME);
-                    //     if (leaderNode == null)// || leaderNode.Jobs.Length != Scheduler.Instance._Jobs.Length)
-                    //     {
-                    //         _nodes.Add(new PlainMetaNode(){
-                    //             ID = Params.UNIQUE_KEY,
-                    //             Host = Params.ADVERTISED_HOST_NAME,
-                    //             Name = Params.NODE_NAME,
-                    //             Port = Params.PORT_NUMBER
-                    //         });
-                    //     }
-                    // } catch(Exception e)
-                    // {
-                    //     Logger.Log("TemperaryNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
-                    // }
 
                     try 
                     {
@@ -328,13 +449,13 @@ namespace Node
                     {
                         Logger.Log("TemperaryNodes", "[3] " + e.Message, Logger.LogLevel.ERROR);
                     }
-                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray(), _ledger.ToArray());
+                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray(), _ledger.ToArray(), _facts.ToArray());
                 } else { 
                     Logger.Log("NodeUpdates", "Did not contain [node:"+n0+"]", Logger.LogLevel.WARN);
                     // (PlainMetaNode[] Nodes, Job[] Jobs) info = GetNodesAndJobs(n0);
 
                     // correct this
-                    return (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{});
+                    return (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{}, _facts.ToArray());
                 }
             }
         }
@@ -431,6 +552,7 @@ namespace Node
                 return false;
             }
         }
+        private static readonly object _sync_lock = new object();
         private static readonly object _cluster_entry_lock = new object();
         private static readonly object _cluster_state_lock = new object();
         private static readonly object _cluster_lock = new object();

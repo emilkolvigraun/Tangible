@@ -130,10 +130,12 @@ namespace Node
                 {
                     tasks[i] = new Task(() =>
                     {
-                        (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger) info = (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{});
+                        (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger, (string Node, int nrJobs)[] Facts) info = (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{}, new (string Node, int nrJobs)[]{});
+                        (string Node, string[] jobs)[] _Sync = new (string Node, string[] jobs)[]{};
                         try 
                         {
                             info = Ledger.Instance.GetNodeUpdates(n0.Key);
+                            _Sync = Ledger.Instance.GetSyncRequests(n0.Key);
                         } catch (Exception e)
                         {
                             Logger.Log("Leader:Updates", "[2]" + e.Message, Logger.LogLevel.ERROR);
@@ -144,6 +146,8 @@ namespace Node
                             // Get the new nodes, or updated nodes relevant to this node
                             Nodes = info.Nodes,
                             Ledger = info._Ledger,
+                            FactSheet = info.Facts,
+                            Sync = _Sync,
 
                             // Get the nodes that are flagged for deletion
                             Remove = info.Remove,
@@ -166,7 +170,8 @@ namespace Node
                             try 
                             {
                                 AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
-                                Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.Ledger, r1.JobIds, info.Nodes.ContainsKey(Params.NODE_NAME));// || 1 > Ledger.Instance.GetStatus(n0.Key)));
+                                Ledger.Instance.UpdateTemporaryNodes(n0.Key, r1.Ledger, r1.JobIds);// || 1 > Ledger.Instance.GetStatus(n0.Key)));
+                                Ledger.Instance.UpdateSyncRequests(n0.Key, r1.SyncRequest, r1.SyncResponse);
                             } catch(Exception e)
                             {
                                 Logger.Log("Leader:Nodes", "[4]" + e.Message, Logger.LogLevel.ERROR);

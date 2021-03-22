@@ -264,6 +264,14 @@ namespace Node
             }
             return false;
         }
+        public static bool ContainsKey(this IEnumerable<Job> jobs, string j0)
+        {
+            foreach(Job j1 in jobs)
+            {
+                if (j1.ID == j0) return true;
+            }
+            return false;
+        }
         public static bool ContainsKey(this IEnumerable<MetaNode> nodes, string key)
         {
             foreach(MetaNode n0 in nodes)
@@ -402,6 +410,15 @@ namespace Node
                 if (n0.Node == key) return n0.jobs;
             } 
             return new Job[]{};
+        }
+
+        public static Job GetJob(this Job[] jobs, string j0)
+        {
+            foreach (Job j1 in jobs)
+            {
+                if (j1.ID == j0) return j1;
+            }
+            return null;
         }
     }
 }

@@ -78,6 +78,20 @@ namespace Node
             }
         }
 
+        public int TotalJobs 
+        {
+            get 
+            {
+                int total = 0;
+                foreach(MetaNode n in Ledger.Instance.Cluster.Values)
+                {
+                    total += n.Jobs.Length;
+                }
+                total += Scheduler.Instance.NumberOfJobs;
+                return total;
+            }
+        }
+
         public void SetCurrentLeader(string n)
         {
             lock(_leader_lock)

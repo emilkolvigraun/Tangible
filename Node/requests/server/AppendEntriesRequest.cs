@@ -9,8 +9,8 @@ namespace Node
         // Used for organizing the cluster
         public PlainMetaNode[] Nodes {get; set;} = null;
         public (string Node, Job[] jobs)[] Ledger {get; set;} = null;
-
-
+        public (string Node, int nrJobs)[] FactSheet {get; set;} = null;
+        public (string Node, string[] jobs)[] Sync {get; set;} = null;
         public string[] Remove {get; set;} = null;
 
         // Jobs that are disitrubted
