@@ -129,7 +129,7 @@ namespace Node
         }
 
         // When the leader receives a response, it stores the current state of the node
-        public void UpdateTemporaryNodes(string n0, string[] nodes, string[] jobs, bool updateSelf)
+        public void UpdateTemporaryNodes(string n0, (string node, string[] jobIds)[] nodes, string[] jobs, bool updateSelf)
         {
             lock (_cluster_entry_lock)
             {
@@ -149,25 +149,43 @@ namespace Node
                         newJobs.Add(j0);
                     } 
                 }
-                List<string> nodeIds = nodes.ToList();
+                List<(string node, string[] jobIds)> nodeIds = nodes.ToList();
                 List<BasicNode> newNodes = new List<BasicNode>();
                 List<BasicNode> _nodes = tempCluster.AsNodeArray().AsBasicNodes();
+
+                // Add a copy of the basic node that this node knows about
+                // but only with the jobs that the other node knows about
+                // such that tempNode reflects the current state of information 
+                // that each other node in the cluster contains
                 foreach(BasicNode b0 in _nodes)
                 {
-                    if (nodeIds.Contains(b0.ID))
+                    if (nodeIds.ContainsNode(b0.ID))
                     {
-                        newNodes.Add(b0);   
+                        if (b0.JobEquality(nodeIds.GetJobIds(b0.ID)))
+                        {
+                            newNodes.Add(b0);   
+                        } else 
+                        {
+                            BasicNode b1 = b0.Copy(nodeIds.GetJobIds(b0.ID));
+                            newNodes.Add(b1);   
+                        }
                     } 
                 }
 
-                if (!updateSelf && temp_Nodes.ContainsKey(n0) && temp_Nodes[n0].Nodes.ContainsID(Params.UNIQUE_KEY))
+                if (nodeIds.ContainsNode(Params.UNIQUE_KEY))
                 {
-                    BasicNode nx = temp_Nodes[n0].Nodes.GetByID(Params.UNIQUE_KEY);
-                    newNodes.Add(nx);
-                } else 
-                {
-                    newNodes.Add(BasicNode.MakeBasicNode(new MetaNode()));
-                }  
+                    BasicNode b1 = BasicNode.MakeBasicNode(new MetaNode()).Copy(nodeIds.GetJobIds(Params.UNIQUE_KEY));
+                    newNodes.Add(b1);
+                }
+
+                // if (!updateSelf && temp_Nodes.ContainsKey(n0) && temp_Nodes[n0].Nodes.ContainsID(Params.UNIQUE_KEY))
+                // {
+                //     BasicNode nx = temp_Nodes[n0].Nodes.GetByID(Params.UNIQUE_KEY);
+                //     newNodes.Add(nx);
+                // } else 
+                // {
+                //     newNodes.Add(BasicNode.MakeBasicNode(new MetaNode()));
+                // }  
                 
                 if (temp_Nodes.ContainsKey(n0))
                 {
@@ -182,7 +200,7 @@ namespace Node
                 }
             }
         }
-        public (MetaNode[] Nodes, string[] Remove, Job[] Jobs) GetNodeUpdates(string n0)
+        public (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger) GetNodeUpdates(string n0)
         {
             lock(_cluster_entry_lock)
             {
@@ -190,6 +208,7 @@ namespace Node
                 Dictionary<string, MetaNode> tempCluster;
                 lock (_cluster_lock)
                 {
+                    // whatever information that this node has about all other nodes in the cluster
                     tempCluster = ClusterCopy;
                 }
                 // If temp nodes includes the key, then we have done this before
@@ -197,42 +216,85 @@ namespace Node
                 if (temp_Nodes.ContainsKey(n0) && tempCluster.ContainsKey(n0))
                 {
                     // Init the lists to return as arrays
-                    List<MetaNode> _nodes = new List<MetaNode>();
+                    List<PlainMetaNode> _nodes = new List<PlainMetaNode>();
                     List<string> _remove = new List<string>();
                     List<Job> _jobs = new List<Job>();    
+                    List<(string Node, Job[] nodeJobs)> _ledger = new List<(string Node, Job[] nodeJobs)>();
 
+                    // the current contents and status of the node in question
                     List<BasicNode> tempNodes = temp_Nodes[n0].Nodes.ToList();
+
+                    // if the leader node as received a new job
+                    // or if the follower node for some reason does not have the leader node
+                    // add it
+                    // try 
+                    // {
+                    //     BasicNode leaderNode = tempNodes.GetByName(Params.NODE_NAME);
+                    //     if (leaderNode == null)// || leaderNode.Jobs.Length != Scheduler.Instance._Jobs.Length)
+                    //     {
+                    //         _nodes.Add(new PlainMetaNode(){
+                    //             ID = Params.UNIQUE_KEY,
+                    //             Host = Params.ADVERTISED_HOST_NAME,
+                    //             Name = Params.NODE_NAME,
+                    //             Port = Params.PORT_NUMBER
+                    //         });
+                    //     }
+                    // } catch(Exception e)
+                    // {
+                    //     Logger.Log("TemperaryNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
+                    // }
 
                     try 
                     {
+                        // add node to _nodes if it is not already added to tempNodes
                         foreach(MetaNode n1 in tempCluster.Values)
                         {
                             // Adds the node, if it is not the same node as this
                             // if it is not already added
-                            // or if there is a difference in the jobs
-                            if ( n0 != n1.Name && (!tempNodes.ContainsKey(n1.Name) || temp_Nodes.ContainsKey(n1.Name) && n1.Jobs.Length != temp_Nodes[n1.Name].Jobs.Length))
+                            if ( n0 != n1.Name && !tempNodes.ContainsKey(n1.Name))
                             {
-                                _nodes.Add(n1);
+                                _nodes.Add(PlainMetaNode.MakePlainMetaNode(n1));
+                            }
+                            // Never send more than 4 new jobs at the time
+                            if (_nodes.Count >= 4) break;
+                        }
+
+                        // foreach node in tempNodes (which reflects the current state of information that the other node has)
+                        // we check if it information is lacking
+                        foreach(BasicNode b1 in tempNodes)
+                        {
+                            Job[] extractedJobs = new Job[]{};
+                            
+                            if (b1.Name == Params.NODE_NAME)
+                            {
+                                List<Job> _current_jobs = new List<Job>();
+                                foreach(Job j1 in Scheduler.Instance._Jobs)
+                                {
+                                    if (!b1.Jobs.ContainsKey(j1))
+                                    {
+                                        _current_jobs.Add(j1);
+                                    }
+                                    if (_current_jobs.Count >= 4)
+                                    {
+                                        break;
+                                    }
+                                }
+                                extractedJobs = _current_jobs.ToArray();
+                            }
+                            else if (tempCluster.ContainsKey(b1.Name)) 
+                            {
+                                extractedJobs = ExtractLackingJobs(b1, tempCluster[b1.Name]);
+                            }
+
+                            if (extractedJobs.Length > 0)
+                            {
+                                _ledger.Add((b1.Name, extractedJobs));
+                                if (extractedJobs.Length >= 4) break;
                             }
                         }
                     } catch(Exception e)
                     {
                         Logger.Log("TemperaryNodes", "[0] " + e.Message, Logger.LogLevel.ERROR);
-                    }
-
-                    // if the leader node as received a new job
-                    // or if the follower node for some reason does not have the leader node
-                    // add it
-                    try 
-                    {
-                        BasicNode leaderNode = tempNodes.GetByName(Params.NODE_NAME);
-                        if (leaderNode == null || leaderNode.Jobs.Length != Scheduler.Instance._Jobs.Length)
-                        {
-                            _nodes.Add(new MetaNode());
-                        }
-                    } catch(Exception e)
-                    {
-                        Logger.Log("TemperaryNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
                     }
 
                     try 
@@ -258,62 +320,82 @@ namespace Node
                             {
                                 _jobs.Add(job);
                             } 
+
+                            // never send more than 4 jobs at the time
+                            if (_jobs.Count >= 4) break;
                         }
                     } catch(Exception e)
                     {
                         Logger.Log("TemperaryNodes", "[3] " + e.Message, Logger.LogLevel.ERROR);
                     }
-                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray());
+                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray(), _ledger.ToArray());
                 } else { 
                     Logger.Log("NodeUpdates", "Did not contain [node:"+n0+"]", Logger.LogLevel.WARN);
-                    (MetaNode[] Nodes, Job[] Jobs) info = GetNodesAndJobs(n0);
-                    return (info.Nodes, new string[]{}, info.Jobs);
+                    // (PlainMetaNode[] Nodes, Job[] Jobs) info = GetNodesAndJobs(n0);
+
+                    // correct this
+                    return (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{});
                 }
             }
         }
-        private (MetaNode[] Nodes, Job[] Jobs) GetNodesAndJobs(string n0)
-        {
-            // Init empty list and array
-            List<MetaNode> _nodes = new List<MetaNode>();
-            Job[] _jobs = new Job[]{};
-        
-            // Iterate the cluster
-            foreach (MetaNode node in ClusterCopy.Values)
-            {
-                // If a node in the cluster is not the same as n0
-                // add it to the list
-                if (node.Name != n0) _nodes.Add(node);
-            }
-            // if the node is in the cluster, return its jobs
-            if (Cluster.ContainsKey(n0))
-            {
-                _jobs = Cluster[n0].Jobs;
-            }
-            // return all other nodes than the one asking
-            // and the jobs of the one asking
-            return (_nodes.ToArray(), _jobs);
-        }
 
+        public Job[] ExtractLackingJobs(BasicNode b0, MetaNode n0)
+        {
+            List<Job> _current_jobs = new List<Job>();
+            foreach(Job j1 in n0.Jobs)
+            {
+                if (!b0.Jobs.ContainsKey(j1))
+                {
+                    _current_jobs.Add(j1);
+                }
+                if (_current_jobs.Count >= 4)
+                {
+                    break;
+                }
+            }
+            return _current_jobs.ToArray();
+        }
+        
         // When the follower receives the Nodes and Remove
-        public void UpdateNodes(MetaNode[] nodes, string[] remove)
+        public void UpdateNodes((string Node, Job[] jobs)[] _ledger, PlainMetaNode[] nodes, string[] remove)
         {
             lock (_cluster_lock)
             {
-                foreach(MetaNode n0 in nodes)
+                foreach(PlainMetaNode n0 in nodes)
                 {
                     try
                     {
                         int temp = Cluster.Count;
-                        if (Cluster.ContainsKey(n0.Name))
+                        if (!Cluster.ContainsKey(n0.Name))
                         {
-                            Cluster[n0.Name] = n0;
-                        } else Cluster.Add(n0.Name, n0);
-                        Logger.Log("UpdateNodes", "Received cluster APPEND: [node:" + n0.ID + "]", Logger.LogLevel.IMPOR);
+                            Cluster.Add(n0.Name, PlainMetaNode.MakeMetaNode(n0));
+                            Logger.Log("UpdateNodes", "Received cluster APPEND: [node:" + n0.ID + "]", Logger.LogLevel.IMPOR);
+                        }
                     } catch(Exception e)
                     {
                         Logger.Log("UpdateNodes", "[0] " + e.Message, Logger.LogLevel.ERROR);
                     }
                 }
+                
+                try 
+                {
+                    foreach (MetaNode n0 in Cluster.Values)
+                    {
+                        Job[] jobs = _ledger.GetJobs(n0.Name);
+                        if (jobs.Length > 0)
+                        {
+                            foreach(Job j0 in jobs)
+                            {
+                                AddJob(n0.Name, j0);
+                                Logger.Log("UpdateNodes", "Received job APPEND: [node:" + n0.ID + ", [job:" + j0.ID + "]", Logger.LogLevel.IMPOR);
+                            }
+                        }
+                    }
+                } catch (Exception e)
+                {
+                        Logger.Log("UpdateNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
+                }
+
                 foreach(string s0 in remove)
                 {
                     try
@@ -326,7 +408,7 @@ namespace Node
 
                     } catch(Exception e)
                     {
-                        Logger.Log("UpdateNodes", "[1] " + e.Message, Logger.LogLevel.ERROR);
+                        Logger.Log("UpdateNodes", "[2] " + e.Message, Logger.LogLevel.ERROR);
                     }
                 }
             }

@@ -62,7 +62,14 @@ namespace Node
                             return;
                         }
                                         
-                        Response = _client.Run(request.Host, request.Port, request.Name, RequestType.RS, RequestType.CT);
+                        Response = _client.Run(request.Host, request.Port, request.Name, new RegistrationRequest(){
+                            Node = new PlainMetaNode(){
+                                ID = Params.UNIQUE_KEY,
+                                Name = Params.NODE_NAME,
+                                Host = Params.ADVERTISED_HOST_NAME,
+                                Port = Params.PORT_NUMBER
+                            }
+                        }, RequestType.CT);
                         
                         if(Response == null || Response.TypeOf != RequestType.CT) 
                         {

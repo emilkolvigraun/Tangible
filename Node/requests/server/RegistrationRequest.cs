@@ -5,7 +5,7 @@ namespace Node
     {
         public RequestType TypeOf {get; set;} = RequestType.RS;
         public byte[] Cert {get; set;} = Params.X509CERT_BYTES;
-        public PlainMetaNode Node {get; set;} = PlainMetaNode.MakePlainMetaNode(new MetaNode());
+        public PlainMetaNode Node {get; set;}
 
     }
 }

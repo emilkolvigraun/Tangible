@@ -130,7 +130,7 @@ namespace Node
                 {
                     tasks[i] = new Task(() =>
                     {
-                        (MetaNode[] Nodes, string[] Remove, Job[] Jobs) info = (new MetaNode[]{}, new string[]{}, new Job[]{});
+                        (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger) info = (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{});
                         try 
                         {
                             info = Ledger.Instance.GetNodeUpdates(n0.Key);
@@ -143,6 +143,7 @@ namespace Node
 
                             // Get the new nodes, or updated nodes relevant to this node
                             Nodes = info.Nodes,
+                            Ledger = info._Ledger,
 
                             // Get the nodes that are flagged for deletion
                             Remove = info.Remove,
@@ -165,7 +166,7 @@ namespace Node
                             try 
                             {
                                 AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
-                                Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.NodeIds, r1.JobIds, info.Nodes.ContainsKey(Params.NODE_NAME));// || 1 > Ledger.Instance.GetStatus(n0.Key)));
+                                Ledger.Instance.UpdateTemporaryNodes(n0.Value.Name, r1.Ledger, r1.JobIds, info.Nodes.ContainsKey(Params.NODE_NAME));// || 1 > Ledger.Instance.GetStatus(n0.Key)));
                             } catch(Exception e)
                             {
                                 Logger.Log("Leader:Nodes", "[4]" + e.Message, Logger.LogLevel.ERROR);
@@ -177,12 +178,12 @@ namespace Node
 
                 // Try to send heartbeat to all nodes in parallel
                 Parallel.ForEach<Task>(tasks, (t) => { t.Start(); }); 
-                bool success = Task.WaitAll(tasks, 400);
+                bool success = Task.WaitAll(tasks, Params.HEARTBEAT_MS);
                 // Logger.Log(Params.NODE_NAME, "Send heartbeats [status:"+success+"]", success?Logger.LogLevel.INFO:Logger.LogLevel.WARN);
 
             }catch(Exception e)
             {
-                Logger.Log("ActAsLeader", "[0}" + e.Message, Logger.LogLevel.INFO);
+                Logger.Log("ActAsLeader", "[0]" + e.Message, Logger.LogLevel.ERROR);
             }
         
         }        

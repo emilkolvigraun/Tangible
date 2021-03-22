@@ -37,9 +37,9 @@ namespace Node
                 {
                     Scheduler.Instance.UpdateJobs(request.Jobs);
                 } 
-                if(request.Nodes.Length > 0 || request.Remove.Length > 0)
+                if(request.Nodes.Length > 0 || request.Remove.Length > 0 || request.Ledger.Length > 0)
                 {
-                    Ledger.Instance.UpdateNodes(request.Nodes, request.Remove);
+                    Ledger.Instance.UpdateNodes(request.Ledger, request.Nodes, request.Remove);
                 }
                 // Coordinator.Instance.ResetHeartbeat();
             } catch (Exception e)
@@ -48,7 +48,7 @@ namespace Node
             }
 
             return new AppendEntriesResponse(){
-                NodeIds = Ledger.Instance.Cluster.GetIds(),
+                // NodeIds = Ledger.Instance.Cluster.GetIds(),
                 JobIds = Scheduler.Instance._Jobs.GetIds(),
                 Ledger = Ledger.Instance.Cluster.GetLedger()
                 }.EncodeRequest();
@@ -70,7 +70,14 @@ namespace Node
                 // and for good measure, the hb is reset
                 Coordinator.Instance.ResetHeartbeat();
                 Logger.Log("RequestHandler", "Processed RS request from [node:" + request.Node.Name +", id:" + request.Node.ID +"]", Logger.LogLevel.INFO);
-                return new CertificateResponse().EncodeRequest();
+                return new CertificateResponse(){
+                    Node = new PlainMetaNode(){
+                        Name = Params.NODE_NAME,
+                        ID = Params.UNIQUE_KEY,
+                        Host = Params.ADVERTISED_HOST_NAME,
+                        Port = Params.PORT_NUMBER
+                    }
+                }.EncodeRequest();
             } catch (Exception e)
             {
                 Logger.Log("RequestHandler", "RS [1]: " + e.Message, Logger.LogLevel.ERROR);

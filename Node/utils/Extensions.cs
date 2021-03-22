@@ -272,6 +272,14 @@ namespace Node
             }
             return false;
         }
+        public static bool ContainsKey(this IEnumerable<PlainMetaNode> nodes, string key)
+        {
+            foreach(PlainMetaNode n0 in nodes)
+            {
+                if (n0.Name == key) return true;
+            }
+            return false;
+        }
 
         public static BasicNode GetByName(this List<BasicNode> nodes, string name)
         {
@@ -330,6 +338,70 @@ namespace Node
                 _ledger.Add((n0.ID, n0.Jobs.GetIds()));
             }
             return _ledger.ToArray();
+        }
+
+        public static bool ContainsNode(this IEnumerable<(string node, string[] jobIds)> ledger, string id)
+        {
+            foreach ((string node, string[] jobIds) node in ledger)
+            {
+                if (node.node == id) return true;
+            }
+            return false;
+        }
+
+        public static bool JobEquality(this BasicNode node, string[] jobIds)
+        {
+            List<string> _jobIds = jobIds.ToList();
+            foreach(Job job in node.Jobs)
+            {
+                if (!_jobIds.Contains(job.ID)) return false;
+            }
+            return true;
+        }
+
+        public static string[] GetJobIds(this IEnumerable<(string node, string[] jobIds)> ledger, string id)
+        {
+            foreach ((string node, string[] jobIds) node in ledger)
+            {
+                if (node.node == id) return node.jobIds;
+            }
+            return new string[]{};
+        }
+
+        public static BasicNode Copy(this BasicNode node, string[] jobs)
+        {
+            List<Job> nodeJobs = new List<Job>();
+            List<string> copyJobs = jobs.ToList();
+            foreach(Job job in node.Jobs)
+            {
+                if (copyJobs.Contains(job.ID))
+                {
+                    nodeJobs.Add(job);
+                }
+            }
+            return new BasicNode(){
+                ID = node.ID,
+                Name = node.Name,
+                Jobs = nodeJobs.ToArray()
+            };
+        }
+
+        public static bool ContainsKey(this (string Node, Job[] jobs)[] _ledger, string key)
+        {
+            foreach((string Node, Job[] jobs) n0 in _ledger)
+            {
+                if (n0.Node == key) return true;
+            } 
+            return false;
+        }
+
+        public static Job[] GetJobs(this (string Node, Job[] jobs)[] _ledger, string key)
+        {
+            foreach((string Node, Job[] jobs) n0 in _ledger)
+            {
+                if (n0.Node == key) return n0.jobs;
+            } 
+            return new Job[]{};
         }
     }
 }
