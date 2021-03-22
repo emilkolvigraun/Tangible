@@ -49,7 +49,8 @@ namespace Node
 
             return new AppendEntriesResponse(){
                 NodeIds = Ledger.Instance.Cluster.GetIds(),
-                JobIds = Scheduler.Instance._Jobs.GetIds()
+                JobIds = Scheduler.Instance._Jobs.GetIds(),
+                Ledger = Ledger.Instance.Cluster.GetLedger()
                 }.EncodeRequest();
         }
         private byte[] ProcessRegistration(RegistrationRequest request)
@@ -64,7 +65,7 @@ namespace Node
             }
             try 
             {
-                Ledger.Instance.AddNode(request.Node.Name, request.Node);
+                Ledger.Instance.AddNode(request.Node.Name, PlainMetaNode.MakeMetaNode(request.Node));
 
                 // and for good measure, the hb is reset
                 Coordinator.Instance.ResetHeartbeat();

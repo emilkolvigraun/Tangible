@@ -14,6 +14,7 @@ namespace Node
         private long _previousHeartbeat = Utils.Millis;
         private string _currentLeader = "";
         private bool electionTerm = false;
+        private long _updater = Utils.Millis;
         private readonly object _client_lock = new object();
         private Dictionary<string, NodeClient> NodeClients {get;} = new Dictionary<string, NodeClient>();
         public enum State 
@@ -26,14 +27,22 @@ namespace Node
 
         public void RunCoordinator()
         {
-            Logger.Log(this.GetType().Name, "Coordinator is running.", Logger.LogLevel.INFO);
+            // Logger.Log(this.GetType().Name, "Coordinator is running.", Logger.LogLevel.INFO);
+            if (Ledger.Instance.ClusterCopy.Count == 0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
+            Logger.Log("Main", "Successfully started Node", Logger.LogLevel.INFO);
             while (true)
             {
                 try 
                 {
-                    // Utils.Wait(5);
                     State _State = GetState; 
                     _actor.Process(_State);
+
+                    if (_updater+1000 < Utils.Millis)
+                    {
+                        Logger.LogState(_State);
+                        _updater = Utils.Millis;
+                    }
+
                     _electionTimeout = Utils.GetRandomInt(0, 200);
                 
                 } catch(Exception e)
@@ -91,16 +100,16 @@ namespace Node
             get 
             {
                 State _state = State.SLEEPING;
-                while (_state == State.SLEEPING)
+                // while (_state == State.SLEEPING)
+                // {
+                if (Ledger.Instance.Cluster.Count < 1) _state = State.SLEEPING;
+                else if (_isLeader) _state = State.LEADER;
+                else if (Utils.Millis > _lastHeartBeat + Params.HEARTBEAT_MS + _electionTimeout)
                 {
-                    if (Ledger.Instance.Cluster.Count < 1) _state = State.SLEEPING;
-                    else if (_isLeader) _state = State.LEADER;
-                    else if (Utils.Millis > _lastHeartBeat + Params.HEARTBEAT_MS + _electionTimeout)
-                    {
-                        _state = State.CANDIDATE;
-                    }
-                    else _state = State.FOLLOWER;
+                    _state = State.CANDIDATE;
                 }
+                else _state = State.FOLLOWER;
+                // }
                 return _state;
             }
         }

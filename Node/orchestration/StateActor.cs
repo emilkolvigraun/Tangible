@@ -7,15 +7,13 @@ namespace Node
 {
     class StateActor
     {
-
-        private long _updater = Utils.Millis;
-
         public void Process(Coordinator.State state)
         {
             switch(state)
             {
                 case Coordinator.State.LEADER:
                     ActAsLeader();
+                    Coordinator.Instance.ResetHeartbeat();
                     break;
                 case Coordinator.State.CANDIDATE:
                     ActAsCandidate();
@@ -25,13 +23,6 @@ namespace Node
                     break;
                 default:
                     break;
-            }
-
-            if (_updater+1000 < Utils.Millis)
-            {
-                if (state == Coordinator.State.FOLLOWER || state == Coordinator.State.CANDIDATE) Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
-                else Logger.Log(Params.NODE_NAME, "Acted as " + state.ToString() + " [" + string.Join(",",Ledger.Instance.Cluster.GetAsToString())+"], "+Coordinator.Instance.LeaderHeartbeat.ToString()+"µs, jobs:" + Scheduler.Instance.NumberOfJobs, Logger.LogLevel.INFO);
-                _updater = Utils.Millis;
             }
         }
 

@@ -34,6 +34,7 @@ namespace Node
             
             // load environment variables
             Params.LoadConfig();
+
             Utils.Wait();
 
             DisplayStartInformation();
@@ -41,11 +42,6 @@ namespace Node
             // initializing server thread
             Thread serverThread = new Thread(() => {
                 NodeServer.RunServer();
-            });
-
-            // initializing orchestrator
-            Thread orchestratorThread = new Thread(() => {
-                Coordinator.Instance.RunCoordinator();
             });
 
             // running internal comunication 
@@ -65,11 +61,9 @@ namespace Node
 
             Utils.Wait();
 
-            // running orchestration/raft 
-            orchestratorThread.Start();
-            
-            if (Ledger.Instance.ClusterCopy.Count == 0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
-            Logger.Log("Main", "Successfully started Node", Logger.LogLevel.INFO);
+            Coordinator.Instance.RunCoordinator();
+
+            Logger.Log("Main", Params.NODE_NAME +" no longer running", Logger.LogLevel.WARN);
         }
     }
 }

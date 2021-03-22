@@ -75,7 +75,7 @@ namespace Node
                             {
                                 r0 = ((CertificateResponse) Response);
                                 _cert_b  = r0.Cert;
-                                Ledger.Instance.AddNode(r0.Node.Name, r0.Node);
+                                Ledger.Instance.AddNode(r0.Node.Name, PlainMetaNode.MakeMetaNode(r0.Node));
                                 Task.Run(()=>{Params.StoreCertificate(_cert_b);});
                                 Logger.Log("ProcessBroadcast", "Processed BC request from [node:" + request.Name + ", id:"+r0.Node.ID+"]", Logger.LogLevel.INFO);
                             } catch (Exception e)

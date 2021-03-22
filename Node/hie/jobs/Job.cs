@@ -20,5 +20,19 @@ namespace Node
         public Type TypeOf {get; set;}
 
         public ActionRequest Request {get; set;}
+
+        public (Job Operational, Job Shadow) MakeJob(ActionRequest request)
+        {
+            Job op = null;
+            Job sh = null;
+            if (request.TypeOf == RequestType.SUBSCRIBE)
+            {
+
+            } else 
+            {
+
+            }
+            return (op,sh);
+        }
     }
 }

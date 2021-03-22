@@ -321,5 +321,15 @@ namespace Node
             .FirstOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
         return foo != null ? foo.State : TcpState.Unknown;
         }
+
+        public static (string node, string[] jobIds)[] GetLedger(this Dictionary<string, MetaNode> nodes)
+        {
+            List<(string node, string[] jobIds)> _ledger = new List<(string node, string[] jobIds)>();
+            foreach (MetaNode n0 in nodes.Values)
+            {
+                _ledger.Add((n0.ID, n0.Jobs.GetIds()));
+            }
+            return _ledger.ToArray();
+        }
     }
 }

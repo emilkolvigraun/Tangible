@@ -65,10 +65,9 @@ namespace Node
         private IRequest WriteRequest(string host, int port, string targetHost, IRequest request, bool timeout = false)
         {
             IRequest response = new EmptyRequest();
-
+            ReInstanceClient();
             if(!_Client.ConnectAsync(host, port).Wait(150))
             {
-                ReInstanceClient();
                 Logger.Log("WriteRequest", "Unable to reach follower - " + host + ":" + port.ToString(), Logger.LogLevel.WARN);
                 return response;
             }
@@ -96,7 +95,6 @@ namespace Node
                     Logger.Log("WriteRequest",  e.InnerException.Message, Logger.LogLevel.ERROR);
                 }
                 sslStream.Close();
-                ReInstanceClient();
                 return response;
             }
             
@@ -115,14 +113,16 @@ namespace Node
                 
             // Close the client connection.
             sslStream.Close();
-            ReInstanceClient();
 
             return response;
         }
         
         private void ReInstanceClient()
         {
-            _Client.Close();
+            if (_Client != null)
+            {
+                _Client.Close();
+            }
             _Client = new TcpClient();
             _Client.Client.LingerState = _lingerOption;
         }
