@@ -23,20 +23,14 @@ namespace Node
                 queue.EnqueueJob(new Job(){
                     TypeOf = Job.Type.OP,
                     StatusOf = Job.Status.NS,
-                    Request = new ActionRequest(){
-                        TypeOf = RequestType.SUBSCRIBE,
-                        Priority = 2
-                    }
+                    Priority = 2
                 });
             queue.DequeueJob();
             for(int i = 0; i < 4; i++)
                 queue.EnqueueJob(new Job(){
                     TypeOf = Job.Type.OP,
                     StatusOf = Job.Status.NS,
-                    Request = new ActionRequest(){
-                        TypeOf = RequestType.SUBSCRIBE,
-                        Priority = 1
-                    }
+                    Priority = 2 
                 });
             queue.DequeueJob();
             queue.DequeueJob();
@@ -44,10 +38,7 @@ namespace Node
                 queue.EnqueueJob(new Job(){
                     TypeOf = Job.Type.OP,
                     StatusOf = Job.Status.NS,
-                    Request = new ActionRequest(){
-                        TypeOf = RequestType.SUBSCRIBE,
-                        Priority = 0
-                    }
+                    Priority = 0
                 });
             queue.DequeueJob();
             queue.DequeueJob();
@@ -55,17 +46,14 @@ namespace Node
                 queue.EnqueueJob(new Job(){
                     TypeOf = Job.Type.OP,
                     StatusOf = Job.Status.NS,
-                    Request = new ActionRequest(){
-                        TypeOf = RequestType.SUBSCRIBE,
-                        Priority = 3
-                    }
+                    Priority = 3
                 });
             queue.DequeueJob();
             queue.DequeueJob();
             // 3, 1, 1, 0, 0, 0, 0
             foreach (Job job in queue.Queue)
             {
-                Console.Write(job.Request.Priority + ",");
+                Console.Write(job.Priority + ",");
             }
             Console.WriteLine();
             Environment.Exit(0);

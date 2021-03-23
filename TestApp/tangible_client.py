@@ -16,7 +16,12 @@ class Client:
         loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
 
     def subscribe(self, loop, priority):
-        query = "{"+'"TypeOf":"SUBSCRIBE",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Data":{"benv":"..."}}'
+        query = '{"TypeOf":"SUBSCRIBE",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"FLOOR0","LocationOf":null,"HasPoint":null},"HasPoint":null},"Value":null}'
+        loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
+        print("send request:", query)
+
+    def read(self, loop, priority):
+        query = '{"TypeOf":"READ",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"FLOOR0","LocationOf":null,"HasPoint":null},"HasPoint":null},"Value":null}'
         loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
         print("send request:", query)
 

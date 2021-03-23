@@ -31,7 +31,7 @@ namespace Node
                     if (_Queue.Count > 0) index = LastIndexOf(job);
 
                     _Queue.Insert(index+1, job);
-                    Logger.Log("PriorityQueue", "Added " + job.Request.TypeOf + " to priority queue", Logger.LogLevel.INFO);
+                    Logger.Log("PriorityQueue", "Added " + job.TypeOfRequest + " to priority queue", Logger.LogLevel.INFO);
                     
                 } catch (Exception e)
                 {
@@ -43,10 +43,10 @@ namespace Node
         private int LastIndexOf(Job job)
         {
             int index = -1;
-            int priority = job.Request.Priority;
+            int priority = job.Priority;
             while (index == -1)
             {   
-                index = _Queue.LastIndexOf(_Queue.Where(j => j.Request.Priority == priority).LastOrDefault());
+                index = _Queue.LastIndexOf(_Queue.Where(j => j.Priority == priority).LastOrDefault());
                 priority++;
                 if (priority >= 10) break;
             }

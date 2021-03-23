@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Node 
 {
@@ -31,15 +32,24 @@ namespace Node
 
         private void ProcessAction(ActionRequest request)
         {
-            string id = Utils.GetUniqueKey(size:10);
-            Job job = new Job(){
-                ID = id,
-                TypeOf = Job.Type.OP,
-                StatusOf = Job.Status.NS,
-                Request = request
-            };
-            Scheduler.Instance.ScheduleJob(job);
-            Logger.Log("ProcessAction", "Processed new job " + job.ID, Logger.LogLevel.INFO);
+            List<(Job operation, Job shadow)> jobs = HardwareAbstraction.Instance.CreateJobs(request);
+            
+            foreach ((Job operation, Job shadow) job in jobs)
+            {
+                bool status = false;
+                string opsh = "";
+                if (job.operation != null)
+                {
+                    opsh = Scheduler.Instance.ScheduleJob(job.operation);
+                    Logger.Log("ProcessAction", "Processed new operatonal job " + job.operation.ID, Logger.LogLevel.INFO);
+                    status = true;
+                }
+                if (job.shadow != null && status)
+                {
+                    Scheduler.Instance.ScheduleJob(job.shadow, opsh);
+                    Logger.Log("ProcessAction", "Processed new shadow job " + job.shadow.ID, Logger.LogLevel.INFO);
+                }
+            }
         }
 
         private void ProcessBroadcast(BroadcastRequest request)

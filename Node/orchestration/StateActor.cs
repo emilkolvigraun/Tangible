@@ -13,29 +13,19 @@ namespace Node
             {
                 case Coordinator.State.LEADER:
                     ActAsLeader();
+                    Scheduler.Instance.NextJob();
                     Coordinator.Instance.ResetHeartbeat();
                     break;
                 case Coordinator.State.CANDIDATE:
                     ActAsCandidate();
                     break;
+                case Coordinator.State.SLEEPING:
+                    Scheduler.Instance.NextJob();
+                    Coordinator.Instance.ResetHeartbeat();
+                    break;
                 case Coordinator.State.FOLLOWER:
-                    ActAsFollower();
+                    Scheduler.Instance.NextJob();
                     break;
-                default:
-                    break;
-            }
-        }
-
-        private void ActAsFollower()
-        {
-            try 
-            {
-                
-                // EXECUTE AND MAINTAIN JOBS
-
-            } catch(Exception e)
-            {
-                Logger.Log("ActAsFollower", e.Message, Logger.LogLevel.ERROR);
             }
         }
 

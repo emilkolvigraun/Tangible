@@ -183,3 +183,4 @@ C:\Users\emilk\OneDrive\tangible\Node\Tangible\n1\obj\Debug\net5.0\Node.dll
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\n1\obj\Debug\net5.0\ref\Node.dll
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\n1\obj\Debug\net5.0\Node.pdb
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\n1\obj\Debug\net5.0\Node.genruntimeconfig.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\Node\bin\Debug\net5.0\Docker.DotNet.dll

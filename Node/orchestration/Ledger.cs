@@ -229,7 +229,8 @@ namespace Node
                 {
                     if(Cluster.ContainsKey(fact.node) && Cluster[fact.node].Jobs.Length != fact.nrjobs)
                     {
-                        syncRequest.Add((fact.node, Cluster[fact.node].Jobs.GetIds()));
+                        string[] noCompleteIds = Cluster[fact.node].Jobs.GetIdsIfNotComplete();
+                        if (noCompleteIds.Length > 0) syncRequest.Add((fact.node, noCompleteIds));
                     }
                 }
             }
@@ -239,7 +240,6 @@ namespace Node
             }
             return syncRequest.ToArray();
         }
-
         public (string node, Job[] jobs)[] RespondWithJobs((string node, string[] jobs)[] syncJobs)
         {
             List<(string node, Job[] jobs)> newJobs = new List<(string node, Job[] jobs)>();

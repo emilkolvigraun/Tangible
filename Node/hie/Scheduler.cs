@@ -1,38 +1,43 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace Node 
 {
     class Scheduler 
     {
-        private Dictionary<string, Job> RunningJobs {get;} = new Dictionary<string, Job>();
         private PriorityQueue JobsNotStarted {get;} = new PriorityQueue();
+        private Dictionary<string, Container> DeployedContainers {get;} = new Dictionary<string, Container>();
 
-        public Job[] _Jobs
+        public Job[] _Jobs 
         {
             get 
             {
                 List<Job> Jobs = new List<Job>();
-                lock (_not_started_lock) lock (_running_jobs_lock)
+                lock (_not_started_lock)  
                 {
                     Jobs.AddRange(JobsNotStarted.Queue);
-                    Jobs.AddRange(RunningJobs.Values);
+                }
+                lock(_containers_lock) 
+                {
+                    foreach (KeyValuePair<string, Container> c in DeployedContainers)
+                    {
+                        Jobs.AddRange(c.Value.Jobs.Values);
+                    }
                 }
                 return Jobs.ToArray();
             }
         }
-
         public int NumberOfJobs
         {
             get 
             {
-                lock (_not_started_lock) lock (_running_jobs_lock)
+                lock (_not_started_lock) lock (_containers_lock)
                 {
                     return _Jobs.Length;
                 }
             }
         }
-
         public void UpdateJobs(Job[] jobs)
         {
             lock(_not_started_lock)
@@ -44,9 +49,9 @@ namespace Node
                 }
             }
         }
-
-        public void ScheduleJob(Job job)
+        public string ScheduleJob(Job job, string ignore = "")
         {
+            if (ignore != "") Logger.Log("ScheduleJob", "Ignoring " + ignore, Logger.LogLevel.INFO);
             Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
             string node = null;
             if (cluster.Count > 1)
@@ -54,20 +59,20 @@ namespace Node
                 MetaNode n0 = cluster.ElementAt(0).Value;
                 foreach (MetaNode nN in cluster.Values)
                 {
-                    if (nN.Name != n0.Name && nN.Jobs.Length < n0.Jobs.Length 
+                    if (nN.Name != ignore && nN.Name != n0.Name && nN.Jobs.Length < n0.Jobs.Length 
                         && nN.Jobs.Length <= AdjustedNumberOfJobs)
                     {
                         node = nN.Name;
                     }
                 }
-                if (node == null && n0.Jobs.Length <= AdjustedNumberOfJobs)
+                if (node == null && ignore != n0.Name && n0.Jobs.Length <= AdjustedNumberOfJobs)
                 {
                     node = n0.Name;
                 } else if (node == null) node = Params.NODE_NAME;
             } else if (cluster.Count == 1)
             {
                 MetaNode n0 = cluster.ElementAt(0).Value;
-                if (n0.Jobs.Length <= AdjustedNumberOfJobs)
+                if (ignore != n0.Name && n0.Jobs.Length <= AdjustedNumberOfJobs)
                 {
                     node = n0.Name;
                 } else node = Params.NODE_NAME;
@@ -90,26 +95,63 @@ namespace Node
                 if(!status)
                 { 
                     Logger.Log("ScheduleJob", "Failed to schedule job.... Retrying", Logger.LogLevel.WARN);
-                    ScheduleJob(job);
+                    return ScheduleJob(job, ignore);
                 }
             }
-        }
 
+            return node;
+        }
         private int AdjustedNumberOfJobs
         {
             get 
             {
-                lock (_not_started_lock) lock (_running_jobs_lock)
+                lock (_not_started_lock) lock(_containers_lock)
                 {
                     return ((int)(_Jobs.Length+1)*2);
                 }
             }
         }
+        public void NextJob()
+        {
+            try 
+            {
+                Job nextJob = JobsNotStarted.DequeueJob();
+                if (nextJob != null) 
+                {
+                    // DockerAPI.Instance;
 
+                    lock(_containers_lock)
+                    {
+                        bool error = GetOrCreateContainer(nextJob.Image).Append(nextJob);
+                        if (error)
+                        {
+                            Logger.Log("NextJob", "There was a problem deploying the job...", Logger.LogLevel.ERROR);
+                        }
+                    }
+                }
+            } catch(Exception e)
+            {
+                Logger.Log("NextJob", "[0] " + e.Message, Logger.LogLevel.ERROR);
+            }
+        }
+
+        private Container GetOrCreateContainer(string image)
+        {
+            lock(_containers_lock)
+            {
+                if (!DeployedContainers.ContainsKey(image))
+                {
+                    DeployedContainers.Add(image, new Container(){
+                        Image = image
+                    });
+                }
+                return DeployedContainers[image];
+            }
+        }
         private static Scheduler _instance = null;
         private static readonly object _lock = new object();
+        private readonly object _containers_lock = new object();
         private readonly object _not_started_lock = new object();
-        private readonly object _running_jobs_lock = new object();
 
         public static Scheduler Instance 
         {

@@ -1,12 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "5M+YtL7vuDAEz2cGfkU53Tx2pukFaT6myPS7aO6TKgVgvGORahLGFsLGhSaGiJRPXU9OtaP0QfeIF6WWTLF+5w==",
+  "dgSpecHash": "LR43zyZ/eZ7kRpbo+bDCZk1xOAa8pAFm9CGAYkhCmUzQtAjovOPbMEuJdiymb7rekMUvGTVw75/02nv/msIVOQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\Node\\Node.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\emilk\\.nuget\\packages\\confluent.kafka\\1.6.2\\confluent.kafka.1.6.2.nupkg.sha512",
+    "C:\\Users\\emilk\\.nuget\\packages\\docker.dotnet\\3.125.4\\docker.dotnet.3.125.4.nupkg.sha512",
     "C:\\Users\\emilk\\.nuget\\packages\\librdkafka.redist\\1.6.1\\librdkafka.redist.1.6.1.nupkg.sha512",
     "C:\\Users\\emilk\\.nuget\\packages\\newtonsoft.json\\12.0.3\\newtonsoft.json.12.0.3.nupkg.sha512",
+    "C:\\Users\\emilk\\.nuget\\packages\\system.buffers\\4.5.1\\system.buffers.4.5.1.nupkg.sha512",
     "C:\\Users\\emilk\\.nuget\\packages\\system.memory\\4.5.0\\system.memory.4.5.0.nupkg.sha512"
   ],
   "logs": []

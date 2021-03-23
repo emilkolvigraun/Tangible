@@ -11,7 +11,7 @@ namespace Node
                 TypeOf = RequestType.SUBSCRIBE,
                 Priority = 2,
                 User = Utils.GetUniqueKey(size: 10),
-                Data = new Dictionary<string, string>(){{"benv","..."}},
+                Location = new GraphLocation(){ID = "MMMI", LocationOf = new GraphLocation(){ID = "FLOOR0"}},
                 ReturnTopic = "MyApplication"
             };
 

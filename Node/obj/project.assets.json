@@ -15,6 +15,19 @@
           "lib/netcoreapp2.1/Confluent.Kafka.dll": {}
         }
       },
+      "Docker.DotNet/3.125.4": {
+        "type": "package",
+        "dependencies": {
+          "Newtonsoft.Json": "12.0.3",
+          "System.Buffers": "4.5.1"
+        },
+        "compile": {
+          "lib/netstandard2.0/Docker.DotNet.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/Docker.DotNet.dll": {}
+        }
+      },
       "librdkafka.redist/1.6.1": {
         "type": "package",
         "build": {
@@ -104,6 +117,15 @@
           "lib/netstandard2.0/Newtonsoft.Json.dll": {}
         }
       },
+      "System.Buffers/4.5.1": {
+        "type": "package",
+        "compile": {
+          "ref/netcoreapp2.0/_._": {}
+        },
+        "runtime": {
+          "lib/netcoreapp2.0/_._": {}
+        }
+      },
       "System.Memory/4.5.0": {
         "type": "package",
         "compile": {
@@ -135,6 +157,21 @@
         "lib/netstandard1.3/Confluent.Kafka.xml",
         "lib/netstandard2.0/Confluent.Kafka.dll",
         "lib/netstandard2.0/Confluent.Kafka.xml"
+      ]
+    },
+    "Docker.DotNet/3.125.4": {
+      "sha512": "qStC9eSTewp/ySdN484fWhe9ZJZxuQtLRCMHnBH4GLbSS94A46n5OZp7nmRbe65iXjL4pIgfC7jiHhrEziCg9A==",
+      "type": "package",
+      "path": "docker.dotnet/3.125.4",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "docker.dotnet.3.125.4.nupkg.sha512",
+        "docker.dotnet.nuspec",
+        "icon.png",
+        "lib/netstandard2.0/Docker.DotNet.dll",
+        "lib/netstandard2.0/Docker.DotNet.pdb"
       ]
     },
     "librdkafka.redist/1.6.1": {
@@ -209,6 +246,37 @@
         "packageIcon.png"
       ]
     },
+    "System.Buffers/4.5.1": {
+      "sha512": "Rw7ijyl1qqRS0YQD/WycNst8hUUMgrMH4FCn1nNm27M4VxchZ1js3fVjQaANHO5f3sN4isvP4a+Met9Y4YomAg==",
+      "type": "package",
+      "path": "system.buffers/4.5.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net461/System.Buffers.dll",
+        "lib/net461/System.Buffers.xml",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.1/System.Buffers.dll",
+        "lib/netstandard1.1/System.Buffers.xml",
+        "lib/netstandard2.0/System.Buffers.dll",
+        "lib/netstandard2.0/System.Buffers.xml",
+        "lib/uap10.0.16299/_._",
+        "ref/net45/System.Buffers.dll",
+        "ref/net45/System.Buffers.xml",
+        "ref/netcoreapp2.0/_._",
+        "ref/netstandard1.1/System.Buffers.dll",
+        "ref/netstandard1.1/System.Buffers.xml",
+        "ref/netstandard2.0/System.Buffers.dll",
+        "ref/netstandard2.0/System.Buffers.xml",
+        "ref/uap10.0.16299/_._",
+        "system.buffers.4.5.1.nupkg.sha512",
+        "system.buffers.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
+      ]
+    },
     "System.Memory/4.5.0": {
       "sha512": "m0psCSpUxTGfvwyO0i03ajXVhgBqyXlibXz0Mo1dtKGjaHrXFLnuQ8rNBTmWRqbfRjr4eC6Wah4X5FfuFDu5og==",
       "type": "package",
@@ -252,6 +320,7 @@
   "projectFileDependencyGroups": {
     "net5.0": [
       "confluent.kafka >= 1.6.2",
+      "docker.dotnet >= 3.125.4",
       "newtonsoft.json >= 12.0.3"
     ]
   },
@@ -297,6 +366,10 @@
           "confluent.kafka": {
             "target": "Package",
             "version": "[1.6.2, )"
+          },
+          "docker.dotnet": {
+            "target": "Package",
+            "version": "[3.125.4, )"
           },
           "newtonsoft.json": {
             "target": "Package",

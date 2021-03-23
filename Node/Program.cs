@@ -31,9 +31,13 @@ namespace Node
             Environment.SetEnvironmentVariable("PORT_NUMBER", "5002");
             Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
             Environment.SetEnvironmentVariable("NODE_NAME", "node2");
+            // Environment.SetEnvironmentVariable("DOCKER_HOST_NAME", "tcp://192.168.1.237:4243");
+            Environment.SetEnvironmentVariable("DOCKER_HOST_NAME", "npipe://./pipe/docker_engine");
             
             // load environment variables
             Params.LoadConfig();
+
+            // SerializeDeserialize_test.Run();
 
             Utils.Wait();
 

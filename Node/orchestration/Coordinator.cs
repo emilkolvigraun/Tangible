@@ -27,7 +27,6 @@ namespace Node
 
         public void RunCoordinator()
         {
-            // Logger.Log(this.GetType().Name, "Coordinator is running.", Logger.LogLevel.INFO);
             if (Ledger.Instance.ClusterCopy.Count == 0) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
             Logger.Log("Main", "Successfully started Node", Logger.LogLevel.INFO);
             while (true)

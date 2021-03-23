@@ -8,6 +8,7 @@ namespace Node
         public string User {get; set;}
         public int Priority {get; set;}
         public string ReturnTopic {get; set;}
-        public Dictionary<string, string> Data {get; set;}
+        public GraphLocation Location {get; set;}
+        public string Value {get; set;} = null;
     }
 }

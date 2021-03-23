@@ -44,6 +44,10 @@
               "target": "Package",
               "version": "[1.6.2, )"
             },
+            "docker.dotnet": {
+              "target": "Package",
+              "version": "[3.125.4, )"
+            },
             "newtonsoft.json": {
               "target": "Package",
               "version": "[12.0.3, )"

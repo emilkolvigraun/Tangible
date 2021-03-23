@@ -307,6 +307,15 @@ namespace Node
             }
             return _ids.ToArray();
         }
+        public static string[] GetIdsIfNotComplete(this Job[] jobs)
+        {
+            List<string> _ids = new List<string>();
+            foreach (Job j0 in jobs)
+            {
+                if (j0.StatusOf != Job.Status.CP) _ids.Add(j0.ID);
+            }
+            return _ids.ToArray();
+        }
 
         public static string[] GetIds(this Dictionary<string, MetaNode> nodes)
         {

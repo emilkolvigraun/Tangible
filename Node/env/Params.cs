@@ -31,6 +31,10 @@ namespace Node
         public static string NODE_NAME;
         public static double USAGE;
 
+        // docker variables
+        public static string DOCKER_HOST_NAME;
+
+
         public static void LoadConfig()
         {
             WAIT_TIME_MS        = GetIntVar("WAIT_TIME_MS", 0);
@@ -44,6 +48,7 @@ namespace Node
             HEARTBEAT_MS        = Utils.GetRandomInt(300, 500);
             UNIQUE_KEY          = Utils.GetUniqueKey(size: 10);
             NODE_NAME           = GetStrVar("NODE_NAME", Utils.GetUniqueKey(size:10));
+            DOCKER_HOST_NAME    = GetStrVar("DOCKER_HOST_NAME");
 
             string CERT_NAME    = NODE_NAME+".pfx";
             X509CERT_BYTES = GenerateCertificate(NODE_NAME);
