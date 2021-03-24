@@ -12,6 +12,7 @@ namespace Node
         public (string Node, int nrJobs)[] FactSheet {get; set;} = null;
         public (string Node, string[] jobs)[] Sync {get; set;} = null;
         public string[] Remove {get; set;} = null;
+        public (string Node, string ID)[] Parts {get; set;} = null;
 
         // Jobs that are disitrubted
         // and returned completed

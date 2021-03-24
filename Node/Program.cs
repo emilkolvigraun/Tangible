@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Node
 {
@@ -31,13 +32,19 @@ namespace Node
             Environment.SetEnvironmentVariable("PORT_NUMBER", "5002");
             Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
             Environment.SetEnvironmentVariable("NODE_NAME", "node2");
+            Environment.SetEnvironmentVariable("DRIVER_RANGE", "6000->6100");
             // Environment.SetEnvironmentVariable("DOCKER_HOST_NAME", "tcp://192.168.1.237:4243");
-            Environment.SetEnvironmentVariable("DOCKER_HOST_NAME", "npipe://./pipe/docker_engine");
+            Environment.SetEnvironmentVariable("DOCKER_ADVERTISED_HOST_NAME", "npipe://./pipe/docker_engine");
             
             // load environment variables
             Params.LoadConfig();
 
+            Task.Run(async () => {
+                await DockerAPI.Instance.RemoveStoppedContainers();
+            }).Wait();
+
             // SerializeDeserialize_test.Run();
+            // DriverTransmit_test.Run();
 
             Utils.Wait();
 

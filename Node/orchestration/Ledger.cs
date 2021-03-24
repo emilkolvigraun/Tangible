@@ -15,6 +15,8 @@ namespace Node
         // If THIS is the Leader: This is the status of all other nodes that THIS node knows about
         private Dictionary<string, int> NodesStatus {get;} = new Dictionary<string, int>();
 
+        private Dictionary<string, List<(string Node, string ID)>> CounterPartUpdate {get;} = new Dictionary<string, List<(string Node, string ID)>>();
+
         private Dictionary<string, (string, string[])[]> SyncRequests {get;} = new Dictionary<string, (string, string[])[]>();
 
         // Cluster stuff
@@ -240,6 +242,47 @@ namespace Node
             }
             return syncRequest.ToArray();
         }
+
+        public void AddCounterPartUpdate(string n1, string jobId)
+        {
+            lock(_cluster_lock) lock(_counter_part_lock)
+            {
+                foreach(string k in Cluster.Keys)
+                {
+                    if (CounterPartUpdate.ContainsKey(k))
+                    {
+                        CounterPartUpdate[k].Add((n1, jobId));
+                    } else 
+                    {
+                        CounterPartUpdate.Add(k, new List<(string Node, string ID)>{(n1, jobId)});
+                    }
+                }
+            }
+        }
+
+        public (string Node, string ID)[] GetCounterParts(string node)
+        {
+            lock (_counter_part_lock)
+            {
+                if(CounterPartUpdate.ContainsKey(node))
+                {
+                    return CounterPartUpdate[node].ToArray();
+                }
+                return new (string Node, string ID)[]{};
+            }
+        }
+
+        public void ClearCounterpartUpdate(string node)
+        {
+            lock (_counter_part_lock)
+            {
+                if(CounterPartUpdate.ContainsKey(node))
+                {
+                    CounterPartUpdate[node].Clear();
+                }
+            }
+        }
+
         public (string node, Job[] jobs)[] RespondWithJobs((string node, string[] jobs)[] syncJobs)
         {
             List<(string node, Job[] jobs)> newJobs = new List<(string node, Job[] jobs)>();
@@ -261,6 +304,20 @@ namespace Node
                 }
             }
             return newJobs.ToArray();
+        }
+
+        public void UpdateCounterPart(string node, string newNode, string jobId)
+        {
+            lock(_cluster_lock)
+            {
+                if (Cluster.ContainsKey(node))
+                {
+                    foreach(Job j0 in Cluster[node].Jobs)
+                    {
+                        if(j0.ID == jobId) j0.CounterPart = (newNode, j0.CounterPart.JobId); 
+                    }
+                }
+            }
         }
 
         // When the leader receives a response, it stores the current state of the node
@@ -552,6 +609,7 @@ namespace Node
                 return false;
             }
         }
+        private static readonly object _counter_part_lock = new object();
         private static readonly object _sync_lock = new object();
         private static readonly object _cluster_entry_lock = new object();
         private static readonly object _cluster_state_lock = new object();

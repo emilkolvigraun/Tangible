@@ -134,6 +134,10 @@ namespace Node
                         return JsonConvert.DeserializeObject<BroadcastRequest>(request);
                     case RequestType.ST:
                         return JsonConvert.DeserializeObject<StatusResponse>(request);
+                    case RequestType.HI:
+                        return JsonConvert.DeserializeObject<Execute>(request);
+                    case RequestType.RN:
+                        return JsonConvert.DeserializeObject<RunAsRequest>(request);
                     // Action requests
                     case RequestType.READ: 
                         goto case RequestType.CREATE_USER;
@@ -428,6 +432,13 @@ namespace Node
                 if (j1.ID == j0) return j1;
             }
             return null;
+        }
+
+        public static ActionType GetActionType(this RequestType tp)
+        {
+            if (tp == RequestType.SUBSCRIBE) return ActionType.SUBSCRIBE;
+            if (tp == RequestType.READ) return ActionType.READ;
+            return ActionType.WRITE;
         }
     }
 }

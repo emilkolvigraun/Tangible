@@ -28,9 +28,11 @@ namespace Node
                 if (request.TypeOf == RequestType.SUBSCRIBE)
                 {
                     shadow = Job.CreateJob(request, image);
+                    shadow.TypeOf = Job.Type.SD;
                 }
 
                 Job operational = Job.CreateJob(request, image);
+                operational.TypeOf = Job.Type.OP;
 
                 _jobs.Add((operational, shadow));
             }
@@ -55,7 +57,7 @@ namespace Node
             // TODO: NOT YET IMPLEMENTED
 
             // Foreach sensor and image, fill in the dictionary
-            string testImage = "test-image-docker";
+            string testImage = "emilkolvigraun/tangible-driver";
             ImageTable.Add(testImage, new List<string>());
             ImageTable[testImage].Add("test-sensor-1");
 

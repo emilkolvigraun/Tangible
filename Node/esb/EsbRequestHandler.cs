@@ -30,24 +30,38 @@ namespace Node
             }
         }
 
+        private void DeployJob((Job operation, Job shadow) job, string shadow_ignore_node = "", string operation_ignore_node = "")
+        {
+            if (job.shadow != null && shadow_ignore_node == "")
+            {
+                shadow_ignore_node = Scheduler.Instance.GetScheduledNode(job.shadow);
+            }
+
+            if (operation_ignore_node=="") operation_ignore_node = Scheduler.Instance.GetScheduledNode(job.operation, shadow_ignore_node);
+            
+            job.operation.CounterPart = (shadow_ignore_node, job.shadow.ID);
+            job.shadow.CounterPart = (operation_ignore_node, job.operation.ID);
+
+            bool shadow_status = Scheduler.Instance.ScheduleFinishedJob(shadow_ignore_node, job.shadow);
+            bool operation_status = Scheduler.Instance.ScheduleFinishedJob(operation_ignore_node, job.operation);
+
+            if (!shadow_status) DeployJob(job, operation_ignore_node:operation_ignore_node);
+            else Logger.Log("ProcessAction", "Processed new shadow job " + job.shadow.ID + ", with counterpart: " + job.shadow.CounterPart.JobId + " on " + job.shadow.CounterPart.Node, Logger.LogLevel.INFO);
+            if (!operation_status) DeployJob(job, shadow_ignore_node:shadow_ignore_node);
+            else Logger.Log("ProcessAction", "Processed new operatonal job " + job.operation.ID + ", with counterpart: " + job.operation.CounterPart.JobId + " on " + job.operation.CounterPart.Node, Logger.LogLevel.INFO);
+        }
+
         private void ProcessAction(ActionRequest request)
         {
             List<(Job operation, Job shadow)> jobs = HardwareAbstraction.Instance.CreateJobs(request);
-            
             foreach ((Job operation, Job shadow) job in jobs)
             {
-                bool status = false;
-                string opsh = "";
-                if (job.operation != null)
+                if (job.operation.TypeOfRequest == RequestType.SUBSCRIBE)
                 {
-                    opsh = Scheduler.Instance.ScheduleJob(job.operation);
-                    Logger.Log("ProcessAction", "Processed new operatonal job " + job.operation.ID, Logger.LogLevel.INFO);
-                    status = true;
-                }
-                if (job.shadow != null && status)
+                    DeployJob(job);
+                } else 
                 {
-                    Scheduler.Instance.ScheduleJob(job.shadow, opsh);
-                    Logger.Log("ProcessAction", "Processed new shadow job " + job.shadow.ID, Logger.LogLevel.INFO);
+                    Scheduler.Instance.ScheduleJob(job.operation);
                 }
             }
         }

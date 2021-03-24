@@ -7,8 +7,7 @@ namespace Node
     class Scheduler 
     {
         private PriorityQueue JobsNotStarted {get;} = new PriorityQueue();
-        private Dictionary<string, Container> DeployedContainers {get;} = new Dictionary<string, Container>();
-
+        private Dictionary<string, Driver> DeployedDrivers {get;} = new Dictionary<string, Driver>();
         public Job[] _Jobs 
         {
             get 
@@ -20,7 +19,7 @@ namespace Node
                 }
                 lock(_containers_lock) 
                 {
-                    foreach (KeyValuePair<string, Container> c in DeployedContainers)
+                    foreach (KeyValuePair<string, Driver> c in DeployedDrivers)
                     {
                         Jobs.AddRange(c.Value.Jobs.Values);
                     }
@@ -49,7 +48,29 @@ namespace Node
                 }
             }
         }
-        public string ScheduleJob(Job job, string ignore = "")
+        
+
+        public void UpdateCounterPart(string jobId, string newNode)
+        {
+            bool status = false;
+            lock(_not_started_lock)
+            {
+                status = JobsNotStarted.UpdateCounterPart(jobId, newNode);
+            }
+
+            lock(_containers_lock)
+            {
+                if (!status)
+                {
+                    foreach(Driver d in DeployedDrivers.Values)
+                    {
+                        d.UpdateCounterPart(jobId, newNode);
+                    }
+                }
+            }
+        }
+
+        public string GetScheduledNode(Job job, string ignore = "")
         {
             if (ignore != "") Logger.Log("ScheduleJob", "Ignoring " + ignore, Logger.LogLevel.INFO);
             Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
@@ -78,6 +99,12 @@ namespace Node
                 } else node = Params.NODE_NAME;
             } else node = Params.NODE_NAME;
 
+            return node;
+        }
+        
+        public string ScheduleJob(Job job, string ignore = "")
+        {
+            string node = GetScheduledNode(job, ignore);
             if (node == Params.NODE_NAME)
             {
                 lock(_not_started_lock)
@@ -99,8 +126,29 @@ namespace Node
                 }
             }
 
+            Logger.Log("ScheduleJob", "Scheduled job " + job.ID + " as " + job.TypeOf.ToString(), Logger.LogLevel.WARN);
             return node;
         }
+
+        public bool ScheduleFinishedJob(string node, Job job)
+        {
+            bool status = false;
+            if (node == Params.NODE_NAME)
+            {
+                lock(_not_started_lock)
+                {
+                    // add the job to thyself
+                    JobsNotStarted.EnqueueJob(job);
+                    status = true;
+                }
+            } else 
+            {
+                // else, add the job to the follower node
+                status = Ledger.Instance.AddJob(node, job);
+            }
+            return status;
+        }
+        
         private int AdjustedNumberOfJobs
         {
             get 
@@ -115,14 +163,33 @@ namespace Node
         {
             try 
             {
+                lock (_containers_lock)
+                {
+                    foreach(Driver d in DeployedDrivers.Values)
+                    {
+                        if (!d.IsStarted & !d.IsRunning)
+                        {
+                            d.StartDriver();
+                        }     
+                        
+                        if (!d.IsVerifyingState)
+                        {
+                            d.VerifyState();
+                        }
+
+                        if (d.IsRunning && !d.IsStarted && !d.IsTransmitting)
+                        {
+                            d.TransmitNewJobs();
+                        }
+                    }
+                }
+
                 Job nextJob = JobsNotStarted.DequeueJob();
                 if (nextJob != null) 
                 {
-                    // DockerAPI.Instance;
-
                     lock(_containers_lock)
                     {
-                        bool error = GetOrCreateContainer(nextJob.Image).Append(nextJob);
+                        bool error = GetOrCreateContainer(nextJob.Image).AppendJob(nextJob);
                         if (error)
                         {
                             Logger.Log("NextJob", "There was a problem deploying the job...", Logger.LogLevel.ERROR);
@@ -134,25 +201,28 @@ namespace Node
                 Logger.Log("NextJob", "[0] " + e.Message, Logger.LogLevel.ERROR);
             }
         }
-
-        private Container GetOrCreateContainer(string image)
+        private Driver GetOrCreateContainer(string image)
         {
             lock(_containers_lock)
             {
-                if (!DeployedContainers.ContainsKey(image))
+                if (!DeployedDrivers.ContainsKey(image))
                 {
-                    DeployedContainers.Add(image, new Container(){
-                        Image = image
+                    string machineName = Utils.GetUniqueKey(size:10);
+                    int port = Params.UNUSED_PORT;
+                    DeployedDrivers.Add(image, new Driver(){
+                        Host = Params.HIE_ADVERTISED_HOST_NAME,
+                        MachineName = machineName,
+                        Image = image,
+                        Port = port
                     });
                 }
-                return DeployedContainers[image];
+                return DeployedDrivers[image];
             }
         }
         private static Scheduler _instance = null;
         private static readonly object _lock = new object();
         private readonly object _containers_lock = new object();
         private readonly object _not_started_lock = new object();
-
         public static Scheduler Instance 
         {
             get 

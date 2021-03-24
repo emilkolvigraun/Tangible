@@ -33,6 +33,9 @@ namespace Node
         // Indicates whether this is a job to act as primary or secondary
         public Type TypeOf {get; set;}
 
+        // only valid for subscriptions
+        public  (string Node, string JobId) CounterPart {get; set;} = (null, null);
+
         // Whether the job is to subscribe, read or write
         public RequestType TypeOfRequest {get; set;}
 
@@ -52,7 +55,8 @@ namespace Node
                 StatusOf = Job.Status.NS,
                 TypeOf = Job.Type.SD,
                 TypeOfRequest = request.TypeOf,
-                Value = request.Value
+                Value = request.Value,
+                Topic = request.ReturnTopic
             };
             return job;
         }

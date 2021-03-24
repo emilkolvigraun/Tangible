@@ -9,6 +9,23 @@ namespace Node
         private readonly object _lock = new object();
         private List<Job> _Queue = new List<Job>();
 
+        public bool UpdateCounterPart(string jobId, string newNode)
+        {
+            lock(_lock)
+            {
+                Console.WriteLine(_Queue.Count);
+                foreach(Job j1 in _Queue)
+                {
+                    if (j1.ID == jobId)
+                    {
+                        j1.CounterPart = (newNode, j1.CounterPart.JobId);
+                        return true;
+                    } 
+                }
+                return false;
+            }
+        }
+
         public List<Job> Queue 
         {
             get 

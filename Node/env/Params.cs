@@ -2,6 +2,9 @@ using System;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+
 
 namespace Node
 {
@@ -31,13 +34,40 @@ namespace Node
         public static string NODE_NAME;
         public static double USAGE;
 
+        public static int DRIVER_RANGE_START;
+        public static int DRIVER_RANGE_END;
+
+
         // docker variables
-        public static string DOCKER_HOST_NAME;
+        public static string DOCKER_ADVERTISED_HOST_NAME;
+        public static string HIE_ADVERTISED_HOST_NAME;
+
+        public static string DOCKER_USER;
+        public static string DOCKER_PASSWORD;
+        public static string DOCKER_EMAIL;
 
 
         public static void LoadConfig()
         {
-            WAIT_TIME_MS        = GetIntVar("WAIT_TIME_MS", 0);
+
+            string dr = Environment.GetEnvironmentVariable("DRIVER_RANGE");
+            if (dr == null)
+            {
+                DRIVER_RANGE_START = 6000;
+                DRIVER_RANGE_END = 7000;
+            } else {
+                string[] rng = dr.Split("->");
+                DRIVER_RANGE_START = int.Parse(rng[0]);
+                DRIVER_RANGE_END = int.Parse(rng[1]);
+            }
+
+            // Using ports between DRIVER_RANGE_START and DRIVER_RANGE_END
+            for(int i = DRIVER_RANGE_START; i < DRIVER_RANGE_END; i++)
+            {
+                UnusedPorts.Add(i);
+            }
+
+            WAIT_TIME_MS        = GetIntVar("WAIT_TIME_MS", 0, 0);
             KAFKA_BROKERS       = GetStrVar("KAFKA_BROKERS");
             CLUSTER_ID          = GetStrVar("CLUSTER_ID");
             BROADCAST_TOPIC     = GetStrVar("BROADCAST_TOPIC");
@@ -48,7 +78,11 @@ namespace Node
             HEARTBEAT_MS        = Utils.GetRandomInt(300, 500);
             UNIQUE_KEY          = Utils.GetUniqueKey(size: 10);
             NODE_NAME           = GetStrVar("NODE_NAME", Utils.GetUniqueKey(size:10));
-            DOCKER_HOST_NAME    = GetStrVar("DOCKER_HOST_NAME");
+            DOCKER_ADVERTISED_HOST_NAME    = GetStrVar("DOCKER_ADVERTISED_HOST_NAME");
+            HIE_ADVERTISED_HOST_NAME       = GetStrVar("HIE_ADVERTISED_HOST_NAME", Params.ADVERTISED_HOST_NAME);
+            DOCKER_EMAIL        = GetStrVar("DOCKER_EMAIL", null);
+            DOCKER_USER         = GetStrVar("DOCKER_USER", null);
+            DOCKER_PASSWORD     = GetStrVar("DOCKER_PASSWORD", null);
 
             string CERT_NAME    = NODE_NAME+".pfx";
             X509CERT_BYTES = GenerateCertificate(NODE_NAME);
@@ -65,7 +99,7 @@ namespace Node
             string v = Environment.GetEnvironmentVariable(var);
             if (v == null) 
             {
-                if (string.IsNullOrEmpty(alterntive)) throw new ArgumentException(var +" is undefined.");
+                if (alterntive == "") throw new ArgumentException(var +" is undefined.");
                 else return alterntive;
             }
             
@@ -113,6 +147,25 @@ namespace Node
             catch (Exception) 
             {
                 return false;
+            }
+        }
+
+        private static readonly object _port_lock = new object();
+        private static List<int> UnusedPorts = new List<int>();
+        public static int UNUSED_PORT 
+        {
+            get 
+            {
+                if (UnusedPorts.Count == 0)
+                {
+                    Logger.Log("UNUSED_PORT", "No more unused ports!", Logger.LogLevel.FATAL);
+                    return -1;
+                }
+                int length = UnusedPorts.Count;
+                int port = UnusedPorts.ElementAt(0);
+                UnusedPorts.RemoveAt(0);
+                if (length == UnusedPorts.Count) Logger.Log("UNUSED_PORT", "Did not find an unused port", Logger.LogLevel.FATAL);
+                return port;
             }
         }
     }

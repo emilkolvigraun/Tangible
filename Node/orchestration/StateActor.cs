@@ -85,6 +85,41 @@ namespace Node
             Logger.Log("ActAsCandidate", "Acted as candidate", Logger.LogLevel.INFO);
         }
 
+        private string Reschedule(Job job, MetaNode n0)
+        {
+            string newNode = null;
+            if (job.TypeOf == Job.Type.SD)
+            {
+                newNode = Scheduler.Instance.GetScheduledNode(job, n0.Name);
+                // newNode = Scheduler.Instance.ScheduleJob(job, n0.Name);
+            
+            } else if (job.TypeOf == Job.Type.OP)
+            {
+                // I first reschedule the job a shadow
+                job.TypeOf = Job.Type.SD;
+                newNode = Scheduler.Instance.GetScheduledNode(job, n0.Name);
+                // newNode = Scheduler.Instance.ScheduleJob(job, n0.Name);
+            }
+
+            if (newNode != null)
+            {
+                if (job.CounterPart.Node == Params.NODE_NAME)
+                {
+                    // I find the counterpart, and tell it to run as a operative
+                    Scheduler.Instance.UpdateCounterPart(job.CounterPart.JobId, newNode);
+
+                } else 
+                {
+                    Ledger.Instance.UpdateCounterPart(job.CounterPart.Node, newNode, job.CounterPart.JobId);
+                }
+            }
+
+            bool status = Scheduler.Instance.ScheduleFinishedJob(newNode, job);
+
+            if (status) return newNode;
+            return Reschedule(job, n0);
+        }
+
         private void ActAsLeader()
         {
             try 
@@ -101,7 +136,16 @@ namespace Node
                         {
                             foreach(Job job in n0.Jobs)
                             {
-                                Scheduler.Instance.ScheduleJob(job);
+                                if (job.CounterPart.Node != null && job.CounterPart.JobId != null)
+                                {
+                                    // Job failed at node3 id:ahyFb0QzAT, type: OP, counterpart: YqTD1orcjG, at: node2
+                                    string newNode = Reschedule(job, n0);
+                                    // now I schedule to inform all other nodes that a counterpart must be updated
+                                    Ledger.Instance.AddCounterPartUpdate(newNode, job.ID);
+                                } else 
+                                {
+                                    Scheduler.Instance.ScheduleJob(job);
+                                }
                             }
                         }
                     }
@@ -138,6 +182,7 @@ namespace Node
                             Ledger = info._Ledger,
                             FactSheet = info.Facts,
                             Sync = _Sync,
+                            Parts = Ledger.Instance.GetCounterParts(n0.Key),
 
                             // Get the nodes that are flagged for deletion
                             Remove = info.Remove,
@@ -153,6 +198,7 @@ namespace Node
                             try 
                             {
                                 Ledger.Instance.ResetStatus(n0.Key);
+                                Ledger.Instance.ClearCounterpartUpdate(n0.Key);
                             } catch(Exception e)
                             {
                                 Logger.Log("Leader:Reset", "[3]" + e.Message, Logger.LogLevel.ERROR);

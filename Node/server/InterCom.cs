@@ -51,6 +51,22 @@ namespace Node
                 {
                     _syncResponse = Ledger.Instance.RespondWithJobs(request.Sync);
                 }
+
+                if (request.Parts.Length > 0)
+                {
+                    foreach ((string Node, string ID) d in request.Parts)
+                    {
+                        if (d.Node == Params.NODE_NAME)
+                        {
+                            // I find the counterpart, and tell it to run as a operative
+                            Scheduler.Instance.UpdateCounterPart(d.ID, d.Node);
+
+                        } else 
+                        {
+                            Ledger.Instance.UpdateCounterPart("" , d.Node, d.ID);
+                        }
+                    }
+                }
                 
                 // Coordinator.Instance.ResetHeartbeat();
             } catch (Exception e)
