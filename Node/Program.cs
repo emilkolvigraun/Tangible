@@ -29,9 +29,9 @@ namespace Node
             Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
             Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
             Environment.SetEnvironmentVariable("ADVERTISED_HOST_NAME", "192.168.1.237");
-            Environment.SetEnvironmentVariable("PORT_NUMBER", "5002");
+            Environment.SetEnvironmentVariable("PORT_NUMBER", "5001");
             Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
-            Environment.SetEnvironmentVariable("NODE_NAME", "node2");
+            Environment.SetEnvironmentVariable("NODE_NAME", "node1");
             Environment.SetEnvironmentVariable("DRIVER_RANGE", "6000->6100");
             // Environment.SetEnvironmentVariable("DOCKER_HOST_NAME", "tcp://192.168.1.237:4243");
             Environment.SetEnvironmentVariable("DOCKER_ADVERTISED_HOST_NAME", "npipe://./pipe/docker_engine");

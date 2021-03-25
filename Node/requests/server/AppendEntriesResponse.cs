@@ -12,10 +12,16 @@ namespace Node
 
         // returns the IDs of each job
         public string[] JobIds {get; set;} 
+        public string[] PartIds {get; set;}
+
         public (string node, string[] jobs)[] SyncRequest {get; set;}
         public (string node, Job[] jobs)[] SyncResponse {get; set;}
 
+
+
         // Returns the ID of each node and the id of the associated jobs
         public (string node, string[] jobIds)[] Ledger {get; set;}
+
+        public string[] CompletedJobs {get; set;}
     }
 }

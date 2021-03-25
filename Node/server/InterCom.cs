@@ -39,9 +39,9 @@ namespace Node
                 {
                     Scheduler.Instance.UpdateJobs(request.Jobs);
                 } 
-                if(request.Nodes.Length > 0 || request.Remove.Length > 0 || request.Ledger.Length > 0)
+                if(request.Nodes.Length > 0 || request.Remove.Length > 0 || request.Ledger.Length > 0 || request.Parts.Count > 0)
                 {
-                    Ledger.Instance.UpdateNodes(request.Ledger, request.Nodes, request.Remove);
+                    Ledger.Instance.UpdateNodes(request.Ledger, request.Nodes, request.Remove, request.Parts);
                 }
                 if (request.Ledger.Length == 0) 
                 {
@@ -51,19 +51,24 @@ namespace Node
                 {
                     _syncResponse = Ledger.Instance.RespondWithJobs(request.Sync);
                 }
-
-                if (request.Parts.Length > 0)
+                if (request.ScheduledCounter.Length > 0)
                 {
-                    foreach ((string Node, string ID) d in request.Parts)
+                    Ledger.Instance.SetScheduledCounterJobs(request.ScheduledCounter);
+                }
+                if (request.Parts.Count > 0)
+                {
+                    foreach (KeyValuePair<string,string> part in request.Parts)
                     {
-                        if (d.Node == Params.NODE_NAME)
+                        Ledger.Instance.AddToAllParts(part.Key, part.Value);
+                    }
+                }
+                if(request.RunAs.Length > 0)
+                {
+                    foreach (string id in request.RunAs)
+                    {
+                        if (Ledger.Instance.MyContainsPart(id))
                         {
-                            // I find the counterpart, and tell it to run as a operative
-                            Scheduler.Instance.UpdateCounterPart(d.ID, d.Node);
-
-                        } else 
-                        {
-                            Ledger.Instance.UpdateCounterPart("" , d.Node, d.ID);
+                            Scheduler.Instance.TransmitRunAs(id);
                         }
                     }
                 }
@@ -78,6 +83,7 @@ namespace Node
                 // NodeIds = Ledger.Instance.Cluster.GetIds(),
                 JobIds = Scheduler.Instance._Jobs.GetIds(),
                 Ledger = Ledger.Instance.Cluster.GetLedger(),
+                PartIds = Ledger.Instance.AllParts.Keys.ToArray(),
                 SyncRequest = _syncRequest,
                 SyncResponse = _syncResponse
                 }.EncodeRequest();

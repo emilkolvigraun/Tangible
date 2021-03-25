@@ -137,27 +137,30 @@ namespace Node
             });
         }
 
-        public void UpdateCounterPart(string jobId, string newNode)
+        public bool SetRunAs(string sd)
         {
             lock(_lock)
             {
-                if (Deployed.ContainsKey(jobId))
+                if (Deployed.ContainsKey(sd))
                 {
-                    Deployed[jobId].CounterPart = (newNode, Deployed[jobId].CounterPart.JobId);
-                    if (Deployed[jobId].TypeOf == Job.Type.SD)
+                    if (Deployed[sd].TypeOf == Job.Type.OP)
                     {
-                        lock(_change_lock)
-                        {
-                            Deployed[jobId].TypeOf = Job.Type.OP;
-                            string _id = Utils.GetUniqueKey(size:10);
-                            ChangeStateNotSend.Add(new RunAsRequest(){
-                                JobID = jobId,
-                                ID = _id
-                            });
-                        }
+                        Deployed[sd].TypeOf = Job.Type.SD;
+                    } else 
+                    {
+                        Deployed[sd].TypeOf = Job.Type.OP;
+                    }
+                    lock(_change_lock)
+                    {
+                        string _id = Utils.GetUniqueKey(size:10);
+                        ChangeStateNotSend.Add(new RunAsRequest(){
+                            JobID = sd,
+                            ID = _id
+                        });
+                        return true;
                     }
                 }
-        
+                return false;
             }
         }
 
@@ -178,8 +181,8 @@ namespace Node
         {
             lock (_transmit_lock)
             {
-                lock(_not_send_lock) if (_transmitting || JobsNotSend.Count == 0) return;
-                
+                lock(_not_send_lock) if (_transmitting) return;
+                // Console.WriteLine("CALLED CALLED CALLED: JOBS NOT SEND:" + JobsNotSend.Count);
                 _transmitting = true;
                 Task.Run(()=>{
                     lock (this._not_send_lock)
@@ -196,7 +199,7 @@ namespace Node
                                     {
                                         break;
                                     }   
-                                    Logger.Log("TransmitNewJobs", "Transmitted job: " + j0.ID, Logger.LogLevel.IMPOR);
+                                    Logger.Log("TransmitNewJobs", "Transmitted [Execute]: " + j0.ID, Logger.LogLevel.IMPOR);
                                     lock(_lock)
                                     {
                                         if (Deployed.ContainsKey(j0.ID) && Deployed[j0.ID].StatusOf == Job.Status.NS)
@@ -231,7 +234,7 @@ namespace Node
                                     {
                                         break;
                                     }   
-                                    Logger.Log("TransmitChange", "Transmitted change: " + r0.ID + ", " + r0.JobID + "->" + r0.TypeOf, Logger.LogLevel.IMPOR);
+                                    Logger.Log("TransmitChange", "Transmitted [RunAsRequest]: " + r0.ID + ", " + r0.JobID + "->" + r0.TypeOf, Logger.LogLevel.IMPOR);
                                     lock(_lock)
                                     {
                                         if (Deployed.ContainsKey(r0.ID) && Deployed[r0.ID].StatusOf == Job.Status.NS)
@@ -260,14 +263,22 @@ namespace Node
         public void StartDriver()
         {
             lock(_started_lock) started = true;
-            Task.Run(()=>{
-                this.ID = DockerAPI.Instance.Containerize(this.Image, this.Host, this.Port, this.MachineName).GetAwaiter().GetResult();
-                if (this.ID == null) Logger.Log(this.ID, "Unable to deploy container", Logger.LogLevel.ERROR);
-                else 
+            Task.Run(async ()=>{
+                this.ID = await DockerAPI.Instance.Containerize(this.Image, this.Host, this.Port, this.MachineName);
+                if (this.ID == null) 
                 {
-                    lock(this._running_lock) this.running = true;
+                    string[] ids = await DockerAPI.Instance.GetContainerIDs(Params.NODE_NAME+"_"+Image.Replace("/","_"));
+                    if (ids.Length > 0)
+                    {
+                        this.ID = ids[0];
+                    } 
+                } 
+
+                if(this.ID == null) Logger.Log(this.ID, "Unable to deploy container", Logger.LogLevel.ERROR);
+                else {
                     lock(this._started_lock) this.started = false;
                     lock(this._state_lock) this.verifying_state = false;
+                    lock(this._running_lock) this.running = true;
                     Logger.Log("StartDriver", "Started driver with [image:"+Image+", host:" + Host + ":" + Port.ToString() + ", id:" + this.ID + "]", Logger.LogLevel.INFO);
                 }
             });

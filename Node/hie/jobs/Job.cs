@@ -34,7 +34,7 @@ namespace Node
         public Type TypeOf {get; set;}
 
         // only valid for subscriptions
-        public  (string Node, string JobId) CounterPart {get; set;} = (null, null);
+        public  string CounterPart {get; set;} = null;
 
         // Whether the job is to subscribe, read or write
         public RequestType TypeOfRequest {get; set;}

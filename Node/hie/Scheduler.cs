@@ -48,31 +48,26 @@ namespace Node
                 }
             }
         }
-        
 
-        public void UpdateCounterPart(string jobId, string newNode)
+        public void TransmitRunAs(string sd)
         {
-            bool status = false;
             lock(_not_started_lock)
             {
-                status = JobsNotStarted.UpdateCounterPart(jobId, newNode);
+                JobsNotStarted.SetRunAs(sd);
             }
 
             lock(_containers_lock)
             {
-                if (!status)
+                foreach(Driver d in DeployedDrivers.Values)
                 {
-                    foreach(Driver d in DeployedDrivers.Values)
-                    {
-                        d.UpdateCounterPart(jobId, newNode);
-                    }
+                    if(d.SetRunAs(sd)) break;
                 }
             }
         }
-
+        
         public string GetScheduledNode(Job job, string ignore = "")
         {
-            if (ignore != "") Logger.Log("ScheduleJob", "Ignoring " + ignore, Logger.LogLevel.INFO);
+            // if (ignore != "") Logger.Log("ScheduleJob", "Ignoring " + ignore, Logger.LogLevel.INFO);
             Dictionary<string, MetaNode> cluster = Ledger.Instance.ClusterCopy;
             string node = null;
             if (cluster.Count > 1)
@@ -123,10 +118,11 @@ namespace Node
                 { 
                     Logger.Log("ScheduleJob", "Failed to schedule job.... Retrying", Logger.LogLevel.WARN);
                     return ScheduleJob(job, ignore);
+                } else {
+                    Logger.Log("ScheduleJob", "Scheduled job " + job.ID + " as " + job.TypeOf.ToString(), Logger.LogLevel.INFO);
                 }
             }
 
-            Logger.Log("ScheduleJob", "Scheduled job " + job.ID + " as " + job.TypeOf.ToString(), Logger.LogLevel.WARN);
             return node;
         }
 

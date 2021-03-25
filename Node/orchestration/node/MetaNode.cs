@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 
 namespace Node 
 {
@@ -16,5 +17,7 @@ namespace Node
 
         // The other nodes which THIS node knows about
         public BasicNode[] Nodes {get; set;} = Ledger.Instance.Cluster.AsNodeArray().AsBasicNodes().ToArray(); 
+
+        public Dictionary<string, string> Parts {get; set;} = Ledger.Instance.AllParts;
     }
 }

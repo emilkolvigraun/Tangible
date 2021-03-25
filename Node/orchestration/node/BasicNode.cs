@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 
 namespace Node 
 {
@@ -7,13 +9,15 @@ namespace Node
         public string ID {get; set;}
         public string Name {get; set;}
         public Job[] Jobs {get; set;}
+        public Dictionary<string, string> Parts {get; set;}
 
         public static BasicNode MakeBasicNode(MetaNode metaNode)
         {
             return new BasicNode(){
                 ID = metaNode.ID,
                 Name = metaNode.Name,
-                Jobs = metaNode.Jobs
+                Jobs = metaNode.Jobs,
+                Parts = metaNode.Parts
             };
         }
     }

@@ -15,9 +15,146 @@ namespace Node
         // If THIS is the Leader: This is the status of all other nodes that THIS node knows about
         private Dictionary<string, int> NodesStatus {get;} = new Dictionary<string, int>();
 
-        private Dictionary<string, List<(string Node, string ID)>> CounterPartUpdate {get;} = new Dictionary<string, List<(string Node, string ID)>>();
-
         private Dictionary<string, (string, string[])[]> SyncRequests {get;} = new Dictionary<string, (string, string[])[]>();
+
+        //                   op  ,  sd
+        private Dictionary<string, string> _AllParts {get;} = new Dictionary<string, string>();
+        private Dictionary<string, string> MyParts {get;} = new Dictionary<string, string>();
+
+        private Dictionary<string, List<string>> RunAsRequests = new Dictionary<string, List<string>>();
+        private readonly object _run_as_lock = new object();
+
+        public string[] GetRunAs(string n0)
+        {
+            lock(_run_as_lock)
+            {
+                if (!RunAsRequests.ContainsKey(n0))
+                {
+                    RunAsRequests.Add(n0, new List<string>()); 
+                }
+
+                return RunAsRequests[n0].ToArray();
+            }
+        }
+
+        private readonly object _my_parts_lock = new object();
+        private readonly object _cluster_parts_lock = new object();
+
+        public Dictionary<string, string> AllParts 
+        {
+            get 
+            {
+                lock(_cluster_parts_lock)
+                {
+                    return _AllParts;
+                }
+            }
+        }
+
+        private List<Job> ScheduledCounterJobs = new List<Job>();
+
+        private readonly object _scheduledCounterJobs_lock = new object();
+
+        public bool AllContainsPart(string op)
+        {
+            lock(_cluster_parts_lock)
+            {
+                return AllParts.ContainsKey(op);
+            }
+        }
+
+        public bool MyContainsPart(string op)
+        {
+            lock(_my_parts_lock)
+            {
+                return MyParts.ContainsKey(op);
+            }
+        }
+
+        public string GetShadowAllPart(string op)
+        {
+            lock(_cluster_parts_lock)
+            {
+                if (AllContainsPart(op)) return AllParts[op];
+                else return null;
+            }
+        }
+
+        public string GetShadowMyPart(string op)
+        {
+            lock(_my_parts_lock)
+            {
+                if (MyContainsPart(op))
+                {
+                    Logger.Log("GetMyPart", "Found: [job:"+MyParts[op]+"]", Logger.LogLevel.INFO);
+                    return MyParts[op];
+                } else return null;
+            }
+        }
+
+        
+        // Always add counter parts to all 
+        public void AddToAllParts(string op, string sd)
+        {
+            lock(_cluster_parts_lock)
+            {
+                if (!_AllParts.ContainsKey(op))
+                    _AllParts.Add(op, sd);
+                else 
+                    _AllParts[op] = sd;
+            }
+        }
+
+        // Keep track of the counter parts that I am in charge of
+        public void AddToMyParts(string op, string sd)
+        {
+            lock(_my_parts_lock)
+            {
+                if (!MyParts.ContainsKey(op))
+                    MyParts.Add(op, sd);
+                else 
+                    MyParts[op] = sd;
+            }
+        }
+
+
+        // This should be integrated with the info logic
+        public void ScheduleCounterJob(Job job)
+        {
+            lock(_scheduledCounterJobs_lock)
+            {
+                if (!ScheduledCounterJobs.Any(j => j.ID == job.ID))
+                {
+                    ScheduledCounterJobs.Add(job);
+                    Logger.Log("ScheduleCounter", "Scheduled counter job for when a new node appears", Logger.LogLevel.INFO);
+                }
+            }
+        }
+        public Job[] GetScheduledCounterJobs()
+        {
+            lock(_scheduledCounterJobs_lock)
+            {
+                if (ScheduledCounterJobs.Count > 0)
+                    Logger.Log("ScheduleCounter", "Retrieved scheduled counterjobs", Logger.LogLevel.INFO);
+                return ScheduledCounterJobs.ToArray();
+            }
+        }
+        public void ClearScheduledCounterJobs()
+        {
+            lock(_scheduledCounterJobs_lock)
+            {
+                ScheduledCounterJobs.Clear();
+            }
+        }
+
+        // only ever used by followers
+        public void SetScheduledCounterJobs(Job[] jobs)
+        {
+            lock(_scheduledCounterJobs_lock)
+            {
+                ScheduledCounterJobs = jobs.ToList();
+            }
+        }
 
         // Cluster stuff
         public int Quorum {
@@ -106,6 +243,31 @@ namespace Node
                     NodesStatus[n] = 0;
                 } else {
                     NodesStatus.Add(n, 0);
+                }
+
+                lock(_run_as_lock)
+                {
+                    if (RunAsRequests.ContainsKey(n))
+                    {
+                        RunAsRequests[n].Clear();
+                    }
+                }
+            }
+        }
+
+        public void AddRunAs(string sd)
+        {
+            lock(_cluster_lock)
+            {
+                foreach (string n0 in Cluster.Keys)
+                {
+                    lock(_run_as_lock)
+                    {
+                        if (!RunAsRequests.ContainsKey(n0))
+                            RunAsRequests.Add(n0, new List<string>());
+                        
+                        RunAsRequests[n0].Add(sd);
+                    }
                 }
             }
         }
@@ -243,46 +405,6 @@ namespace Node
             return syncRequest.ToArray();
         }
 
-        public void AddCounterPartUpdate(string n1, string jobId)
-        {
-            lock(_cluster_lock) lock(_counter_part_lock)
-            {
-                foreach(string k in Cluster.Keys)
-                {
-                    if (CounterPartUpdate.ContainsKey(k))
-                    {
-                        CounterPartUpdate[k].Add((n1, jobId));
-                    } else 
-                    {
-                        CounterPartUpdate.Add(k, new List<(string Node, string ID)>{(n1, jobId)});
-                    }
-                }
-            }
-        }
-
-        public (string Node, string ID)[] GetCounterParts(string node)
-        {
-            lock (_counter_part_lock)
-            {
-                if(CounterPartUpdate.ContainsKey(node))
-                {
-                    return CounterPartUpdate[node].ToArray();
-                }
-                return new (string Node, string ID)[]{};
-            }
-        }
-
-        public void ClearCounterpartUpdate(string node)
-        {
-            lock (_counter_part_lock)
-            {
-                if(CounterPartUpdate.ContainsKey(node))
-                {
-                    CounterPartUpdate[node].Clear();
-                }
-            }
-        }
-
         public (string node, Job[] jobs)[] RespondWithJobs((string node, string[] jobs)[] syncJobs)
         {
             List<(string node, Job[] jobs)> newJobs = new List<(string node, Job[] jobs)>();
@@ -306,22 +428,8 @@ namespace Node
             return newJobs.ToArray();
         }
 
-        public void UpdateCounterPart(string node, string newNode, string jobId)
-        {
-            lock(_cluster_lock)
-            {
-                if (Cluster.ContainsKey(node))
-                {
-                    foreach(Job j0 in Cluster[node].Jobs)
-                    {
-                        if(j0.ID == jobId) j0.CounterPart = (newNode, j0.CounterPart.JobId); 
-                    }
-                }
-            }
-        }
-
         // When the leader receives a response, it stores the current state of the node
-        public void UpdateTemporaryNodes(string n0, (string node, string[] jobIds)[] nodes, string[] jobs)
+        public void UpdateTemporaryNodes(string n0, (string node, string[] jobIds)[] nodes, string[] jobs, string[] parts)
         {
             lock (_cluster_entry_lock)
             {
@@ -344,6 +452,16 @@ namespace Node
                 List<(string node, string[] jobIds)> nodeIds = nodes.ToList();
                 List<BasicNode> newNodes = new List<BasicNode>();
                 List<BasicNode> _nodes = tempCluster.AsNodeArray().AsBasicNodes();
+
+                Dictionary<string, string> newParts = new Dictionary<string, string>();
+                Dictionary<string, string> allParts = Ledger.Instance.AllParts.Copy();
+                foreach (string part in parts)
+                {
+                    if (allParts.ContainsKey(part))
+                    {
+                        newParts.Add(part, allParts[part]);
+                    }
+                }
 
                 // Add a copy of the basic node that this node knows about
                 // but only with the jobs that the other node knows about
@@ -379,11 +497,12 @@ namespace Node
                     MetaNode n1 = tempCluster[n0].Copy();
                     n1.Nodes = newNodes.ToArray();
                     n1.Jobs = newJobs.ToArray();
+                    n1.Parts = newParts;
                     temp_Nodes.Add(n0, n1);
                 }
             }
         }
-        public (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger, (string Node, int nrJobs)[] Facts) GetNodeUpdates(string n0)
+        public (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger, (string Node, int nrJobs)[] Facts, Dictionary<string, string> parts) GetNodeUpdates(string n0)
         {
             lock(_cluster_entry_lock)
             {
@@ -419,11 +538,24 @@ namespace Node
                     List<string> _remove = new List<string>();
                     List<Job> _jobs = new List<Job>();    
                     List<(string Node, Job[] nodeJobs)> _ledger = new List<(string Node, Job[] nodeJobs)>();
+                    Dictionary<string, string> _parts = new Dictionary<string, string>();
                     // the current contents and status of the node in question
                     List<BasicNode> tempNodes = temp_Nodes[n0].Nodes.ToList();
 
                     try 
                     {
+                        
+                        foreach(KeyValuePair<string, string> p0 in Ledger.Instance.AllParts.Copy())
+                        {
+                            if (!temp_Nodes[n0].Parts.ContainsKey(p0.Key) || temp_Nodes[n0].Parts[p0.Key] != p0.Value)
+                            {
+                                _parts.Add(p0.Key, p0.Value);
+                            }
+
+                            if (_parts.Count >= 4) break;
+                        }
+
+
                         // add node to _nodes if it is not already added to tempNodes
                         foreach(MetaNode n1 in tempCluster.Values)
                         {
@@ -506,13 +638,13 @@ namespace Node
                     {
                         Logger.Log("TemperaryNodes", "[3] " + e.Message, Logger.LogLevel.ERROR);
                     }
-                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray(), _ledger.ToArray(), _facts.ToArray());
+                    return (_nodes.ToArray(), _remove.ToArray(), _jobs.ToArray(), _ledger.ToArray(), _facts.ToArray(), _parts);
                 } else { 
                     Logger.Log("NodeUpdates", "Did not contain [node:"+n0+"]", Logger.LogLevel.WARN);
                     // (PlainMetaNode[] Nodes, Job[] Jobs) info = GetNodesAndJobs(n0);
 
                     // correct this
-                    return (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{}, _facts.ToArray());
+                    return (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{}, _facts.ToArray(), new Dictionary<string,string>());
                 }
             }
         }
@@ -535,7 +667,7 @@ namespace Node
         }
         
         // When the follower receives the Nodes and Remove
-        public void UpdateNodes((string Node, Job[] jobs)[] _ledger, PlainMetaNode[] nodes, string[] remove)
+        public void UpdateNodes((string Node, Job[] jobs)[] _ledger, PlainMetaNode[] nodes, string[] remove, Dictionary<string, string> parts)
         {
             lock (_cluster_lock)
             {
@@ -583,6 +715,18 @@ namespace Node
                             Cluster.Remove(s0);
                             Logger.Log("UpdateNodes", "Received cluster REMOVE: [node:" + s0 + "]", Logger.LogLevel.IMPOR);
                         }
+
+                    } catch(Exception e)
+                    {
+                        Logger.Log("UpdateNodes", "[2] " + e.Message, Logger.LogLevel.ERROR);
+                    }
+                }
+
+                foreach(KeyValuePair<string, string> part in parts)
+                {
+                    try
+                    {
+                        AddToAllParts(part.Key, part.Value);
 
                     } catch(Exception e)
                     {

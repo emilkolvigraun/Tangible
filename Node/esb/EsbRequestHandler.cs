@@ -34,21 +34,23 @@ namespace Node
         {
             if (job.shadow != null && shadow_ignore_node == "")
             {
+                if (Ledger.Instance.Cluster.Count > 0)
+                    shadow_ignore_node = Scheduler.Instance.GetScheduledNode(job.shadow, Params.NODE_NAME);
                 shadow_ignore_node = Scheduler.Instance.GetScheduledNode(job.shadow);
             }
 
             if (operation_ignore_node=="") operation_ignore_node = Scheduler.Instance.GetScheduledNode(job.operation, shadow_ignore_node);
             
-            job.operation.CounterPart = (shadow_ignore_node, job.shadow.ID);
-            job.shadow.CounterPart = (operation_ignore_node, job.operation.ID);
+            job.operation.CounterPart = job.shadow.ID;
+            job.shadow.CounterPart = job.operation.ID;
 
             bool shadow_status = Scheduler.Instance.ScheduleFinishedJob(shadow_ignore_node, job.shadow);
             bool operation_status = Scheduler.Instance.ScheduleFinishedJob(operation_ignore_node, job.operation);
 
             if (!shadow_status) DeployJob(job, operation_ignore_node:operation_ignore_node);
-            else Logger.Log("ProcessAction", "Processed new shadow job " + job.shadow.ID + ", with counterpart: " + job.shadow.CounterPart.JobId + " on " + job.shadow.CounterPart.Node, Logger.LogLevel.INFO);
+            else Logger.Log("ProcessAction", "Processed new shadow job " + job.shadow.ID + ", with counterpart: " + job.shadow.CounterPart + " on " + shadow_ignore_node, Logger.LogLevel.INFO);
             if (!operation_status) DeployJob(job, shadow_ignore_node:shadow_ignore_node);
-            else Logger.Log("ProcessAction", "Processed new operatonal job " + job.operation.ID + ", with counterpart: " + job.operation.CounterPart.JobId + " on " + job.operation.CounterPart.Node, Logger.LogLevel.INFO);
+            else Logger.Log("ProcessAction", "Processed new operatonal job " + job.operation.ID + ", with counterpart: " + job.operation.CounterPart + " on " + operation_ignore_node, Logger.LogLevel.INFO);
         }
 
         private void ProcessAction(ActionRequest request)
@@ -58,7 +60,16 @@ namespace Node
             {
                 if (job.operation.TypeOfRequest == RequestType.SUBSCRIBE)
                 {
-                    DeployJob(job);
+                    if (Ledger.Instance.Cluster.Count > 0)
+                    {
+                        DeployJob(job);
+                    } else 
+                    {
+                        job.operation.CounterPart = job.shadow.ID;
+                        string n = Scheduler.Instance.ScheduleJob(job.operation);
+                        job.shadow.CounterPart = job.operation.ID;
+                        Ledger.Instance.ScheduleCounterJob(job.shadow);
+                    }
                 } else 
                 {
                     Scheduler.Instance.ScheduleJob(job.operation);
@@ -106,7 +117,17 @@ namespace Node
                             {
                                 r0 = ((CertificateResponse) Response);
                                 _cert_b  = r0.Cert;
-                                Ledger.Instance.AddNode(r0.Node.Name, PlainMetaNode.MakeMetaNode(r0.Node));
+                                MetaNode nmn = PlainMetaNode.MakeMetaNode(r0.Node);
+                                Job[] nmnjobs = Ledger.Instance.GetScheduledCounterJobs();
+                                nmn.Jobs = nmnjobs;
+                                Ledger.Instance.AddNode(r0.Node.Name, nmn);
+                                Ledger.Instance.ClearScheduledCounterJobs();
+                                foreach(Job j0 in nmnjobs)
+                                {
+                                    // These are all SD jobs
+                                    // So we should add them to the counterparts dict in the ledger
+                                    Ledger.Instance.AddToAllParts(j0.CounterPart, j0.ID);
+                                }
                                 Task.Run(()=>{Params.StoreCertificate(_cert_b);});
                                 Logger.Log("ProcessBroadcast", "Processed BC request from [node:" + request.Name + ", id:"+r0.Node.ID+"]", Logger.LogLevel.INFO);
                             } catch (Exception e)

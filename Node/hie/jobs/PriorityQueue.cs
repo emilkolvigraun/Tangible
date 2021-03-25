@@ -9,23 +9,6 @@ namespace Node
         private readonly object _lock = new object();
         private List<Job> _Queue = new List<Job>();
 
-        public bool UpdateCounterPart(string jobId, string newNode)
-        {
-            lock(_lock)
-            {
-                Console.WriteLine(_Queue.Count);
-                foreach(Job j1 in _Queue)
-                {
-                    if (j1.ID == jobId)
-                    {
-                        j1.CounterPart = (newNode, j1.CounterPart.JobId);
-                        return true;
-                    } 
-                }
-                return false;
-            }
-        }
-
         public List<Job> Queue 
         {
             get 
@@ -33,6 +16,25 @@ namespace Node
                 lock(_lock)
                 {
                     return _Queue;
+                }
+            }
+        }
+
+        public void SetRunAs(string sd)
+        {
+            lock(_lock)
+            {
+                foreach(Job j0 in _Queue)
+                {
+                    if (j0.ID == sd)
+                    {
+                        if(j0.TypeOf == Job.Type.SD)
+                        {
+                            j0.TypeOf = Job.Type.OP;
+                        } else j0.TypeOf = Job.Type.SD;
+
+                        break;
+                    }
                 }
             }
         }
@@ -48,6 +50,16 @@ namespace Node
                     if (_Queue.Count > 0) index = LastIndexOf(job);
 
                     _Queue.Insert(index+1, job);
+                    
+                    if (job.TypeOfRequest == RequestType.SUBSCRIBE && job.TypeOf == Job.Type.SD)
+                    {
+                        Ledger.Instance.AddToAllParts(job.CounterPart, job.ID);
+                        Ledger.Instance.AddToMyParts(job.CounterPart, job.ID);
+                    } else if (job.TypeOfRequest == RequestType.SUBSCRIBE && job.TypeOf == Job.Type.OP)
+                    {
+                        Ledger.Instance.AddToAllParts(job.ID, job.CounterPart);
+                    }
+
                     Logger.Log("PriorityQueue", "Added " + job.TypeOfRequest + " to priority queue", Logger.LogLevel.INFO);
                     
                 } catch (Exception e)

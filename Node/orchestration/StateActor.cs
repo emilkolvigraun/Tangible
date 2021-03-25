@@ -85,40 +85,40 @@ namespace Node
             Logger.Log("ActAsCandidate", "Acted as candidate", Logger.LogLevel.INFO);
         }
 
-        private string Reschedule(Job job, MetaNode n0)
-        {
-            string newNode = null;
-            if (job.TypeOf == Job.Type.SD)
-            {
-                newNode = Scheduler.Instance.GetScheduledNode(job, n0.Name);
-                // newNode = Scheduler.Instance.ScheduleJob(job, n0.Name);
+        // private string Reschedule(Job job, MetaNode n0)
+        // {
+        //     string newNode = null;
+        //     if (job.TypeOf == Job.Type.SD)
+        //     {
+        //         newNode = Scheduler.Instance.GetScheduledNode(job, n0.Name);
+        //         // newNode = Scheduler.Instance.ScheduleJob(job, n0.Name);
             
-            } else if (job.TypeOf == Job.Type.OP)
-            {
-                // I first reschedule the job a shadow
-                job.TypeOf = Job.Type.SD;
-                newNode = Scheduler.Instance.GetScheduledNode(job, n0.Name);
-                // newNode = Scheduler.Instance.ScheduleJob(job, n0.Name);
-            }
+        //     } else if (job.TypeOf == Job.Type.OP)
+        //     {
+        //         // I first reschedule the job a shadow
+        //         job.TypeOf = Job.Type.SD;
+        //         newNode = Scheduler.Instance.GetScheduledNode(job, n0.Name);
+        //         // newNode = Scheduler.Instance.ScheduleJob(job, n0.Name);
+        //     }
 
-            if (newNode != null)
-            {
-                if (job.CounterPart.Node == Params.NODE_NAME)
-                {
-                    // I find the counterpart, and tell it to run as a operative
-                    Scheduler.Instance.UpdateCounterPart(job.CounterPart.JobId, newNode);
+        //     if (newNode != null)
+        //     {
+        //         if (job.CounterPart.Node == Params.NODE_NAME)
+        //         {
+        //             // I find the counterpart, and tell it to run as a operative
+        //             Scheduler.Instance.UpdateCounterPart(job.CounterPart.JobId, newNode);
 
-                } else 
-                {
-                    Ledger.Instance.UpdateCounterPart(job.CounterPart.Node, newNode, job.CounterPart.JobId);
-                }
-            }
+        //         } else 
+        //         {
+        //             Ledger.Instance.UpdateCounterPart(job.CounterPart.Node, newNode, job.CounterPart.JobId);
+        //         }
+        //     }
 
-            bool status = Scheduler.Instance.ScheduleFinishedJob(newNode, job);
+        //     bool status = Scheduler.Instance.ScheduleFinishedJob(newNode, job);
 
-            if (status) return newNode;
-            return Reschedule(job, n0);
-        }
+        //     if (status) return newNode;
+        //     return Reschedule(job, n0);
+        // }
 
         private void ActAsLeader()
         {
@@ -136,14 +136,75 @@ namespace Node
                         {
                             foreach(Job job in n0.Jobs)
                             {
-                                if (job.CounterPart.Node != null && job.CounterPart.JobId != null)
+                                // If the job was already completed, but dangeling, then skip.
+                                if (job.StatusOf == Job.Status.CP) continue;
+
+                                Logger.Log("FailedJob", "A [job"+job.ID+"] has failed on [node:"+n0.Name+"]", Logger.LogLevel.WARN);
+
+                                if (job.CounterPart != null && job.TypeOfRequest == RequestType.SUBSCRIBE && job.TypeOf == Job.Type.OP)
                                 {
-                                    // Job failed at node3 id:ahyFb0QzAT, type: OP, counterpart: YqTD1orcjG, at: node2
-                                    string newNode = Reschedule(job, n0);
-                                    // now I schedule to inform all other nodes that a counterpart must be updated
-                                    Ledger.Instance.AddCounterPartUpdate(newNode, job.ID);
-                                } else 
+                                    if (cluster.Count-1 > 0)
+                                    {
+                                        if (Ledger.Instance.MyContainsPart(job.ID))
+                                        {
+                                            Logger.Log("ActAsLeader", "Operational [job:"+job.ID +"] failed but I have the counter node (cluster>0)", Logger.LogLevel.INFO);
+
+                                            string shadow = Ledger.Instance.GetShadowMyPart(job.ID);
+                                            Scheduler.Instance.TransmitRunAs(shadow);
+
+                                            job.TypeOf = Job.Type.SD;
+                                            Scheduler.Instance.ScheduleJob(job);
+
+                                        } else if (Ledger.Instance.AllContainsPart(job.ID))
+                                        {
+                                            Logger.Log("ActAsLeader", "Operational [job:"+job.ID +"] failed but I found the counter node (cluster>0)", Logger.LogLevel.INFO);
+                                            
+                                            // send a run as
+                                            string shadow = Ledger.Instance.GetShadowAllPart(job.ID);
+                                            Ledger.Instance.AddRunAs(shadow);
+
+                                            job.TypeOf = Job.Type.SD;
+                                            Scheduler.Instance.ScheduleJob(job);
+                                        }
+                                    } else 
+                                    {
+                                        if (Ledger.Instance.MyContainsPart(job.ID))
+                                        {
+                                            Logger.Log("ActAsLeader", "Operational [job:"+job.ID +"] failed but I have the counter node (cluster<0)", Logger.LogLevel.INFO);
+
+                                            // send a RunAs
+                                            string shadow = Ledger.Instance.GetShadowMyPart(job.ID);
+
+                                            
+                                            Scheduler.Instance.TransmitRunAs(shadow);
+
+                                            // and schedule a counter job for later
+                                            job.TypeOf = Job.Type.SD;
+                                            Ledger.Instance.ScheduleCounterJob(job);
+
+                                        } else
+                                        {
+                                            Scheduler.Instance.ScheduleJob(job);
+                                        }
+                                        
+                                        // Logger.Log("ActAsLeader", "I am alone in the cluster: Queued the job for the next node that becomes part of the mesh", Logger.LogLevel.INFO);
+                                        
+                                    }
+                                } else if (job.CounterPart != null && job.TypeOfRequest == RequestType.SUBSCRIBE && job.TypeOf == Job.Type.SD) 
                                 {
+                                    if (cluster.Count-1 > 0)
+                                    {
+                                        Logger.Log("ActAsLeader", "Rescheduling shadow [job:"+job.ID+"] (cluster>0)", Logger.LogLevel.INFO);
+                                        Scheduler.Instance.ScheduleJob(job);
+                                    } else 
+                                    {
+                                        Ledger.Instance.ScheduleCounterJob(job);
+                                    }
+                                }
+                                
+                                else 
+                                {
+                                    Logger.Log("ActAsLeader", "Rescheduling [job:"+job.ID+"] (cluster>0)", Logger.LogLevel.INFO);
                                     Scheduler.Instance.ScheduleJob(job);
                                 }
                             }
@@ -164,7 +225,7 @@ namespace Node
                 {
                     tasks[i] = new Task(() =>
                     {
-                        (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger, (string Node, int nrJobs)[] Facts) info = (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{}, new (string Node, int nrJobs)[]{});
+                        (PlainMetaNode[] Nodes, string[] Remove, Job[] Jobs, (string Node, Job[] nodeJobs)[] _Ledger, (string Node, int nrJobs)[] Facts, Dictionary<string, string> Parts) info = (new PlainMetaNode[]{}, new string[]{}, new Job[]{}, new (string Node, Job[] nodeJobs)[]{}, new (string Node, int nrJobs)[]{}, new Dictionary<string,string>());
                         (string Node, string[] jobs)[] _Sync = new (string Node, string[] jobs)[]{};
                         try 
                         {
@@ -182,8 +243,9 @@ namespace Node
                             Ledger = info._Ledger,
                             FactSheet = info.Facts,
                             Sync = _Sync,
-                            Parts = Ledger.Instance.GetCounterParts(n0.Key),
-
+                            Parts = info.Parts,
+                            ScheduledCounter = Ledger.Instance.GetScheduledCounterJobs(),
+                            RunAs = Ledger.Instance.GetRunAs(n0.Key),
                             // Get the nodes that are flagged for deletion
                             Remove = info.Remove,
 
@@ -198,7 +260,6 @@ namespace Node
                             try 
                             {
                                 Ledger.Instance.ResetStatus(n0.Key);
-                                Ledger.Instance.ClearCounterpartUpdate(n0.Key);
                             } catch(Exception e)
                             {
                                 Logger.Log("Leader:Reset", "[3]" + e.Message, Logger.LogLevel.ERROR);
@@ -206,7 +267,7 @@ namespace Node
                             try 
                             {
                                 AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
-                                Ledger.Instance.UpdateTemporaryNodes(n0.Key, r1.Ledger, r1.JobIds);// || 1 > Ledger.Instance.GetStatus(n0.Key)));
+                                Ledger.Instance.UpdateTemporaryNodes(n0.Key, r1.Ledger, r1.JobIds, r1.PartIds);// || 1 > Ledger.Instance.GetStatus(n0.Key)));
                                 Ledger.Instance.UpdateSyncRequests(n0.Key, r1.SyncRequest, r1.SyncResponse);
                             } catch(Exception e)
                             {

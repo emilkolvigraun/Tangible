@@ -185,6 +185,10 @@ namespace Node
         {
             return d0.ToDictionary(entry => entry.Key, entry => entry.Value);
         }
+        public static Dictionary<string, string> Copy(this Dictionary<string, string> d0)
+        {
+            return d0.ToDictionary(entry => entry.Key, entry => entry.Value);
+        }
         public static Dictionary<string, int> Copy(this Dictionary<string, int> d0)
         {
             return d0.ToDictionary(entry => entry.Key, entry => entry.Value);

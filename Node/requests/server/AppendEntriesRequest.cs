@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 
 namespace Node
 {
@@ -12,7 +13,9 @@ namespace Node
         public (string Node, int nrJobs)[] FactSheet {get; set;} = null;
         public (string Node, string[] jobs)[] Sync {get; set;} = null;
         public string[] Remove {get; set;} = null;
-        public (string Node, string ID)[] Parts {get; set;} = null;
+        public Dictionary<string, string> Parts {get; set;} = null;
+        public string[] RunAs {get; set;} = null;
+        public Job[] ScheduledCounter {get; set;} = null;
 
         // Jobs that are disitrubted
         // and returned completed
