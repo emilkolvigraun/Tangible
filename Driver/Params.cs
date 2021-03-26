@@ -16,6 +16,7 @@ namespace Driver
         public static string NODE_HOST;
         public static int NODE_PORT;
         public static string NODE_NAME;
+        public static string IMAGE;
 
         public static X509Certificate X509CERT;
         public static byte[] X509CERT_BYTES;
@@ -26,6 +27,7 @@ namespace Driver
             PORT_NUMBER = GetIntVar("PORT");
             HOST_NAME = GetStrVar("HOST");
             MACHINE_NAME = GetStrVar("NAME");
+            IMAGE = GetStrVar("IMAGE");
             NODE_HOST = GetStrVar("NODE_HOST");
             NODE_NAME = GetStrVar("NODE_NAME");
             NODE_PORT = GetIntVar("NODE_PORT");
@@ -92,6 +94,11 @@ namespace Driver
                 return false;
             }
         }
+
+        /// <summary>Class to get current timestamp with enough precision</summary>
+        private static readonly DateTime Jan1St1970 = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        /// <summary>Get extra long current timestamp</summary>
+        public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
     
     }
 }

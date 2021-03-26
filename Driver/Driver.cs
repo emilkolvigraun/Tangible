@@ -35,7 +35,8 @@ namespace Driver
                             RequestResponse rr = new RequestResponse(){
                                 JobId = exe.JobID,
                                 Status = true,
-                                Value = exe.Value==null?"value":exe.Value
+                                Value = exe.Value==null?"value":exe.Value,
+                                PointID = exe.PointID,
                             };
 
                             if (exe.TypeOfAction == ActionType.SUBSCRIBE)
@@ -74,10 +75,10 @@ namespace Driver
                                             if (status)
                                             {
                                                 IRequest r1 = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rr);
-                                                if (r1.TypeOf == RequestType.ST) 
-                                                {
-                                                    queue.Remove(exe);
-                                                }
+                                                // if (r1.TypeOf == RequestType.ST) 
+                                                // {
+                                                //     queue.Remove(exe);
+                                                // }
                                             }
                                         }
 

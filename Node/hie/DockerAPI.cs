@@ -53,7 +53,7 @@ namespace Node
             }
         }  
 
-        public async Task<string> Containerize(string image, string host, int port, string machineName)
+        public async Task<string> Containerize(string image, string host, int port, string machineName, int instance)
         {
             string ID = null;
             bool status = await PullImage(image);
@@ -62,13 +62,13 @@ namespace Node
             CancellationTokenSource cts = new CancellationTokenSource(8000);
             cts.CancelAfter(8000);
             Task.Run(async () => {
-                string _name = Params.NODE_NAME+"_"+image.Replace("/","_");
+                string _name = Params.NODE_NAME+"_"+image.Replace("/","_")+"_"+instance.ToString();
                 var response = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
                 { 
                     Image = image,  
                     Name = _name,
                     Hostname = "localhost",
-                    Env = new string[]{"HOST="+host, "PORT="+port.ToString(), "NAME="+machineName, "NODE_HOST="+Params.ADVERTISED_HOST_NAME, "NODE_NAME="+Params.NODE_NAME, "NODE_PORT="+Params.PORT_NUMBER.ToString()}, 
+                    Env = new string[]{"HOST="+host, "PORT="+port.ToString(), "NAME="+machineName, "NODE_HOST="+Params.ADVERTISED_HOST_NAME, "NODE_NAME="+Params.NODE_NAME, "NODE_PORT="+Params.PORT_NUMBER.ToString(), "IMAGE="+image}, 
                     // HostConfig = new HostConfig { NetworkMode = "host" },
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                     {

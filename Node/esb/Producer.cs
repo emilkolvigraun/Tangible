@@ -33,6 +33,18 @@ namespace Node
             _producer = new ProducerBuilder<Null, string>(config).Build();
         }
 
+        public void SendMany((string message, string topic)[] messages)
+        {
+            List<string> failedTopics = new List<string>();
+
+            foreach ((string message, string topic) message in messages)
+            {
+                _producer.Produce(message.topic, new Message<Null, string> { Value = message.message });
+            }
+            // wait for up to 10 seconds for any inflight messages to be delivered.
+            _producer.Flush(TimeSpan.FromSeconds(10));
+        }
+
         public (bool Status, string[] topic) Send(string message, string[] topics)
         {
             bool status = true;

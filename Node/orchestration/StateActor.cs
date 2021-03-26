@@ -267,7 +267,13 @@ namespace Node
                             try 
                             {
                                 AppendEntriesResponse r1 = ((AppendEntriesResponse) r0);
-                                Ledger.Instance.UpdateTemporaryNodes(n0.Key, r1.Ledger, r1.JobIds, r1.PartIds);// || 1 > Ledger.Instance.GetStatus(n0.Key)));
+
+
+                                List<string> njids = r1.JobIds.ToList();
+                                njids.AddRange(r1.CompletedJobs);
+                                if (njids.Count > 1) Console.WriteLine(njids.Count);
+                                Ledger.Instance.UpdateTemporaryNodes(n0.Key, r1.Ledger, njids.ToArray(), r1.PartIds);// || 1 > Ledger.Instance.GetStatus(n0.Key)));
+                                Ledger.Instance.UpdateCompletedJobs(n0.Key, r1.CompletedJobs);
                                 Ledger.Instance.UpdateSyncRequests(n0.Key, r1.SyncRequest, r1.SyncResponse);
                             } catch(Exception e)
                             {

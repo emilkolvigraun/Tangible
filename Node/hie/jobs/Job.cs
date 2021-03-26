@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Node 
 {
@@ -25,7 +26,7 @@ namespace Node
         public string Image {get; set;}
 
         // All of the ids of the points to execute the request
-        public string[] PointIds {get; set;}
+        public HashSet<string> PointIds {get; set;}
 
         // Indicates whether the job is under processing, not yet started or completed
         public Status StatusOf {get; set;}
@@ -58,7 +59,7 @@ namespace Node
                 ID = id,
                 Priority = request.Priority,
                 Image = info.Key,
-                PointIds = info.Value.ToArray(),
+                PointIds = new HashSet<string>(info.Value),
                 StatusOf = Job.Status.NS,
                 TypeOf = Job.Type.SD,
                 TypeOfRequest = request.TypeOf,

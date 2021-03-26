@@ -7,7 +7,7 @@ namespace Node
     class Scheduler 
     {
         private PriorityQueue JobsNotStarted {get;} = new PriorityQueue();
-        private Dictionary<string, Driver> DeployedDrivers {get;} = new Dictionary<string, Driver>();
+        private Dictionary<string, Driver[]> DeployedDrivers {get;} = new Dictionary<string, Driver[]>();
         public Job[] _Jobs 
         {
             get 
@@ -19,9 +19,12 @@ namespace Node
                 }
                 lock(_containers_lock) 
                 {
-                    foreach (KeyValuePair<string, Driver> c in DeployedDrivers)
+                    foreach (KeyValuePair<string, Driver[]> c in DeployedDrivers)
                     {
-                        Jobs.AddRange(c.Value.Jobs.Values);
+                        foreach (Driver d in c.Value)
+                        {
+                            Jobs.AddRange(d.Jobs.Values);
+                        }
                     }
                 }
                 return Jobs.ToArray();
@@ -49,6 +52,20 @@ namespace Node
             }
         }
 
+        public void ProcessRequestResponse(RequestResponse response)
+        {
+            lock(_containers_lock)
+            {
+                if (DeployedDrivers.ContainsKey(response.Image))
+                {
+                    foreach(Driver d in DeployedDrivers[response.Image])
+                    {
+                        if(d.ContainsJob(response.JobId)) d.EvaluateResponse(response);
+                    }
+                }
+            }
+        }
+
         public void TransmitRunAs(string sd)
         {
             lock(_not_started_lock)
@@ -58,9 +75,12 @@ namespace Node
 
             lock(_containers_lock)
             {
-                foreach(Driver d in DeployedDrivers.Values)
+                foreach(Driver[] d0 in DeployedDrivers.Values)
                 {
-                    if(d.SetRunAs(sd)) break;
+                    foreach(Driver d1 in d0)
+                    {
+                        if(d1.SetRunAs(sd)) break;
+                    }
                 }
             }
         }
@@ -161,21 +181,30 @@ namespace Node
             {
                 lock (_containers_lock)
                 {
-                    foreach(Driver d in DeployedDrivers.Values)
+                    foreach(Driver[] d0 in DeployedDrivers.Values)
                     {
-                        if (!d.IsStarted & !d.IsRunning)
+                        foreach(Driver d1 in d0)
                         {
-                            d.StartDriver();
-                        }     
-                        
-                        if (!d.IsVerifyingState)
-                        {
-                            d.VerifyState();
-                        }
+                            if (!d1.IsStarted & !d1.IsRunning)
+                            {
+                                d1.StartDriver();
+                            }     
+                            
+                            if (!d1.IsVerifyingState)
+                            {
+                                d1.VerifyState();
+                            }
 
-                        if (d.IsRunning && !d.IsStarted && !d.IsTransmitting && d.IsReady)
-                        {
-                            d.TransmitNewJobs();
+                            if (d1.IsRunning && !d1.IsStarted && !d1.IsTransmitting && d1.IsReady)
+                            {
+                                d1.TransmitNewJobs();
+                                d1.RemoveFinishedJobs();
+                            }
+
+                            if (!d1.IsResponding)
+                            {
+                                d1.SendResponses();
+                            }
                         }
                     }
                 }
@@ -205,14 +234,32 @@ namespace Node
                 {
                     string machineName = Utils.GetUniqueKey(size:10);
                     int port = Params.UNUSED_PORT;
-                    DeployedDrivers.Add(image, new Driver(){
-                        Host = Params.HIE_ADVERTISED_HOST_NAME,
-                        MachineName = machineName,
-                        Image = image,
-                        Port = port
+                    DeployedDrivers.Add(image, new Driver[] {
+                        new Driver(){
+                            Host = Params.HIE_ADVERTISED_HOST_NAME,
+                            MachineName = machineName,
+                            Image = image,
+                            Port = port
+                    }});
+                } 
+                
+                // If this is the case, then we need to figure out how to make the names of each container more diverse
+                if (DeployedDrivers[image].Last().Deployed.Count > 1000000)
+                {
+                    string machineName = Utils.GetUniqueKey(size:10);
+                    int port = Params.UNUSED_PORT;
+                    List<Driver> drivers = DeployedDrivers[image].ToList();
+                    drivers.Add(
+                        new Driver(){
+                            Host = Params.HIE_ADVERTISED_HOST_NAME,
+                            MachineName = machineName,
+                            Image = image,
+                            Port = port
                     });
+                    DeployedDrivers[image] = drivers.ToArray();
                 }
-                return DeployedDrivers[image];
+
+                return DeployedDrivers[image].Last();
             }
         }
         private static Scheduler _instance = null;

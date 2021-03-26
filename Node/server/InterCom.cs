@@ -28,7 +28,15 @@ namespace Node
 
         private byte[] ProcessRequestResponse(RequestResponse request)
         {
-            Console.WriteLine("Received response " + request.EncodeRequestStr());
+            try 
+            {
+                Scheduler.Instance.ProcessRequestResponse(request);
+
+            } catch (Exception e)
+            {
+                Logger.Log("RequestResponse", "Something wennt wrong when parsing the request response: " + e.Message, Logger.LogLevel.ERROR);
+                return new EmptyRequest().EncodeRequest();
+            }
             return new StatusResponse(){
                 Status = true
             }.EncodeRequest();
@@ -95,7 +103,8 @@ namespace Node
                 Ledger = Ledger.Instance.Cluster.GetLedger(),
                 PartIds = Ledger.Instance.AllParts.Keys.ToArray(),
                 SyncRequest = _syncRequest,
-                SyncResponse = _syncResponse
+                SyncResponse = _syncResponse,
+                CompletedJobs = Ledger.Instance.FinishedJobs
                 }.EncodeRequest();
         }
         private byte[] ProcessRegistration(RegistrationRequest request)

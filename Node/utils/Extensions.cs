@@ -82,6 +82,17 @@ namespace Node
                 return null;
             }
         }
+        public static string Serialize(this Response request)
+        {
+            try
+            {
+                return JsonConvert.SerializeObject(request, Formatting.None);
+            } catch(Exception e)
+            {
+                Logger.Log("EncodeRequest", e.Message, Logger.LogLevel.ERROR);
+                return null;
+            }
+        }
         public static dynamic DecodeRequest(this byte[] request)
         {
             return request.GetString().DecodeRequest();

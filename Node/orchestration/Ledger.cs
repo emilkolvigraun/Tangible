@@ -21,6 +21,68 @@ namespace Node
         private Dictionary<string, string> _AllParts {get;} = new Dictionary<string, string>();
         private Dictionary<string, string> MyParts {get;} = new Dictionary<string, string>();
 
+        private HashSet<string> _FinishedJobs = new HashSet<string>();
+        private readonly object _finished_jobs_lock = new object();
+
+
+        public string[] FinishedJobs
+        {
+            get 
+            {
+                lock(_finished_jobs_lock)
+                {
+                    string[] cpj = _FinishedJobs.ToArray();
+                    _FinishedJobs.Clear();
+                    return cpj;
+                }
+            }
+        }
+
+        public void AddFinishedJob(string job)
+        {
+            lock(_finished_jobs_lock)
+            {
+                _FinishedJobs.Add(job);
+            }
+        }
+
+        public void UpdateCompletedJobs(string n0, string[] cpj)
+        {
+            HashSet<string> completedJobs = new HashSet<string>(cpj);
+            lock(_cluster_lock)
+            {
+                if (Cluster.ContainsKey(n0))
+                {
+                    List<Job> newJobs = new List<Job>();
+                    foreach(Job j0 in Cluster[n0].Jobs.ToList())
+                    {
+                        if (!completedJobs.Contains(j0.ID))
+                        {
+                            newJobs.Add(j0);
+                        }
+                    }
+                    Nodes[n0].Jobs = newJobs.ToArray();
+                }
+            }
+            
+            lock(_cluster_entry_lock)
+            {
+                if(temp_Nodes.ContainsKey(n0))
+                {
+                    List<Job> newJobs = new List<Job>();
+                    foreach(Job j0 in temp_Nodes[n0].Jobs.ToList())
+                    {
+                        if (!completedJobs.Contains(j0.ID))
+                        {
+                            newJobs.Add(j0);
+                        }
+                    }
+                    temp_Nodes[n0].Jobs = newJobs.ToArray();
+                }
+            }
+        }
+
+
         private Dictionary<string, List<string>> RunAsRequests = new Dictionary<string, List<string>>();
         private readonly object _run_as_lock = new object();
 
