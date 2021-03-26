@@ -26,6 +26,21 @@ namespace Node
         private List<Execute> JobsNotSend = new List<Execute>();
         private List<RunAsRequest> ChangeStateNotSend = new List<RunAsRequest>();
 
+        private long TimeStarted = Utils.Millis;
+        private readonly object _time_started_lock = new object();
+
+        public bool IsReady
+        {
+            get 
+            {
+                lock(_time_started_lock)
+                {
+                    if (TimeStarted+200 < Utils.Millis) return true;
+                    return false;
+                }
+            }
+        }
+
         public bool IsRunning
         {
             get 
@@ -279,6 +294,7 @@ namespace Node
                     lock(this._started_lock) this.started = false;
                     lock(this._state_lock) this.verifying_state = false;
                     lock(this._running_lock) this.running = true;
+                    lock(this._time_started_lock) this.TimeStarted = Utils.Millis;
                     Logger.Log("StartDriver", "Started driver with [image:"+Image+", host:" + Host + ":" + Port.ToString() + ", id:" + this.ID + "]", Logger.LogLevel.INFO);
                 }
             });

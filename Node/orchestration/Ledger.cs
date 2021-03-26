@@ -37,6 +37,20 @@ namespace Node
             }
         }
 
+        public List<string> GetAllJobIds
+        {
+            get 
+            {
+                List<string> ids = new List<string>();
+                foreach(MetaNode n0 in ClusterCopy.Values)
+                {
+                    ids.AddRange(n0.Jobs.GetIds());
+                }
+                ids.AddRange(Scheduler.Instance._Jobs.GetIds());
+                return ids;
+            }
+        }
+
         private readonly object _my_parts_lock = new object();
         private readonly object _cluster_parts_lock = new object();
 

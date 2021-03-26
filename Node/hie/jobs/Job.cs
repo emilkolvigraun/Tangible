@@ -46,7 +46,14 @@ namespace Node
         public static Job CreateJob(ActionRequest request, KeyValuePair<string, List<string>> info)
         {
 
-            string id = Utils.GetUniqueKey(size:10);
+            string id = Utils.GetUniqueKey(size:15);
+
+            // It is important that we generate a unique job ID
+            while (Ledger.Instance.GetAllJobIds.Contains(id))
+            {
+                id = Utils.GetUniqueKey(size:15);
+            }
+
             Job job = new Job(){
                 ID = id,
                 Priority = request.Priority,

@@ -68,7 +68,7 @@ namespace Node
                     Image = image,  
                     Name = _name,
                     Hostname = "localhost",
-                    Env = new string[]{"HOST="+host, "PORT="+port.ToString(), "NAME="+machineName}, 
+                    Env = new string[]{"HOST="+host, "PORT="+port.ToString(), "NAME="+machineName, "NODE_HOST="+Params.ADVERTISED_HOST_NAME, "NODE_NAME="+Params.NODE_NAME, "NODE_PORT="+Params.PORT_NUMBER.ToString()}, 
                     // HostConfig = new HostConfig { NetworkMode = "host" },
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                     {

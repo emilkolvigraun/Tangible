@@ -9,6 +9,7 @@ namespace Driver
         HI, // hie request [job append]
         RN, // run as operative
         ST, // status response
+        RR, // request response
         EMPTY
     }
 }

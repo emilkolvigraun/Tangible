@@ -13,6 +13,9 @@ namespace Driver
         public static int PORT_NUMBER;
         public static string HOST_NAME;
         public static string MACHINE_NAME;
+        public static string NODE_HOST;
+        public static int NODE_PORT;
+        public static string NODE_NAME;
 
         public static X509Certificate X509CERT;
         public static byte[] X509CERT_BYTES;
@@ -23,6 +26,9 @@ namespace Driver
             PORT_NUMBER = GetIntVar("PORT");
             HOST_NAME = GetStrVar("HOST");
             MACHINE_NAME = GetStrVar("NAME");
+            NODE_HOST = GetStrVar("NODE_HOST");
+            NODE_NAME = GetStrVar("NODE_NAME");
+            NODE_PORT = GetIntVar("NODE_PORT");
             string CERT_NAME    = MACHINE_NAME+".pfx";
             X509CERT_BYTES = GenerateCertificate(MACHINE_NAME);
             File.WriteAllBytes(CERT_NAME , X509CERT_BYTES);

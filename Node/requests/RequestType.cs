@@ -17,6 +17,7 @@ namespace Node
         EMPTY, // empty
         NIL, // no expectation
         RN, // run as operative
+        RR, // request response
 
         // ACTION TYPES
         SUBSCRIBE,

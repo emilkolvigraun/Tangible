@@ -18,10 +18,20 @@ namespace Node
                     return ProcessAppendEntry((AppendEntriesRequest)request);
                 case RequestType.VT:
                     return ProcessVoting((VotingRequest)request);
+                case RequestType.RR:
+                    return ProcessRequestResponse((RequestResponse)request);
                 default:
                     Logger.Log("RequestHandler", "Received malformed request", Logger.LogLevel.ERROR);
                     return new EmptyRequest().EncodeRequest();
             }
+        }
+
+        private byte[] ProcessRequestResponse(RequestResponse request)
+        {
+            Console.WriteLine("Received response " + request.EncodeRequestStr());
+            return new StatusResponse(){
+                Status = true
+            }.EncodeRequest();
         }
 
         private byte[] ProcessAppendEntry(AppendEntriesRequest request)

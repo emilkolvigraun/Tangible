@@ -4,7 +4,7 @@ using System.Threading;
 namespace Driver
 {
     class Program
-    {
+    { 
         static void Main(string[] args)
         {
             // Environment.SetEnvironmentVariable("HOST", "192.168.1.237");
@@ -14,16 +14,16 @@ namespace Driver
 
             Thread serverThread = new Thread(() => {
                 NodeServer.RunServer();
-            });
+            }); 
 
             serverThread.Start();
 
             Console.WriteLine("Starting with params:");
             Console.WriteLine(Params.MACHINE_NAME + ", " + Params.HOST_NAME + ":" + Params.PORT_NUMBER.ToString());
 
-
-
-            ProcessLoop.Instance.Run(new Driver());
+            Driver driver = new Driver();
+            driver.Run();
+            ProcessLoop.Instance.Run(driver);
         }
     }
 }

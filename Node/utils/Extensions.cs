@@ -138,6 +138,8 @@ namespace Node
                         return JsonConvert.DeserializeObject<Execute>(request);
                     case RequestType.RN:
                         return JsonConvert.DeserializeObject<RunAsRequest>(request);
+                    case RequestType.RR:
+                        return JsonConvert.DeserializeObject<RequestResponse>(request);
                     // Action requests
                     case RequestType.READ: 
                         goto case RequestType.CREATE_USER;

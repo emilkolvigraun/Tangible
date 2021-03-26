@@ -25,6 +25,11 @@ class Client:
         loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
         print("send request:", query)
 
+    def write(self, loop, priority, value):
+        query = '{"TypeOf":"WRITE",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"FLOOR0","LocationOf":null,"HasPoint":null},"HasPoint":null},"Value":"'+str(value)+'"}'
+        loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
+        print("send request:", query)
+
 
     def listen(self, loop):
         loop.run_until_complete(self.kclient.subscribe(self.return_topic))

@@ -173,7 +173,7 @@ namespace Node
                             d.VerifyState();
                         }
 
-                        if (d.IsRunning && !d.IsStarted && !d.IsTransmitting)
+                        if (d.IsRunning && !d.IsStarted && !d.IsTransmitting && d.IsReady)
                         {
                             d.TransmitNewJobs();
                         }
