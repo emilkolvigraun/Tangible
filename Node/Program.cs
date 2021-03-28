@@ -6,9 +6,9 @@ namespace Node
 {
     class Program
     {
-
         static void DisplayStartInformation()
         {
+            Utils.Wait();
             Logger.Log("Main", "Starting with parameters:", Logger.LogLevel.INFO);
             Logger.Log("Main", "- ADDRESS: " + Params.ADVERTISED_HOST_NAME + ":" + Params.PORT_NUMBER, Logger.LogLevel.INFO);
             Logger.Log("Main", "- NODE_NAME: " + Params.NODE_NAME, Logger.LogLevel.INFO);
@@ -18,13 +18,11 @@ namespace Node
             Logger.Log("Main", "- REQUEST_TOPIC: " + Params.REQUEST_TOPIC, Logger.LogLevel.INFO);
             Logger.Log("Main", "- UNIQUE_ID: " + Params.UNIQUE_KEY, Logger.LogLevel.INFO);
             Logger.Log("Main", "- ELECTION_TIMEOUT: " + Params.HEARTBEAT_MS +"ms", Logger.LogLevel.INFO);
-            // Logger.Log("Main", "% Processor Time: " + Params.USAGE, Logger.LogLevel.INFO);
         }
 
-        static void Main(string[] args)
+        static void AsDebug()
         {
-            // DEBUGGING 
-            Environment.SetEnvironmentVariable("KAFKA_BROKERS", "192.168.1.237:9092");
+            Environment.SetEnvironmentVariable("KAFKA_BROKERS", "192.168.1.237:9092,192.168.1.237:9093");
             Environment.SetEnvironmentVariable("CLUSTER_ID", "Tangible#1");
             Environment.SetEnvironmentVariable("REQUEST_TOPIC", "Tangible.request.1");
             Environment.SetEnvironmentVariable("BROADCAST_TOPIC", "Tangible.broadcast.1");
@@ -33,48 +31,86 @@ namespace Node
             Environment.SetEnvironmentVariable("WAIT_TIME_MS", "1000");
             Environment.SetEnvironmentVariable("NODE_NAME", "node1");
             Environment.SetEnvironmentVariable("DRIVER_RANGE", "6000->6100");
-            // Environment.SetEnvironmentVariable("DOCKER_HOST_NAME", "tcp://192.168.1.237:4243");
             Environment.SetEnvironmentVariable("DOCKER_ADVERTISED_HOST_NAME", "npipe://./pipe/docker_engine");
-            
-            // load environment variables
-            Params.LoadConfig();
+        }
 
+        static Thread Init()
+        {
+            Params.LoadConfig();
             Task.Run(async () => {
                 await DockerAPI.Instance.RemoveStoppedContainers();
             }).Wait();
-
-            // SerializeDeserialize_test.Run();
-            // DriverTransmit_test.Run();
-
-            Utils.Wait();
-
             DisplayStartInformation();
+            MainLoop loop = new MainLoop();
 
-            // initializing server thread
-            Thread serverThread = new Thread(() => {
-                NodeServer.RunServer();
+            Thread loopThread = new Thread(() => {
+                loop.Run();
             });
 
-            // running internal comunication 
-            serverThread.Start();
-            
-            Utils.Wait(1);
+            Task.Run(() => {
+                foreach(string img in HardwareAbstraction.Images)
+                {
+                    Containers.Instance.CreateContainer(img);
+                    while (true) {if(!Containers.Instance.IsBusy)break;}
+                }
+            }).Wait();
 
-            // sending the broadcast
-            while (true)
-            {
-                (bool Status, string[] failures) Result = Producer.Instance.Send(new BroadcastRequest().EncodeRequestStr(), new string[] {Params.BROADCAST_TOPIC});
+            return loopThread;
+        }
+
+        static void RunTests()
+        {
+            // Request_test.Run();
+            // Environment.Exit(0);
+        }
+
+        static void Broadcast()
+        {
+            Task.Run(() => {
                 Utils.Wait(1000);
-                if (Result.Status) break;
-                Logger.Log("Main", "Failed to broadcast, retrying in 1 second...", Logger.LogLevel.WARN);
-            }
-            Logger.Log("Main", "Transmitted broadcast", Logger.LogLevel.INFO);
+                long t0 = Utils.Millis;
+                bool status = false;
+                while (t0+2000 >= Utils.Millis)
+                {
+                    (bool Status, string[] failures) Result = Producer.Instance.Send(new BroadcastRequest(){
+                        _Node = new Node()
+                        {
+                            Name = Params.NODE_NAME,
+                            Key = Params.UNIQUE_KEY,
+                            Host = Params.ADVERTISED_HOST_NAME,
+                            Port = Params.PORT_NUMBER
+                        }
+                    }.EncodeRequestStr(), new string[] {Params.BROADCAST_TOPIC});
+                    status = Result.Status;
+                    if (status) 
+                    {
+                        Logger.Log("Main", "Broadcasted to " + Params.BROADCAST_TOPIC, Logger.LogLevel.INFO);
+                        break;
+                    } 
+                    Logger.Log("Main", "Failed to broadcast, retrying in 1 second...", Logger.LogLevel.WARN);
+                    Utils.Wait(1000);
+                }
+                if (!status) Logger.Log("Broadcast", "Failed to broadcast. Exiting...", Logger.LogLevel.FATAL);
+            
+                Utils.Wait(500);
+                if (Cluster.Instance.Count == 0 || CurrentState.Instance.IsLeader) Consumer.Instance.Start(new string[]{Params.BROADCAST_TOPIC, Params.REQUEST_TOPIC});
+            });
+        }
 
-            Utils.Wait();
+        static void Main(string[] args)
+        {
+            // DEBUGGING 
+            AsDebug();
 
-            Coordinator.Instance.RunCoordinator();
+            Thread loop = Init();
+            
+            // DEBUGGING
+            RunTests();
 
-            Logger.Log("Main", Params.NODE_NAME +" no longer running", Logger.LogLevel.WARN);
+            
+            loop.Start();
+            Broadcast();
+            NodeServer.RunServer();
         }
     }
 }

@@ -4,10 +4,13 @@ services:
     image: wurstmeister/zookeeper
     ports:
       - "2181:2181"
-  kafka:
+
+  kafka_1:
     image: wurstmeister/kafka
     ports:
       - "9092:9092"
+    depends_on: 
+      - "zookeeper"
     environment:
       KAFKA_ADVERTISED_HOST_NAME: 192.168.1.237
       KAFKA_CREATE_TOPICS: "Tangible.broadcast.1:1:1, Tangible.request.1:1:1"
@@ -16,3 +19,22 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock     
+  
+  kafka_2:
+    image: wurstmeister/kafka
+    ports:
+      - "9093:9093"
+    depends_on: 
+      - "zookeeper"
+    environment:
+      # KAFKA_ADVERTISED_HOST_NAME: 192.168.1.237
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.1.237:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
+      KAFKA_CREATE_TOPICS: "MyApplication:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock     
+
+      # KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181

@@ -1,9 +1,26 @@
 #!/usr/bin/env python3.7.2
-import asyncio, json
+import asyncio, json, time
 from datetime import datetime
 from aiokafka import AIOKafkaProducer
 from aiokafka import AIOKafkaConsumer
 import random as rn
+
+class InterfaceResponseHandler:
+    async def handle(self, message):
+        raise NotImplementedError
+
+class ResponseHandler(InterfaceResponseHandler):
+    
+    """
+        Default implementation of model.InterfaceResponseHandler
+    """
+    def __init__(self):
+        self.times = {"sent":[], "received":[]}
+        self.filename = "results_1"
+        self.test = 2
+
+    async def handle(self, message):
+        print(message.value.decode())
 
 class Client:
     def __init__(self, brokers:str, user:str, return_topic:str):
@@ -25,19 +42,27 @@ class Client:
         loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
         print("send request:", query)
 
+    def send_many_write(self, loop, priority, amount):
+        messages = []
+        for i in range(amount):
+            query = '{"TypeOf":"WRITE",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"FLOOR0","LocationOf":null,"HasPoint":null},"HasPoint":null},"Value":"'+str(i)+'"}'
+            messages.append(query)
+        loop.run_until_complete(self.kclient.send_messages('Tangible.request.1', messages))
+            
+
+
     def write(self, loop, priority, value):
-        query = '{"TypeOf":"WRITE",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"FLOOR0","LocationOf":null,"HasPoint":null},"HasPoint":null},"Value":"'+str(value)+'"}'
+        # query = '{"TypeOf":"WRITE",'+'"User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"FLOOR0","LocationOf":null,"HasPoint":null},"HasPoint":null},"Value":"'+str(value)+'"}'        
+        query = '{"ID":null,"TypeOf":"WRITE","Action":"WRITE","User":"'+self.user+'","Priority":'+str(priority)+',"ReturnTopic":"'+self.return_topic+'","Location":{"ID":"MMMI","LocationOf":{"ID":"ROOM-xyz","LocationOf":null,"HasPoint":{"ID":"sensor-xyz"}},"HasPoint":null},"Value":"'+str(value)+'"}'
         loop.run_until_complete(self.kclient.send_message('Tangible.request.1', query))
         print("send request:", query)
 
 
-    def listen(self, loop):
-        loop.run_until_complete(self.kclient.subscribe(self.return_topic))
+    def listen(self, loop, rsh=ResponseHandler()):
+        loop.run_until_complete(self.kclient.subscribe(self.return_topic, rsh))
         loop.run_forever()
 
-class InterfaceResponseHandler:
-    async def handle(self, message):
-        raise NotImplementedError
+
 
 class Admin:
     def __init__(self, brokers: list):
@@ -55,6 +80,14 @@ class Producer:
         finally:
             await self.producer.stop()
 
+    async def send_messages(self, topic, messages:list):
+        await self.producer.start()
+        try:
+            for msg in messages:
+                await self.producer.send_and_wait(topic, msg.encode('utf-8'))
+        finally:
+            await self.producer.stop()
+
 class Consumer: 
     def __init__(self, group:str, host):
         self.host   = host
@@ -67,7 +100,7 @@ class Consumer:
         consumer = AIOKafkaConsumer(
         topics,
         loop=self.loop, bootstrap_servers=self.host,
-        group_id=self.group)
+        group_id=self.group, auto_offset_reset='earliest')
 
         await consumer.start()
         try:
@@ -75,20 +108,6 @@ class Consumer:
                 await response_handler.handle(msg)
         finally:
             await consumer.stop()
-
-
-class ResponseHandler(InterfaceResponseHandler):
-    
-    """
-        Default implementation of model.InterfaceResponseHandler
-    """
-    def __init__(self):
-        self.times = {"sent":[], "received":[]}
-        self.filename = "results_1"
-        self.test = 2
-
-    async def handle(self, message):
-        print(message.value.decode())
 
 class KafkaClient:
     def __init__(self, broker:str, group:str):

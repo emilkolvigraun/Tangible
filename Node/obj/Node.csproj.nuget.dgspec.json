@@ -42,7 +42,7 @@
           "dependencies": {
             "confluent.kafka": {
               "target": "Package",
-              "version": "[1.6.2, )"
+              "version": "[1.6.3, )"
             },
             "docker.dotnet": {
               "target": "Package",
@@ -50,7 +50,7 @@
             },
             "newtonsoft.json": {
               "target": "Package",
-              "version": "[12.0.3, )"
+              "version": "[13.0.1, )"
             }
           },
           "imports": [

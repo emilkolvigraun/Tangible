@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="confluent.kafka" Version="1.6.2" />
+    <PackageReference Include="confluent.kafka" Version="1.6.3" />
     <PackageReference Include="docker.dotnet" Version="3.125.4" />
-    <PackageReference Include="newtonsoft.json" Version="12.0.3" />
+    <PackageReference Include="newtonsoft.json" Version="13.0.1" />
   </ItemGroup>
 
 </Project>

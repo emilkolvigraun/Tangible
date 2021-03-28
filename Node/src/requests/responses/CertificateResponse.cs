@@ -1,0 +1,9 @@
+
+namespace Node 
+{
+    class CertificateResponse : IRequest
+    {
+        public RequestType TypeOf {get; set;} = RequestType.CERTIFICATE;
+        public byte[] Cert {get; set;} = Params.X509CERT_BYTES;
+    }
+}

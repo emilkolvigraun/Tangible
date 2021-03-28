@@ -37,6 +37,7 @@ namespace Driver
                                 Status = true,
                                 Value = exe.Value==null?"value":exe.Value,
                                 PointID = exe.PointID,
+                                TimeStamp = Params.Millis
                             };
 
                             if (exe.TypeOfAction == ActionType.SUBSCRIBE)
@@ -103,10 +104,11 @@ namespace Driver
                                 lock (_lock_4)
                                 {
                                     IRequest response = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rr);
-                                    if (response.TypeOf == RequestType.ST) 
+                                    while (response.TypeOf != RequestType.ST) 
                                     {
-                                        queue.Remove(exe);
+                                        response = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rr);
                                     }
+                                    queue.Remove(exe);
                                 }
                             }
                         }

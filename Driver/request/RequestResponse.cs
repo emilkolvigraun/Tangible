@@ -10,6 +10,6 @@ namespace Driver
         public string JobId {get; set;}        
         public string PointID {get; set;}
         public string Image {get; set;} = Params.IMAGE;        
-        public long TimeStamp {get; set;} = Params.Millis;
+        public long TimeStamp {get; set;}
     }
 }

@@ -19,8 +19,8 @@ namespace Driver
             serverCertificate = Params.X509CERT;
             // Create a TCP/IP (IPv4) socket and listen for incoming connections.
             TcpListener listener = new TcpListener(IPAddress.Any, Params.PORT_NUMBER);
-            listener.Server.ReceiveTimeout = 150;
-            listener.Server.SendTimeout = 150;
+            listener.Server.ReceiveTimeout = 500;
+            listener.Server.SendTimeout = 500;
             listener.Start();
             Console.WriteLine("Running...");
             while (true)

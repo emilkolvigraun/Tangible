@@ -17,7 +17,7 @@ namespace Driver
         {
             IRequest response = new EmptyRequest();
             ReInstanceClient();
-            if(!_Client.ConnectAsync(host, port).Wait(150))
+            if(!_Client.ConnectAsync(host, port).Wait(500))
             {
                 return response;
             }
