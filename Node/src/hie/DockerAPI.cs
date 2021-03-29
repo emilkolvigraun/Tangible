@@ -92,7 +92,7 @@ namespace Node
                 #pragma warning disable CS4014
                 _client.Containers.StartContainerAsync(response.ID, null, cts.Token);
 
-                Utils.Wait(300);
+                Utils.Wait(500);
 
                 Logger.Log("CreateImage", "Started container: " + response.ID, Logger.LogLevel.INFO);
 

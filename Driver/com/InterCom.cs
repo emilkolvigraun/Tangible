@@ -12,33 +12,33 @@ namespace Driver
             IRequest request = byteArr.ParseRequest();
             switch (request.TypeOf)
             {
-                case RequestType.HI:
-                    return ProcessNextJob((Execute)request);
-                case RequestType.RN:
-                    return ProcessRunAs((RunAsRequest)request);
+                case RequestType.EXECUTE:
+                    return ProcessNextJob((DriverRequest)request);
+                // case RequestType.RN:
+                //     return ProcessRunAs((RunAsRequest)request);
                 default:
                     return new EmptyRequest().EncodeRequest();
             }
         }
 
-        public byte[] ProcessNextJob(Execute request)
+        public byte[] ProcessNextJob(DriverRequest request)
         {
-            if (request.TypeOfAction == ActionType.WRITE && request.Value == null)
+            if (request.Action == ActionType.WRITE && request.Value == null)
+            {
                 return new StatusResponse(){Status = false}.EncodeRequest();
-
+            }
             ProcessQueue.Instance.Enqueue(request);
-
             return new StatusResponse(){Status = true}.EncodeRequest();
         }
 
-        public byte[] ProcessRunAs(RunAsRequest request)
-        {
-            if (request.JobID == null)
-                return new StatusResponse(){Status = false}.EncodeRequest();
+        // public byte[] ProcessRunAs(RunAsRequest request)
+        // {
+        //     if (request.JobID == null)
+        //         return new StatusResponse(){Status = false}.EncodeRequest();
 
-            ProcessQueue.Instance.Enqueue(request);
+        //     ProcessQueue.Instance.Enqueue(request);
             
-            return new StatusResponse(){Status = true}.EncodeRequest();
-        }
+        //     return new StatusResponse(){Status = true}.EncodeRequest();
+        // }
     }
 }

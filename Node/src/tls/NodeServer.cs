@@ -53,7 +53,7 @@ namespace Node
             {
                 sslStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired: false, checkCertificateRevocation: true);
 
-                // Set timeouts for the read and write to 200 ms.
+                // Set timeouts for the read and write to timeout ms.
                 sslStream.ReadTimeout = Params.CONNECT_TIMEOUT;
                 sslStream.WriteTimeout = Params.CONNECT_TIMEOUT;
 
@@ -61,9 +61,8 @@ namespace Node
                 byte[] response = new EmptyRequest().EncodeRequest();
                 try 
                 {
-                    Task.Run(()=>{
-                        response = Handler.ProcessRequest(sslStream.ReadRequest());
-                    }).Wait(Params.CONNECT_TIMEOUT);
+                    IRequest request = sslStream.ReadRequest();
+                    response = Handler.ProcessRequest(request);
                 } catch(Exception)
                 {}
                 sslStream.Write(response);

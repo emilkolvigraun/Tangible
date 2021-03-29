@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 
 namespace Driver 
 {
@@ -12,6 +13,7 @@ namespace Driver
             lock(_queue_lock)
             {   
                 ExecuteQueue.Enqueue(task);
+                Console.WriteLine("Enqueued request");
             }
         }
 

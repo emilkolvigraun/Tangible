@@ -1,15 +1,17 @@
-
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 namespace Driver 
 {
     class RequestResponse : IRequest 
     {
-        public RequestType TypeOf {get; set;} = RequestType.RR;
+        [JsonConverter(typeof(StringEnumConverter))] 
+        public RequestType TypeOf {get; set;} = RequestType.RESPONSE;
 
-        public bool Status {get; set;}
+        public string ID {get; set;}
+
+        public long T0 {get; set;}
+        public long T1 {get; set;}
+
         public string Value {get; set;}
-        public string JobId {get; set;}        
-        public string PointID {get; set;}
-        public string Image {get; set;} = Params.IMAGE;        
-        public long TimeStamp {get; set;}
     }
 }

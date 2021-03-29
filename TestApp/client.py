@@ -13,7 +13,7 @@ def get_time_ms():
 amount = 100
 send = 0
 
-frequency = 1 #hz
+frequency = 10 #hz
 update_interval = (1/frequency)*1000
 
 t0 = time.time()*1000

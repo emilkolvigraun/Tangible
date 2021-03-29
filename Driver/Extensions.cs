@@ -118,10 +118,10 @@ namespace Driver
                 switch (typeOf.GetRequestType())
                 {
                     // Intercom requests
-                    case RequestType.HI:
-                        return JsonConvert.DeserializeObject<Execute>(request);
-                    case RequestType.RN:
-                        return JsonConvert.DeserializeObject<RunAsRequest>(request);
+                    case RequestType.EXECUTE:
+                        return JsonConvert.DeserializeObject<DriverRequest>(request);
+                    // case RequestType.RN:
+                    //     return JsonConvert.DeserializeObject<RunAsRequest>(request);
                     // default
                     default:
                         return JsonConvert.DeserializeObject<EmptyRequest>(request);

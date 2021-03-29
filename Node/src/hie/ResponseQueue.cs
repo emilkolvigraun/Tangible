@@ -35,6 +35,14 @@ namespace Node
                     T1 = response.T1,
                     T2 = Utils.Millis,
                 }.Serialize(), RequestQueue.Instance.GetReturnTopic(response.ID)));
+
+                if (CurrentState.Instance.GetState == State.LEADER || CurrentState.Instance.GetState == State.SLEEPING)
+                {
+                    RequestQueue.Instance.DetachRequest(response.ID);
+                } else 
+                {
+                    RequestQueue.Instance.CompleteRequest(response.ID);
+                }
             }
         }
 

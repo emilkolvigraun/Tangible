@@ -181,27 +181,10 @@ namespace Node
                 {
                     Ledger.Instance.ScheduleRequest(request);
                 }
-                SleeperRequestQueue();
+                ActAsFollower();
             } catch(Exception e)
             {
                 Logger.Log("ActAsSleeper", e.Message, Logger.LogLevel.ERROR);
-            }
-        }
-
-        private void SleeperRequestQueue(int index = 0)
-        {
-            Request request = RequestQueue.Instance.Peek(index);
-
-            if (request != null)
-            {
-                bool status = Containers.Instance.ExecuteRequest(request);
-                if (!status) SleeperRequestQueue(index+1);
-                else 
-                {
-                    RequestQueue.Instance.Dequeue();
-                }
-                
-                // RequestQueue.Instance.DetachRequest(request.ID);
             }
         }
 
@@ -212,11 +195,13 @@ namespace Node
             if (request != null)
             {
                 bool status = Containers.Instance.ExecuteRequest(request);
-                if (!status) ActAsFollower(index+1);
-                else RequestQueue.Instance.Dequeue();
-
-                RequestQueue.Instance.CompleteRequest(request.ID);
+                if (status) RequestQueue.Instance.Dequeue(index);
+                // if (!status) ActAsFollower(index+1);
+                // else RequestQueue.Instance.Dequeue(index);
             }
+
+            if (!ResponseQueue.Instance.IsBusy)
+                ResponseQueue.Instance.Empty();
         }
     }
 }

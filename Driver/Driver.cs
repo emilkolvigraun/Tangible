@@ -15,7 +15,7 @@ namespace Driver
         private int total = 0;
 
         private NodeClient Client = new NodeClient();
-        private List<Execute> queue = new List<Execute>();
+        private List<DriverRequest> queue = new List<DriverRequest>();
         private Dictionary<string, List<RequestResponse>> memory = new Dictionary<string, List<RequestResponse>>();
         private Dictionary<string, RunAsRequest> report = new Dictionary<string, RunAsRequest>();
 
@@ -28,103 +28,43 @@ namespace Driver
                     lock(_lock_1)
                     {
 
-                        List<Execute> queueCopy = queue.ToList();
+                        List<DriverRequest> queueCopy = queue.ToList();
 
-                        foreach(Execute exe in queueCopy)
+                        foreach(DriverRequest exe in queueCopy)
                         {
                             RequestResponse rr = new RequestResponse(){
-                                JobId = exe.JobID,
-                                Status = true,
-                                Value = exe.Value==null?"value":exe.Value,
-                                PointID = exe.PointID,
-                                TimeStamp = Params.Millis
+                                ID = exe.ID,
+                                T0 = exe.T0,
+                                T1 = Params.Millis,
+                                Value = exe.Value
                             };
 
-                            if (exe.TypeOfAction == ActionType.SUBSCRIBE)
+                            lock (_lock_4)
                             {
-
-                                lock (_lock_2)
+                                IRequest response = Client.Run(rr);
+                                while (response.TypeOf != RequestType.STATUS) 
                                 {
-
-                                    if (report.ContainsKey(exe.JobID))
-                                    {
-                                        exe.JobType = JobType.OP;
-                                    }
-
-                                    if (exe.JobType == JobType.OP)
-                                    {
-                                        lock(_lock_3)
-                                        {
-                                            bool status = true;
-                                            if (memory.ContainsKey(exe.JobID))
-                                            {
-                                                List<RequestResponse> rrl = memory[exe.JobID].ToList(); 
-                                                for (int i = 0; i < rrl.Count; i++)
-                                                {
-                                                    IRequest r0 = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rrl[i]);
-                                                    if (r0.TypeOf == RequestType.ST) 
-                                                    {
-                                                        memory[exe.JobID].RemoveAt(i);
-                                                    } else 
-                                                    {   
-                                                        status = false;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-
-                                            if (status)
-                                            {
-                                                IRequest r1 = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rr);
-                                                // if (r1.TypeOf == RequestType.ST) 
-                                                // {
-                                                //     queue.Remove(exe);
-                                                // }
-                                            }
-                                        }
-
-                                        
-                                    } else 
-                                    {
-                                        lock(_lock_3)
-                                        {
-                                            if (!memory.ContainsKey(exe.JobID))
-                                            {
-                                                memory.Add(exe.JobID, new List<RequestResponse>());
-                                            }
-
-                                            memory[exe.JobID].Add(rr);
-
-                                            if (memory[exe.JobID].Count > 200)
-                                                memory[exe.JobID].RemoveAt(0);
-                                        }
-                                    }
+                                    Console.WriteLine("Unable to transmit");
+                                    response = Client.Run(rr);
                                 }
-                            } else {
-                                lock (_lock_4)
-                                {
-                                    IRequest response = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rr);
-                                    while (response.TypeOf != RequestType.ST) 
-                                    {
-                                        response = Client.WriteRequest(Params.NODE_HOST, Params.NODE_PORT, Params.NODE_NAME, rr);
-                                    }
-                                    queue.Remove(exe);
-                                }
+                                Console.WriteLine("Transmitted");
+                                queue.Remove(exe);
                             }
+                            
                         }
                     }
                 }
             });
         }
 
-        public void ProcessExecute(Execute request)
+        public void ProcessExecute(DriverRequest request)
         {
             // request.
             lock(_lock_1)
             {
                 queue.Add(request);
                 total++;
-                Console.WriteLine(request.EncodeRequestStr() + ", total Execute: " + total.ToString());
+                Console.WriteLine("total: " + total.ToString());
             }
         }
 

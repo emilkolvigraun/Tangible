@@ -93,11 +93,16 @@ namespace Node
             }
         }
 
-        public void Dequeue()
+        public void Dequeue(int index)
         {
             lock(_lock)
             {
-                _queue.RemoveFirst();
+                if (index == 0)
+                    _queue.RemoveFirst();
+                else if(_queue.Count > index)
+                {
+                    _queue.Remove(_queue.ElementAt(index));
+                }
             }
         }
 

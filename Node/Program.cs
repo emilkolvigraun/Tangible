@@ -47,13 +47,13 @@ namespace Node
                 loop.Run();
             });
 
-            Task.Run(() => {
-                foreach(string img in HardwareAbstraction.Images)
-                {
-                    Containers.Instance.CreateContainer(img);
-                    while (true) {if(!Containers.Instance.IsBusy)break;}
-                }
-            }).Wait();
+            // Task.Run(() => {
+            //     foreach(string img in HardwareAbstraction.Images)
+            //     {
+            //         Containers.Instance.CreateContainer(img);
+            //         while (true) {if(!Containers.Instance.IsBusy)break;}
+            //     }
+            // }).Wait();
 
             return loopThread;
         }

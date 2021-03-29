@@ -43,27 +43,34 @@ namespace Node
             // Read the  message sent by the client.
             // The client signals the end of the message using the
             // "<EOF>" marker.
+
             byte[] b = new byte[2048];
             byte[] cb = null;
-            int bytes = -1;
-            do
+            try 
             {
-                bytes = sslStream.Read(b, 0, b.Length);
-                byte[] rb = b.Take(bytes).ToArray();
-                if (cb == null) cb = rb;
-                else
+                int bytes = -1;
+                do
                 {
-                    byte[] tb = new byte[cb.Length + rb.Length];
-                    int offset = 0;
-                    Buffer.BlockCopy(cb, 0, tb, offset, cb.Length);
-                    offset += cb.Length;
-                    Buffer.BlockCopy(rb, 0, tb, offset, rb.Length);
-                    cb = tb;
-                }
+                    bytes = sslStream.Read(b, 0, b.Length);
+                    byte[] rb = b.Take(bytes).ToArray();
+                    if (cb == null) cb = rb;
+                    else
+                    {
+                        byte[] tb = new byte[cb.Length + rb.Length];
+                        int offset = 0;
+                        Buffer.BlockCopy(cb, 0, tb, offset, cb.Length);
+                        offset += cb.Length;
+                        Buffer.BlockCopy(rb, 0, tb, offset, rb.Length);
+                        cb = tb;
+                    }
 
-                if (bytes < 2048) break;
+                    if (bytes < 2048) break;
 
-            } while (bytes != 0);
+                } while (bytes != 0);
+            } catch (Exception e)
+            {
+                Logger.Log("ReadRequest", e.Message + "\n" + e.StackTrace, Logger.LogLevel.ERROR);
+            }
 
             return cb.GetString().DecodeRequest();
         }
@@ -120,6 +127,8 @@ namespace Node
                         return JsonConvert.DeserializeObject<AppendEntryResponse>(request);
                     case RequestType.RESPONSE:
                         return JsonConvert.DeserializeObject<RequestResponse>(request);
+                    case RequestType.STATUS:
+                        return JsonConvert.DeserializeObject<StatusResponse>(request);
                     case RequestType.EXECUTE:
                         return JsonConvert.DeserializeObject<DriverRequest>(request);
                     case RequestType.READ or RequestType.WRITE or RequestType.SUBSCRIBE:

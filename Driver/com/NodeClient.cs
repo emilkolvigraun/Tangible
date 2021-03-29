@@ -3,6 +3,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Collections;
 
 namespace Driver
 {
@@ -11,62 +12,68 @@ namespace Driver
 
         private readonly object _lock = new object();
         private TcpClient _Client = new TcpClient();
+        SslStream sslStream = null;
         LingerOption _lingerOption = new LingerOption(false, 1);
 
-        public IRequest WriteRequest(string host, int port, string targetHost, IRequest request, bool timeout = false)
+        private string Host;
+        private int Port;
+        private string Name;
+
+        public NodeClient ()
         {
-            IRequest response = new EmptyRequest();
-            ReInstanceClient();
-            if(!_Client.ConnectAsync(host, port).Wait(500))
-            {
-                return response;
-            }
-            
-            // Create an SSL stream that will close the client's stream.
-            SslStream sslStream = new SslStream(
-                _Client.GetStream(),
-                false,
-                new RemoteCertificateValidationCallback (ValidateServerCertificate),
-                null
-                );
-                
-            // The server name must match the name on the server certificate.
-            try
-            {
-                sslStream.AuthenticateAsClient(targetHost);
-            }
-            catch (AuthenticationException e)
-            {
-                sslStream.Close();
-                return response;
-            }
-            
-            // encoding request
-            sslStream.Write(request.EncodeRequest());
-            sslStream.Flush();
-
-            // Read message from the server.
-            try 
-            {
-                response = sslStream.ReadRequest().ParseRequest();
-            } catch (Exception)
-            {
-            }
-                
-            // Close the client connection.
-            sslStream.Close();
-
-            return response;
+            Host = Params.NODE_HOST;
+            Port = Params.NODE_PORT;
+            Name = Params.NODE_NAME;
         }
-        
-        private void ReInstanceClient()
+
+        private static Hashtable certificateErrors = new Hashtable();
+
+        public IRequest Run(IRequest request)
         {
-            if (_Client != null)
+            lock(_lock)
             {
-                _Client.Close();
+                IRequest response = new EmptyRequest();
+                // Create a TCP/IP client socket.
+                // machineName is the host running the server application.
+                TcpClient client = new TcpClient(Host, Port);
+                // if (!client.ConnectAsync(Host, Port).Wait(100)) return response;
+                // Console.WriteLine("Client connected.");
+                // Create an SSL stream that will close the client's stream.
+                SslStream sslStream = new SslStream(
+                    client.GetStream(),
+                    false,
+                    new RemoteCertificateValidationCallback (ValidateServerCertificate),
+                    null
+                    );
+                // The server name must match the name on the server certificate.
+                try
+                {
+                    sslStream.AuthenticateAsClient(Name, null, SslProtocols.Tls|SslProtocols.Tls11|SslProtocols.Tls12|SslProtocols.Tls13, false);
+                }
+                catch (AuthenticationException e)
+                {
+                    Console.WriteLine("Exception: {0}", e.Message);
+                    if (e.InnerException != null)
+                    {
+                        Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
+                    }
+                    Console.WriteLine ("Authentication failed - closing the connection.");
+                    client.Close();
+                    return response;
+                }
+
+                // Send hello message to the server.
+                sslStream.Write(request.EncodeRequest());
+                sslStream.Flush();
+                // Read message from the server.
+                response = sslStream.ReadRequest().ParseRequest();
+                
+                // Close the client connection.
+                client.Close();
+
+                return response;
             }
-            _Client = new TcpClient();
-            _Client.Client.LingerState = _lingerOption;
+            
         }
 
         // The following method is invoked by the RemoteCertificateValidationDelegate.

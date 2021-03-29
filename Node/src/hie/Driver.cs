@@ -1,3 +1,4 @@
+using System;
 
 namespace Node 
 {
@@ -20,9 +21,17 @@ namespace Node
 
         public bool TransmitRequest(Request request)
         {
-            DriverRequest r0 = DriverRequest.Create(request); 
-            IRequest Response = Client.Run(r0);
-            return (Response.TypeOf == RequestType.STATUS && ((StatusResponse)Response).Status);
+            IRequest Response = null;
+            try 
+            {
+                DriverRequest r0 = DriverRequest.Create(request); 
+                Response = Client.Run(r0);
+                return (Response.TypeOf == RequestType.STATUS && ((StatusResponse)Response).Status);
+            } catch(Exception e)
+            {
+                Logger.Log("TransmitRequest", e.Message +  "Failed to transmit execute to driver: " + (Response == null?"null":Response.TypeOf.ToString()) , Logger.LogLevel.WARN);
+                return false;
+            }
         }
     }
 }

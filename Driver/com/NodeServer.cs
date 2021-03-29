@@ -19,8 +19,8 @@ namespace Driver
             serverCertificate = Params.X509CERT;
             // Create a TCP/IP (IPv4) socket and listen for incoming connections.
             TcpListener listener = new TcpListener(IPAddress.Any, Params.PORT_NUMBER);
-            listener.Server.ReceiveTimeout = 500;
-            listener.Server.SendTimeout = 500;
+            listener.Server.ReceiveTimeout = 5000;
+            listener.Server.SendTimeout = 5000;
             listener.Start();
             Console.WriteLine("Running...");
             while (true)
@@ -31,6 +31,7 @@ namespace Driver
                 {
                     TcpClient client = listener.AcceptTcpClient();
                     ProcessClient(client);
+                    Console.WriteLine("ready for next client");
                 } catch (Exception e)
                 {Console.WriteLine("ERROR: " + e.Message);}
             }
@@ -47,14 +48,18 @@ namespace Driver
                 sslStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired: false, checkCertificateRevocation: true);
 
                 // Set timeouts for the read and write to 200 ms.
-                sslStream.ReadTimeout = 500;
-                sslStream.WriteTimeout = 500;
+                sslStream.ReadTimeout = 5000;
+                sslStream.WriteTimeout = 5000;
 
                 // Read a message from the client.
                 try
                 {
-                    byte[] response = Handler.ProcessRequest(sslStream.ReadRequest());
+                    byte[] request = sslStream.ReadRequest();
+                    Console.WriteLine("RECEIVED:" + request.GetString());
+                    byte[] response = Handler.ProcessRequest(request);
                     sslStream.Write(response);
+                    Console.WriteLine("RESPONDED:" + response.GetString());
+                    sslStream.Flush();
                 } catch(Exception e)
                 {
                     Console.WriteLine("ERROR: " + e.Message);

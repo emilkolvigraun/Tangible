@@ -28,13 +28,12 @@ namespace Driver
                 IRequest exe = ProcessQueue.Instance.Dequeue();
                 if (exe != null)
                 {
-                    if (exe.TypeOf == RequestType.HI)
-                    {
-                        driver.ProcessExecute((Execute)exe);
-                    } else if (exe.TypeOf == RequestType.RN)
-                    {
-                        driver.ProcessRunAs((RunAsRequest)exe);
-                    }
+                    driver.ProcessExecute((DriverRequest)exe);
+                    
+                    // } else if (exe.TypeOf == RequestType.RN)
+                    // {
+                    //     driver.ProcessRunAs((RunAsRequest)exe);
+                    // }
                 }
             }
         }

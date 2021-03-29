@@ -8,6 +8,8 @@ namespace Node
         public ActionType Action {get; set;}
         public string Value {get; set;}
         public string PointID {get; set;}
+        
+        public long T0 {get; set;}
 
         public static DriverRequest Create(Request request)
         {
@@ -15,7 +17,8 @@ namespace Node
                 Action = request.TypeOf,
                 ID = request.ID,
                 Value = request.Value,
-                PointID = request.PointID
+                PointID = request.PointID,
+                T0 = request.Timestamp
             };
         }
     }

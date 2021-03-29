@@ -44,6 +44,7 @@ namespace Node
                 lock(_lock)
                 {
                     this._Drivers.Add(image, driver);
+                    Utils.Wait(300);
                 }
                 busy = false;
             });
@@ -57,6 +58,8 @@ namespace Node
             }
         }
 
+        private bool sending = false;
+
         public bool ExecuteRequest(Request request)
         {
             lock (_lock)
@@ -67,7 +70,14 @@ namespace Node
                     return false;
                 }
 
-                return _Drivers[request.Image].TransmitRequest(request);
+                if(!sending)
+                {
+                    sending = true;
+                    bool status = _Drivers[request.Image].TransmitRequest(request);
+                    sending = false;
+                    return status;
+                } 
+                return false;
             }
         }
     }
