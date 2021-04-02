@@ -33,44 +33,52 @@ namespace Driver
             lock(_lock)
             {
                 IRequest response = new EmptyRequest();
-                // Create a TCP/IP client socket.
-                // machineName is the host running the server application.
-                TcpClient client = new TcpClient(Host, Port);
-                // if (!client.ConnectAsync(Host, Port).Wait(100)) return response;
-                // Console.WriteLine("Client connected.");
-                // Create an SSL stream that will close the client's stream.
-                SslStream sslStream = new SslStream(
-                    client.GetStream(),
-                    false,
-                    new RemoteCertificateValidationCallback (ValidateServerCertificate),
-                    null
-                    );
-                // The server name must match the name on the server certificate.
-                try
+                try 
                 {
-                    sslStream.AuthenticateAsClient(Name, null, SslProtocols.Tls|SslProtocols.Tls11|SslProtocols.Tls12|SslProtocols.Tls13, false);
-                }
-                catch (AuthenticationException e)
-                {
-                    Console.WriteLine("Exception: {0}", e.Message);
-                    if (e.InnerException != null)
+                    // Create a TCP/IP client socket.
+                    // machineName is the host running the server application.
+                    TcpClient client = new TcpClient(Host, Port);
+                    // if (!client.ConnectAsync(Host, Port).Wait(500)) return response;
+                    // Console.WriteLine("Client connected.");
+                    // Create an SSL stream that will close the client's stream.
+                    SslStream sslStream = new SslStream(
+                        client.GetStream(),
+                        false,
+                        new RemoteCertificateValidationCallback (ValidateServerCertificate),
+                        null
+                        );
+                    // The server name must match the name on the server certificate.
+                    try
                     {
-                        Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
+                        sslStream.AuthenticateAsClient(Name, null, SslProtocols.Tls|SslProtocols.Tls11|SslProtocols.Tls12|SslProtocols.Tls13, false);
                     }
-                    Console.WriteLine ("Authentication failed - closing the connection.");
+                    catch (AuthenticationException e)
+                    {
+                        Console.WriteLine("Exception: {0}", e.Message);
+                        if (e.InnerException != null)
+                        {
+                            Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
+                        }
+                        Console.WriteLine ("Authentication failed - closing the connection.");
+                        client.Close();
+                        return response;
+                    }
+
+                    try 
+                    {
+                        // Send hello message to the server.
+                        sslStream.Write(request.EncodeRequest());
+                        sslStream.Flush();
+                        // Read message from the server.
+                        response = sslStream.ReadRequest().ParseRequest();
+                    } catch (Exception e)
+                    {Console.WriteLine(e.Message);}
+                    
+                    // Close the client connection.
                     client.Close();
-                    return response;
-                }
 
-                // Send hello message to the server.
-                sslStream.Write(request.EncodeRequest());
-                sslStream.Flush();
-                // Read message from the server.
-                response = sslStream.ReadRequest().ParseRequest();
-                
-                // Close the client connection.
-                client.Close();
-
+                } catch(Exception e)
+                {Console.WriteLine(e.Message);}
                 return response;
             }
             

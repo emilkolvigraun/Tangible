@@ -1,0 +1,36 @@
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\TangibleNode.exe
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\TangibleNode.deps.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\TangibleNode.runtimeconfig.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\TangibleNode.runtimeconfig.dev.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\ref\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\TangibleNode.pdb
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\bin\Debug\net5.0\Newtonsoft.Json.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.csprojAssemblyReference.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.AssemblyInfoInputs.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.AssemblyInfo.cs
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.csproj.CoreCompileInputs.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.csproj.CopyComplete
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\ref\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.pdb
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\New folder\obj\Debug\net5.0\TangibleNode.genruntimeconfig.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\TangibleNode.exe
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\TangibleNode.deps.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\TangibleNode.runtimeconfig.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\TangibleNode.runtimeconfig.dev.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\ref\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\TangibleNode.pdb
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\Newtonsoft.Json.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.csprojAssemblyReference.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.AssemblyInfoInputs.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.AssemblyInfo.cs
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.csproj.CoreCompileInputs.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.csproj.CopyComplete
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\ref\TangibleNode.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.pdb
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.genruntimeconfig.cache

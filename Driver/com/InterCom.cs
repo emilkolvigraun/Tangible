@@ -23,12 +23,13 @@ namespace Driver
 
         public byte[] ProcessNextJob(DriverRequest request)
         {
-            if (request.Action == ActionType.WRITE && request.Value == null)
-            {
-                return new StatusResponse(){Status = false}.EncodeRequest();
-            }
-            ProcessQueue.Instance.Enqueue(request);
-            return new StatusResponse(){Status = true}.EncodeRequest();
+            Console.WriteLine(request.EncodeRequestStr());
+            return new RequestResponse(){
+                ID = request.ID,
+                T0 = request.T0,
+                T1 = Params.Millis,
+                Value = request.Value
+            }.EncodeRequest();
         }
 
         // public byte[] ProcessRunAs(RunAsRequest request)

@@ -1,40 +1,99 @@
-version: '2'
+version: '2.1'
+
 services:
-  zookeeper:
-    image: wurstmeister/zookeeper
+  zoo1:
+    image: zookeeper:3.4.9
+    hostname: zoo1
     ports:
       - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+    volumes:
+      - ./zk-multiple-kafka-multiple/zoo1/data:/data
+      - ./zk-multiple-kafka-multiple/zoo1/datalog:/datalog
 
-  kafka_1:
-    image: wurstmeister/kafka
+  zoo2:
+    image: zookeeper:3.4.9
+    hostname: zoo2
+    ports:
+      - "2182:2182"
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_PORT: 2182
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+    volumes:
+      - ./zk-multiple-kafka-multiple/zoo2/data:/data
+      - ./zk-multiple-kafka-multiple/zoo2/datalog:/datalog
+
+  zoo3:
+    image: zookeeper:3.4.9
+    hostname: zoo3
+    ports:
+      - "2183:2183"
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_PORT: 2183
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+    volumes:
+      - ./zk-multiple-kafka-multiple/zoo3/data:/data
+      - ./zk-multiple-kafka-multiple/zoo3/datalog:/datalog
+
+
+  kafka1:
+    image: confluentinc/cp-kafka:5.5.1
+    hostname: kafka1
     ports:
       - "9092:9092"
-    depends_on: 
-      - "zookeeper"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.1.237
-      KAFKA_CREATE_TOPICS: "Tangible.broadcast.1:1:1, Tangible.request.1:1:1"
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 1
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181,zoo2:2182,zoo3:2183"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock     
-  
-  kafka_2:
-    image: wurstmeister/kafka
+      - ./zk-multiple-kafka-multiple/kafka1/data:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+
+  kafka2:
+    image: confluentinc/cp-kafka:5.5.1
+    hostname: kafka2
     ports:
       - "9093:9093"
-    depends_on: 
-      - "zookeeper"
     environment:
-      # KAFKA_ADVERTISED_HOST_NAME: 192.168.1.237
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.1.237:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
-      KAFKA_CREATE_TOPICS: "MyApplication:1:1"
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 1
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka2:19093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181,zoo2:2182,zoo3:2183"
+      KAFKA_BROKER_ID: 2
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock     
+      - ./zk-multiple-kafka-multiple/kafka2/data:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
 
-      # KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  kafka3:
+    image: confluentinc/cp-kafka:5.5.1  
+    hostname: kafka3
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka3:19094,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181,zoo2:2182,zoo3:2183"
+      KAFKA_BROKER_ID: 3
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+    volumes:
+      - ./zk-multiple-kafka-multiple/kafka3/data:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3

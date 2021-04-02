@@ -3,17 +3,17 @@ import tangible_client, asyncio, time
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-client = tangible_client.Client(brokers="192.168.1.237:9092,192.168.1.237:9093", user="test-user", return_topic="MyApplication")
+client = tangible_client.Client(brokers="192.168.1.237:9092,192.168.1.237:9093,192.168.1.237:9094", user="test-user", return_topic="MyApplication")
 
 # client.send_many_write(loop, 2, 10000)
 
 def get_time_ms():
     return time.time()*1000
 
-amount = 100
+amount = 10000
 send = 0
 
-frequency = 10 #hz
+frequency = 100 #hz
 update_interval = (1/frequency)*1000
 
 t0 = time.time()*1000

@@ -22,39 +22,38 @@ namespace Driver
         public void Run()
         {
             Console.WriteLine("Running driver loop...");
-            Task.Run(() => {
-                while(true)
+            while(true)
+            {
+                lock(_lock_1)
                 {
-                    lock(_lock_1)
+
+                    List<DriverRequest> queueCopy = queue.ToList();
+
+                    foreach(DriverRequest exe in queueCopy)
                     {
+                        RequestResponse rr = new RequestResponse(){
+                            ID = exe.ID,
+                            T0 = exe.T0,
+                            T1 = Params.Millis,
+                            Value = exe.Value
+                        };
 
-                        List<DriverRequest> queueCopy = queue.ToList();
-
-                        foreach(DriverRequest exe in queueCopy)
+                        lock (_lock_4)
                         {
-                            RequestResponse rr = new RequestResponse(){
-                                ID = exe.ID,
-                                T0 = exe.T0,
-                                T1 = Params.Millis,
-                                Value = exe.Value
-                            };
-
-                            lock (_lock_4)
+                            IRequest response = Client.Run(rr);
+                            while (response.TypeOf != RequestType.STATUS) 
                             {
-                                IRequest response = Client.Run(rr);
-                                while (response.TypeOf != RequestType.STATUS) 
-                                {
-                                    Console.WriteLine("Unable to transmit");
-                                    response = Client.Run(rr);
-                                }
-                                Console.WriteLine("Transmitted");
-                                queue.Remove(exe);
+                                Console.WriteLine("Unable to transmit");
+                                response = Client.Run(rr);
                             }
-                            
+                            Console.WriteLine("Transmitted, " + queue.Count);
+                            queue.Remove(exe);
                         }
+                        
                     }
                 }
-            });
+            }
+            Console.WriteLine("STOPPED!!!");
         }
 
         public void ProcessExecute(DriverRequest request)
@@ -64,7 +63,7 @@ namespace Driver
             {
                 queue.Add(request);
                 total++;
-                Console.WriteLine("total: " + total.ToString());
+                Console.WriteLine("total: " + total.ToString() + ", queue:" + queue.Count);
             }
         }
 

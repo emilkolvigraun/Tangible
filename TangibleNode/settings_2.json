@@ -1,0 +1,8 @@
+{
+    "Host": "192.168.1.237",
+    "Port": 5002,
+    "ID": "TcpNode2",
+    "RDFPath":"C:\\Model\\Is\\Located\\Somewhere\\RDF.ttl",
+    "RequestTopic":"tangible.requests.1",
+    "BroadcastTopic":"tangible.cluster.1"
+}
