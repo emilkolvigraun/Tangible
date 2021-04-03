@@ -19,6 +19,10 @@ namespace TangibleNode
         public int Priority {get; set;}
         public string ID {get; set;}
         public string Assigned {get; set;}
+        public string ReturnTopic {get; set;}
+
+        // DEBUGGING
         public string T0  {get; set;}
+        public string T1  {get; set;}
     }   
 }

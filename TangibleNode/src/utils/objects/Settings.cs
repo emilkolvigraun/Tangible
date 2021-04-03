@@ -12,6 +12,11 @@ namespace TangibleNode
         public string BroadcastTopic {get; set;} = string.Empty;
         public string RequestTopic {get; set;} = string.Empty;
 
+        public string DockerRemoteHost {get; set;} = string.Empty;
+        public string DriverHostName {get; set;} = string.Empty;
+        public int DriverPortRangeStart {get; set;} = 8000;
+        public int DriverPortRangeEnd {get; set;} = 8100;
+
         public Optional Optional {get; set;} = default(Optional);
 
         public List<Node> TcpNodes {get; set;} = new List<Node>();

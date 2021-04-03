@@ -107,7 +107,8 @@ namespace TangibleNode
             {
                 if (!BatchesBehind.ContainsKey(peerID))
                     BatchesBehind.Add(peerID, new TDict<string, Request>());
-                BatchesBehind[peerID].Add(request.ID, request);
+                if (!BatchesBehind[peerID].ContainsKey(request.ID))
+                    BatchesBehind[peerID].Add(request.ID, request);
             }
         }
 
@@ -132,11 +133,19 @@ namespace TangibleNode
             if (action.Assigned == Params.ID)
             {
                 PriorityQueue.Enqueue(action);
-                Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to self");
             } else 
             {
                 Peers.AppendAction(action.Assigned, action);
-                Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
+            }
+        }
+
+        public int LogCount 
+        {
+            get 
+            {
+                int i0 = PriorityQueue.Count;
+                int i1 = Peers.PeerLogCount;
+                return i0+i1;
             }
         }
 

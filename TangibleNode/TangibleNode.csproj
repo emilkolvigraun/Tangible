@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="docker.dotnet" Version="3.125.4" />
     <PackageReference Include="newtonsoft.json" Version="13.0.1" />
   </ItemGroup>
 

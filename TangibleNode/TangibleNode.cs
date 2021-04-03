@@ -1,5 +1,5 @@
 using System.Threading;
-
+using System.Collections.Generic;
 namespace TangibleNode
 {
     class TangibleNode
@@ -19,6 +19,11 @@ namespace TangibleNode
             // initializing the HA and loading the RDF model
             HardwareAbstraction HA = new HardwareAbstraction(settings.RDFPath);
 
+            HardwareInteractionEnvironment hie = new HardwareInteractionEnvironment();
+
+            // prepare warm start
+            HA.LoadDriverImages(hie);
+            
             // initializing the consumer and providing the HA
             Consumer consumer = new Consumer(HA);
 

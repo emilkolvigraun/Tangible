@@ -43,12 +43,12 @@ namespace TangibleNode
         /// <summary>Executed an action for each value in the TDict</summary>
         public void ForEachRead(System.Action<TValue> action)
         {
-            _lock.EnterReadLock();
-            foreach (TValue val in _dict.Values)
+            // _lock.EnterReadLock();
+            foreach (TValue val in _dict.Values.ToList())
             {
                 action(val);
             }
-            _lock.ExitReadLock();
+            // _lock.ExitReadLock();
         }
 
 

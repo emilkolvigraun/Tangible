@@ -3,4 +3,5 @@ C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\pub
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\TangibleNode.deps.json
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\TangibleNode.runtimeconfig.json
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\TangibleNode.pdb
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\Docker.DotNet.dll
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\Newtonsoft.Json.dll

@@ -7,7 +7,20 @@ using System.Collections.Generic;
 
 namespace TangibleNode 
 {
-    public class AsynchronousClient {          
+    class TestHandler
+    {
+        public void OnResponse(TestReceiverClient client, string receiverID, DriverResponse sender, string response)
+        {
+            if (response == string.Empty)
+            {
+                client.StartClient(sender);
+            }
+        }
+    }
+
+
+    public class TestReceiverClient 
+    {          
         // ManualResetEvent instances signal completion.  
         private ManualResetEvent connectDone =
             new ManualResetEvent(false);  
@@ -22,7 +35,7 @@ namespace TangibleNode
 
         private bool _notified {get; set;} = false;
 
-        public AsynchronousClient(string host, int port, string id)
+        public TestReceiverClient(string host, int port, string id)
         {
             Host = host;
             Port = port;
@@ -35,7 +48,8 @@ namespace TangibleNode
         /// <summary>
         /// Establishes connection to the remote host, sends the request an activates OnResponse on the requesthandler
         /// </summary>
-        public void StartClient(RequestBatch request, IResponseHandler rh) {  
+        public void StartClient(DriverResponse request)
+        {  
             // Connect to a remote device.  
             try {  
                 // Establish the remote endpoint for the socket.  
@@ -56,7 +70,7 @@ namespace TangibleNode
                 if (client.Connected)
                 {    
                     // Send test data to the remote device.  
-                    Send(client, Encoder.EncodeRequestBatch(request));  
+                    Send(client, Encoder.EncodeDriverResponse(request));  
                     sendDone.WaitOne();  
         
                     // Receive the response from the remote device.  
@@ -64,7 +78,7 @@ namespace TangibleNode
                     receiveDone.WaitOne();  
         
                     // Activate the responsehandler
-                    rh.OnResponse(ID, request, response);  
+                    new TestHandler().OnResponse(this, ID, request, response);  
                     _notified = true;
                 } 
 
@@ -85,43 +99,36 @@ namespace TangibleNode
                 response = String.Empty;   
             } catch
             {  
-                // Logger.Write(Logger.Tag.ERROR, e.ToString());
                 connectDone.Reset();  
                 sendDone.Reset();  
                 receiveDone.Reset();  
                 response = String.Empty;   
-                HandleFailure(request, rh);
+                HandleFailure(request);
             } 
 
             if (!_notified)
             {
-                HandleFailure(request, rh);
+                HandleFailure(request);
             } else 
             {
                 _notified = false;
             }
+            
+            Logger.Write(Logger.Tag.COMMIT, "Send request to " + request.ReturnTopic);
         }  
         
-        private void HandleFailure(RequestBatch request, IResponseHandler rh)
+        private void HandleFailure(DriverResponse request)
         {
-            Dictionary<string, bool> r0 = new Dictionary<string, bool>();
-            foreach (Request r1 in request.Batch)
-            {
-                r0.Add(r1.ID, false);
-            }
-
             // Activate the responsehandler
-            rh.OnResponse(ID, request, Encoder.SerializeResponse(new Response(){
-                Status = r0
-            }));  
+            new TestHandler().OnResponse(this, ID, request, string.Empty);  
             
             Logger.Write(Logger.Tag.WARN, "Unable to connect to [node:" + ID +"][retries:"+StateLog.Instance.Peers.GetHeartbeat(ID)+"]");
-            StateLog.Instance.Peers.AccessHeartbeat(ID, (hb) => {hb.Increment();});   
             _notified = true;
         }
     
         private void ConnectCallback(IAsyncResult ar) {  
-            try {  
+            try 
+            {  
                 // Retrieve the socket from the state object.  
                 Socket client = (Socket) ar.AsyncState;  
 
@@ -132,10 +139,7 @@ namespace TangibleNode
                     // Signal that the connection has been made.  
                     connectDone.Set();                  
                 }
-    
-            } catch
-            {  
-            }  
+            } catch {}  
         }  
     
         private void Receive(Socket client) {  

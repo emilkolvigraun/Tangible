@@ -17,7 +17,7 @@ namespace TangibleNode
 
         public void AddNewNode(Node node)
         {
-            if (node.ID == Params.ID) return;
+            if (node.ID.Contains(Params.ID)) return;
             bool b = AddIfNew(node);
             if (b)
             {
@@ -33,6 +33,7 @@ namespace TangibleNode
 
         public bool AddIfNew(Node node)
         {
+            if (node==null || node.ID.Contains(Params.ID)) return false;
             bool b = _nodes.ContainsKey(node.ID);
             if (!b)
             {
@@ -84,7 +85,7 @@ namespace TangibleNode
             }
         }
 
-        public int LogCount 
+        public int PeerLogCount 
         {
             get 
             {
@@ -109,7 +110,7 @@ namespace TangibleNode
             _nodes[id].AddAction(action);
         }
 
-        public string ScheduleAction()
+        public string ScheduleAction(string avoid = "")
         {
             if (NodeCount < 1) return Params.ID;
             KeyValuePair<string, Peer>[] peers = new KeyValuePair<string, Peer>[NodeCount];
@@ -121,12 +122,15 @@ namespace TangibleNode
             string selected_peer_name = selected_peer.Client.ID;
             foreach (KeyValuePair<string, Peer> peer in peers)
             {
+                if (peer.Value.Client.ID == avoid || peer.Value.Heartbeat.Value > 0) continue;
                 if (peer.Value.ActionCount < selected_peer.ActionCount)
                 {
                     selected_peer_name = peer.Value.Client.ID;
                     selected_peer = peer.Value;
                 }
             }
+
+            if (selected_peer_name == avoid || selected_peer.Heartbeat.Value > 0) return Params.ID;
 
             return selected_peer_name;
         }
@@ -137,7 +141,8 @@ namespace TangibleNode
         /// </summary>
         public void AccessHeartbeat(string ID, System.Action<TInt> action)
         {
-            action(_nodes[ID].Heartbeat);
+            if (_nodes.ContainsKey(ID))
+                action(_nodes[ID].Heartbeat);
         }
 
         public void ForEachAsync(System.Action<Peer> action, out Task[] tasks)

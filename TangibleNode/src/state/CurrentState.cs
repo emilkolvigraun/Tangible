@@ -5,6 +5,7 @@ namespace TangibleNode
     {
         public TTimer Timer {get;} = new TTimer("mainLoop");
         private TState _state {get;} = new TState();
+        private readonly object _object_lock = new object();
 
         public bool IsLeader
         {

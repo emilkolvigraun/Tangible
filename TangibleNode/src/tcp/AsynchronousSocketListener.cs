@@ -4,14 +4,23 @@ using System.Net.Sockets;
 using System.Text;  
 using System.Threading;  
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace TangibleNode 
 {
     public class AsynchronousSocketListener
     {
+        LingerOption _linger = new LingerOption(false, 0);
+
         // Thread signal.  
         public ManualResetEvent allDone = new ManualResetEvent(false);
+
+        private TestReceiverClient _debuggingClient {get;}
+
+        public AsynchronousSocketListener()
+        {
+            _debuggingClient = new TestReceiverClient(Params.HOST, 9000, "TestReceiver");
+        }
 
         /// <summary>
         /// Establishes the local endpoint for the socket
@@ -51,68 +60,104 @@ namespace TangibleNode
 
         public void AcceptCallback(IAsyncResult ar)
         {
-            // Signal the main thread to continue.  
-            allDone.Set();  
+            try 
+            {
+                // Signal the main thread to continue.  
+                allDone.Set();  
 
-            // Get the socket that handles the client request.  
-            Socket listener = (Socket) ar.AsyncState;  
-            Socket handler = listener.EndAccept(ar);  
+                // Get the socket that handles the client request.  
+                Socket listener = (Socket) ar.AsyncState;  
+                Socket handler = listener.EndAccept(ar);  
 
-            // Create the state object.  
-            StateObject state = new StateObject();  
-            state.workSocket = handler;  
-            handler.BeginReceive( state.buffer, 0, StateObject.BufferSize, 0,  
-                new AsyncCallback(ReadCallback), state);  
+                // Create the state object.  
+                StateObject state = new StateObject();  
+                state.workSocket = handler;  
+                handler.BeginReceive( state.buffer, 0, StateObject.BufferSize, 0,  
+                    new AsyncCallback(ReadCallback), state);  
+            } catch (Exception e) {  
+                Console.WriteLine(e.ToString());  
+            }  
         }
 
         public void ReadCallback(IAsyncResult ar)
         {
-            String content = String.Empty;  
+            try 
+            {
+                String content = String.Empty;  
 
-            // Retrieve the state object and the handler socket  
-            // from the asynchronous state object.  
-            StateObject state = (StateObject) ar.AsyncState;  
-            Socket handler = state.workSocket;  
+                // Retrieve the state object and the handler socket  
+                // from the asynchronous state object.  
+                StateObject state = (StateObject) ar.AsyncState;  
+                Socket handler = state.workSocket;  
 
-            // Read data from the client socket.
-            int bytesRead = handler.EndReceive(ar);  
+                // Read data from the client socket.
+                int bytesRead = handler.EndReceive(ar);  
 
-            if (bytesRead > 0) {  
-                // There  might be more data, so store the data received so far.  
-                state.sb.Append(Encoding.ASCII.GetString(  
-                    state.buffer, 0, bytesRead));  
+                if (bytesRead > 0) {  
+                    // There  might be more data, so store the data received so far.  
+                    state.sb.Append(Encoding.ASCII.GetString(  
+                        state.buffer, 0, bytesRead));  
 
-                // Check for end-of-file tag. If it is not there, read
-                // more data.  
-                content = state.sb.ToString();  
-                if (content.IndexOf("<EOF>") > -1) {  
-                    // All the data has been read from the
-                    // client.              
-                    RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
-                    StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
-                    Response response = MakeResponse(requestBatch);
-                    
-                    // send back the response to client
-                    Send(handler, Encoder.EncodeResponse(response));  
-                } else {  
-                    // Not all data received. Get more.  
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,  
-                    new AsyncCallback(ReadCallback), state);  
+                    // Check for end-of-file tag. If it is not there, read
+                    // more data.  
+                    content = state.sb.ToString();  
+                    if (content.IndexOf("<EOF>") > -1) {  
+                        // All the data has been read from the
+                        // client.         
+
+                        Response response1 = null;
+                        try 
+                        {
+                            RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
+                            StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
+                            (Response r, DriverResponse d) response = MakeResponse(requestBatch);
+                            response1 = response.r;
+                        } catch 
+                        {
+                            response1 = new Response(){Completed = null, Data = null, Status = null};
+                        }
+                            
+                        Send(handler, Encoder.EncodeResponse(response1));  
+                            // send back the response to client
+
+
+                        // if (response.d!=null) 
+                        // {
+                        //     Task.Run(() => {
+                        //         _debuggingClient.StartClient(response.d);
+                        //     });
+                        // }
+                        
+                    } else {  
+                        // Not all data received. Get more.  
+                        handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,  
+                        new AsyncCallback(ReadCallback), state);  
+                    }  
                 }  
-            }  
+            } catch (Exception e) 
+            {
+                Logger.Write(Logger.Tag.ERROR, e.ToString());
+            }
         }
 
-        private Response MakeResponse(RequestBatch requestBatch)
+        private (Response, DriverResponse) MakeResponse(RequestBatch requestBatch)
         {
+            if (requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
             Dictionary<string, bool> response = new Dictionary<string, bool>();
             foreach (Request request in requestBatch.Batch)
             {
                 response.Add(request.ID, true);
-
+                // if (request.Type == Request._Type.DRIVER_RESPONSE)
+                // {
+                //     return (new Response()
+                //     {
+                //         Status = response
+                //     }, Encoder.DecodeDriverResponse(request.Data)); 
+                // } else 
                 if (request.Type == Request._Type.VOTE){
                     Vote vote = Encoder.DecodeVote(request.Data);
                     Vote myVote = vote;
-                    int count = StateLog.Instance.Peers.LogCount;
+                    int count = StateLog.Instance.LogCount;
                     if (vote.LogCount < count)
                     {
                         myVote = new Vote()
@@ -127,26 +172,29 @@ namespace TangibleNode
                         CurrentState.Instance.Timer.Reset(((int)(Params.HEARTBEAT_MS/2)));
                     }
                     else CurrentState.Instance.Timer.Reset();
-                    return new Response()
+                    return (new Response()
                     {
                         Status = response,
                         Data = Encoder.EncodeVote(myVote)
-                    };
+                    }, null);
 
                 } else if (request.Type == Request._Type.ACTION)
                 {
                     Action action = Encoder.DecodeAction(request.Data);
                     StateLog.Instance.AppendAction(action);
+                    CurrentState.Instance.CancelState();
                 } else if (request.Type == Request._Type.NODE_ADD)
                 {
                     Node node = Encoder.DecodeNode(request.Data);
                     StateLog.Instance.Peers.AddNewNode(node);
+                    CurrentState.Instance.CancelState();
                 }
                 else if (request.Type == Request._Type.NODE_DEL)
                 {
                     Node node = Encoder.DecodeNode(request.Data);
                     StateLog.Instance.ClearPeerLog(node.ID);
                     StateLog.Instance.Peers.TryRemoveNode(node.ID);
+                    CurrentState.Instance.CancelState();
                 }
             }
 
@@ -155,18 +203,23 @@ namespace TangibleNode
 
             CurrentState.Instance.Timer.Reset();
 
-            return new Response()
+            return (new Response()
             {
                 Status = response,
                 Completed = StateLog.Instance.Follower_GetCompletedActions()
-            };
+            }, null);
         }
 
         private void Send(Socket handler, byte[] byteData)
         {
-            // Begin sending the data to the remote device.  
-            handler.BeginSend(byteData, 0, byteData.Length, 0,  
-                new AsyncCallback(SendCallback), handler);  
+            try 
+            {
+                // Begin sending the data to the remote device.  
+                handler.BeginSend(byteData, 0, byteData.Length, 0,  
+                    new AsyncCallback(SendCallback), handler);  
+            } catch (Exception e) {  
+                Console.WriteLine(e.ToString());  
+            }  
         }
 
         private void SendCallback(IAsyncResult ar)
@@ -178,13 +231,11 @@ namespace TangibleNode
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);  
-
+                handler.LingerState = _linger;
                 handler.Shutdown(SocketShutdown.Both);  
-                handler.Close();  
-
-            }
-            catch (Exception e)
-            {
+                handler.Close(0);  
+                
+            } catch (Exception e) {  
                 Console.WriteLine(e.ToString());  
             }  
         }

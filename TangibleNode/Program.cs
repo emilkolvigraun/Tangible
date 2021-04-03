@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace TangibleNode
 {
@@ -8,6 +9,8 @@ namespace TangibleNode
     {
         static void Main(string[] args)
         {
+            // DEBUGGING
+            Logger.EnableStateLogger();
 
             Settings settings = default(Settings);            
             if (args.Length > 0)
@@ -24,6 +27,13 @@ namespace TangibleNode
                 }
             } else Logger.Write(Logger.Tag.INFO, "No settings provided.");
 
+            // parse the settings
+            Params.LoadEnvironment(settings);
+
+            // DEBUGGING
+            Logger.WriteStateHeader();
+
+            // run the node
             new TangibleNode(settings).Start();
         }
     }

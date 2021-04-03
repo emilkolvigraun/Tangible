@@ -29,57 +29,38 @@ namespace TangibleNode
             long t0 = Utils.Millis;
             Logger.Write(Logger.Tag.INFO, "Started consuming from ESB on " + Params.REQUEST_TOPIC + " and " + Params.BROADCAST_TOPIC +".");
             
-            Utils.Sleep(30000);
-            while (CurrentState.Instance.IsLeader)
+            if (CurrentState.Instance.Get_State.State != State.LEADER) Utils.Sleep(10000);
+            while (true)
             {
                 long t1 = Utils.Millis - t0;
                 long t2 = Utils.Millis;
-                if (t1 >= interval)
+                if (t1 >= interval && CurrentState.Instance.IsLeader)
                 {
+                    Params.STEP++;
                     ReceiveDataRequest(new DataRequest(){
                         Type = Action._Type.WRITE,
                         Benv = new Location(){
                             HasPoint = new List<Point>{new Point(){ID = "123abc"}}
                         },
                         Priority = 2,
-                        Value = "1"
+                        Value = Params.STEP.ToString(),
+                        T0 = Utils.Millis.ToString(),
+                        ReturnTopic = "MyApplication"
                     });
-                    // t0 = Utils.Millis-(Utils.Millis-t2);
-                } 
+                    t0 = Utils.Millis-(Utils.Millis-t2);
+                } else if (!CurrentState.Instance.IsLeader)
+                    t0 = Utils.Millis-(Utils.Millis-t2);
             }
-            // while (this._running)
-            // {
-
-            //     // if(Params.STAGE >= 5 && CurrentState.Instance.GetState == State.LEADER)
-            //     // {
-            //     //     break; 
-            //     // }
-
-            //     if (t1 >= interval)
-            //     {
-            //         ReceiveDataRequest(new DataRequest(){
-            //             Type = Action._Type.WRITE,
-            //             Benv = new Location(){
-            //                 HasPoint = new List<Point>{new Point(){ID = "123abc"}}
-            //             },
-            //             Priority = 2,
-            //             Value = "1"
-            //         });
-            //         t0 = Utils.Millis-(Utils.Millis-t2);
-            //     }
-            // }
         }
 
         public void ReceiveDataRequest(DataRequest dataRequest)
         {
             List<Request> requests = HA.MarshallDataRequest(dataRequest);
-            requests.ForEach((r)=>{
-                StateLog.Instance.AddRequestBehindToAll(r);
-            });
+
             Task[] tasks;
             StateLog.Instance.Peers.ForEachAsync((p) => {
                 RequestBatch rb = new RequestBatch(){
-                    Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
+                    Batch = requests,
                     Completed = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID),
                     Sender = Node.Self
                 };
@@ -122,7 +103,6 @@ namespace TangibleNode
                     }
                 });
 
-                StateLog.Instance.AddRequestBehind(p0.Client.ID, request);
                 p0.Client.StartClient(rb, new DefaultHandler());
             }, out tasks);
             

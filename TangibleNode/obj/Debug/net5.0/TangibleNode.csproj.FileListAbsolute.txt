@@ -34,3 +34,4 @@ C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\Tan
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\ref\TangibleNode.dll
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.pdb
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\obj\Debug\net5.0\TangibleNode.genruntimeconfig.cache
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\Docker.DotNet.dll

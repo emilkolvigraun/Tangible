@@ -9,6 +9,10 @@ namespace TangibleNode
             Logger.Write(Logger.Tag.DEBUG, "Broadcasted to " + Params.BROADCAST_TOPIC);
         }
 
+        public void Respond(string message, string topic)
+        {
+            Logger.Write(Logger.Tag.DEBUG, "Responded to " + topic);
+        }
 
         //-------------------CONSTRUCTER------------------//
         private static readonly object _lock = new object();

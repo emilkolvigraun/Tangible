@@ -9,6 +9,23 @@ namespace TangibleNode
             // Load RDF model
         }
 
+        public void LoadDriverImages(HardwareInteractionEnvironment hie)
+        {
+            // foreach(string image in Get_Images)
+            // {
+            //     hie.PrepareWarmStart(image);
+            // }
+        }
+
+        private List<string> Get_Images
+        {
+            get 
+            {
+                // TODO: DESIGN AND IMPLEMENT
+                return new List<string>{"emilkolvigraun/tangible-test-driver"};
+            }
+        }
+
         public List<Request> MarshallDataRequest(DataRequest dataRequest)
         {
 
@@ -26,7 +43,9 @@ namespace TangibleNode
                     Value = dataRequest.Value,
                     ID = Utils.GenerateUUID(),
                     Assigned = StateLog.Instance.Peers.ScheduleAction(),
-                    T0 = Utils.Millis.ToString()
+                    T0 = dataRequest.T0,
+                    T1 = Utils.Millis.ToString(),
+                    ReturnTopic = dataRequest.ReturnTopic
                 };
                 StateLog.Instance.AppendAction(action);
                 requests.Add(new Request() {

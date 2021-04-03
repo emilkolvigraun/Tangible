@@ -1,9 +1,15 @@
 using System;
+using System.Collections.Generic;
 
 namespace TangibleNode 
 {
     class Params 
     {
+
+        // DEBUGGING
+        public static long STEP = 0;
+
+
         public static string HOST;
         public static int PORT;
         public static string ID;
@@ -15,8 +21,14 @@ namespace TangibleNode
         public static int HEARTBEAT_MS;
 
         public static string BROADCAST_TOPIC;
-        public static string REQUEST_TOPIC;
-        
+        public static string REQUEST_TOPIC;      
+
+        public static string DOCKER_REMOTE_HOST;
+        public static string DOCKER_HOST;
+        public static int DRIVER_PORT_RANGE_START;
+        public static int DRIVER_PORT_RANGE_END;
+
+        private static Queue<int> _unusedPorts = new Queue<int>();
 
         public static void LoadEnvironment(Settings settings)
         {
@@ -30,6 +42,21 @@ namespace TangibleNode
             ELECTION_TIMEOUT_START = GetIntOrSet("ELECTION_TIMEOUT_START", settings.Optional.ElectionTimeoutTangeStart_MS, 250);
             ELECTION_TIMEOUT_END = GetIntOrSet("ELECTION_TIMEOUT_END", settings.Optional.ElectionTimeoutTangeEnd_MS, 500);
             HEARTBEAT_MS = GetIntOrSet("HEARTBEAT_MS", settings.Optional.Heartbeat_MS, 1000, 300);
+            DRIVER_PORT_RANGE_START = GetIntOrSet("DRIVER_PORT_RANGE_START", settings.DriverPortRangeStart, 8000);
+            DRIVER_PORT_RANGE_END = GetIntOrSet("DRIVER_PORT_RANGE_END", settings.DriverPortRangeEnd, 8100);
+            DOCKER_REMOTE_HOST = GetStrThrowIfMissing("DOCKER_REMOTE_HOST", settings.DockerRemoteHost);
+            DOCKER_HOST = GetStrThrowIfMissing("DOCKER_HOST", settings.DriverHostName);
+
+            for(int i = DRIVER_PORT_RANGE_START; i < DRIVER_PORT_RANGE_END; i++)
+            {
+                _unusedPorts.Enqueue(i);
+            }
+        }
+
+        public static int GetUnusedPort()
+        {
+            if (_unusedPorts.Count < 1) Logger.Write(Logger.Tag.FATAL, "No more free ports!");
+            return _unusedPorts.Dequeue();
         }
 
         public static string GetStrThrowIfMissing(string var, string str)

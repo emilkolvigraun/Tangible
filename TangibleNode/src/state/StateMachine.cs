@@ -28,7 +28,13 @@ namespace TangibleNode
         }
         public void OnResponse(string receiverID, RequestBatch sender, string response)
         {
+            if (response==null) return;
             Response r0 = Encoder.DecodeResponse(response);
+            if (r0==null||r0.Status==null)
+            {
+                // Will never be leader (well, not until next term)
+                return;
+            }
             sender.Batch.ForEach((r) => {
                 if (r0.Status.ContainsKey(r.ID))
                 {
@@ -113,7 +119,7 @@ namespace TangibleNode
                             ID = Utils.GenerateUUID(),
                             Data = Encoder.EncodeVote(new Vote(){
                                 ID = Params.ID,
-                                LogCount = StateLog.Instance.Peers.LogCount
+                                LogCount = StateLog.Instance.LogCount
                             })
                         }
                     };
@@ -145,9 +151,55 @@ namespace TangibleNode
                                 ID = Utils.GenerateUUID(),
                                 Data = Encoder.EncodeNode(p.AsNode)
                             });
+
+                            Peer peer = null;
+                            bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
+
+                            if (success)
+                            {
+                                HashSet<string> _rescheduledActions = new HashSet<string>();
+                                peer.ForEachAction((a)=>{
+                                    if (!_rescheduledActions.Contains(a.ID))
+                                    {
+                                        _rescheduledActions.Add(a.ID);
+                                        Action action = a;
+                                        action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
+                                        action.ID = Utils.GenerateUUID();
+                                        StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
+                                            Type = Request._Type.ACTION,
+                                            ID = Utils.GenerateUUID(),
+                                            Data = Encoder.EncodeAction(action)
+                                        });
+                                        StateLog.Instance.AppendAction(action);
+                                    }
+                                });
+                                // StateLog.Instance.GetBatchesBehind(p.Client.ID).ForEach((b) => {
+                                //     if (b.Type == Request._Type.ACTION)
+                                //     {
+                                //         Action a0 = Encoder.DecodeAction(b.Data);
+                                //         Console.WriteLine(p.Client.ID + " WAS BEHIND" + a0.Value);
+                                //         if (!_rescheduledActions.Contains(a0.ID) && a0.Assigned == p.Client.ID)
+                                //         {
+                                //             _rescheduledActions.Add(a0.ID);
+                                //             Action action = a0;
+                                //             action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
+                                //             action.ID = Utils.GenerateUUID();
+                                //             StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
+                                //                 Type = Request._Type.ACTION,
+                                //                 ID = Utils.GenerateUUID(),
+                                //                 Data = Encoder.EncodeAction(action)
+                                //             });
+                                //             StateLog.Instance.AppendAction(action);
+                                //         }
+                                //     }
+                                // });
+                            }
                             
                             StateLog.Instance.ClearPeerLog(p.Client.ID);
                             StateLog.Instance.Peers.TryRemoveNode(p.Client.ID);
+                        } else 
+                        {
+                            connectionsLost = StateLog.Instance.GetBatchesBehind(p.Client.ID).Count > 0;
                         }
                     });
 
@@ -174,6 +226,8 @@ namespace TangibleNode
                     Producer.Instance.Broadcast();
                     _sleepingTimer.Reset();
                 }
+
+                // Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
 
                 // Logger.WriteState();
             }

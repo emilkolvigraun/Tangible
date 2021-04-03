@@ -4,7 +4,7 @@ namespace TangibleNode
 {
     class Peer
     {
-        public AsynchronousClient Client {get;}
+        public SynchronousClient Client {get;}
         private TDict<string, Action> _tasks {get;}
         public TInt Heartbeat {get;}
         private Node _node {get;}
@@ -12,7 +12,7 @@ namespace TangibleNode
         public Peer(Node node)
         {
             _node = node;
-            Client = new AsynchronousClient(node.Host, node.Port, node.ID);
+            Client = new SynchronousClient(node.Host, node.Port, node.ID);
             _tasks = new TDict<string, Action>();
             Heartbeat = new TInt();
         }
@@ -30,6 +30,7 @@ namespace TangibleNode
             if (!_tasks.ContainsKey(action.ID))
             {
                 _tasks.AddSafe(new KeyValuePair<string, Action>(action.ID, action));
+                Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
             } 
         }
 
@@ -39,6 +40,11 @@ namespace TangibleNode
                 _tasks.Remove(actionID);
         }
 
+        public void ForEachAction(System.Action<Action> action)
+        {
+            _tasks.ForEachRead((p) => action(p));
+        }
+
         public int ActionCount
         {
             get 
@@ -46,6 +52,5 @@ namespace TangibleNode
                 return _tasks.Count;
             }
         }
-
     }
 }

@@ -56,7 +56,9 @@ namespace TangibleNode
         }
         public static byte[] EncodeResponse(Response node)
         {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None) + "<EOF>");
+            string str = JsonConvert.SerializeObject(node, Formatting.None) + "<EOF>";
+            byte[] bytes = Encoding.ASCII.GetBytes(str);
+            return Encoding.ASCII.GetBytes(str);
         }
         public static string SerializeResponse(Response node)
         {
@@ -86,9 +88,37 @@ namespace TangibleNode
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
+        public static DriverResponse DecodeDriverResponse(string msg)
+        {
+            return JsonConvert.DeserializeObject<DriverResponse>(msg);
+        }
+        public static DriverResponse DecodeDriverResponse(byte[] msg)
+        {
+            return JsonConvert.DeserializeObject<DriverResponse>(Encoding.ASCII.GetString(msg));
+        }
         public static Broadcast DecodeBroadcast(string msg)
         {
             return JsonConvert.DeserializeObject<Broadcast>(msg);
+        }
+        public static byte[] EncodeRequestResponse(RequestResponse request)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(request, Formatting.None));
+        }
+        public static byte[] EncodeDriverResponse(DriverResponse node)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
+        }
+        public static byte[] EncodePointRequest(PointRequest node)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
+        }
+        public static PointRequest DecodePointRequest(string msg)
+        {
+            return JsonConvert.DeserializeObject<PointRequest>(msg);
+        }
+        public static PointRequest DecodePointRequest(byte[] msg)
+        {
+            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg));
         }
         
     }

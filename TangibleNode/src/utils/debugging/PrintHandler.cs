@@ -6,8 +6,9 @@ namespace TangibleNode
     {
         public void OnResponse(string receiverID, RequestBatch sender, string response)
         {
-            Request request = Encoder.DecodeRequest(response);
-            Console.WriteLine(request.Type);
+            Console.WriteLine(response);
+            Response r0 = Encoder.DecodeResponse(response);
+            // Console.WriteLine(request.Type);
         }
     }
 }
