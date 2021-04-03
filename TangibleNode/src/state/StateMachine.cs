@@ -154,14 +154,13 @@ namespace TangibleNode
 
                             Peer peer = null;
                             bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
+                            Dictionary<string, Action> _rescheduledActions = new Dictionary<string, Action>();
 
                             if (success)
                             {
-                                HashSet<string> _rescheduledActions = new HashSet<string>();
                                 peer.ForEachAction((a)=>{
-                                    if (!_rescheduledActions.Contains(a.ID))
+                                    if (!_rescheduledActions.ContainsKey(a.ID))
                                     {
-                                        _rescheduledActions.Add(a.ID);
                                         Action action = a;
                                         action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
                                         action.ID = Utils.GenerateUUID();
@@ -170,33 +169,19 @@ namespace TangibleNode
                                             ID = Utils.GenerateUUID(),
                                             Data = Encoder.EncodeAction(action)
                                         });
-                                        StateLog.Instance.AppendAction(action);
+                                        _rescheduledActions.Add(a.ID, action);
                                     }
                                 });
-                                // StateLog.Instance.GetBatchesBehind(p.Client.ID).ForEach((b) => {
-                                //     if (b.Type == Request._Type.ACTION)
-                                //     {
-                                //         Action a0 = Encoder.DecodeAction(b.Data);
-                                //         Console.WriteLine(p.Client.ID + " WAS BEHIND" + a0.Value);
-                                //         if (!_rescheduledActions.Contains(a0.ID) && a0.Assigned == p.Client.ID)
-                                //         {
-                                //             _rescheduledActions.Add(a0.ID);
-                                //             Action action = a0;
-                                //             action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
-                                //             action.ID = Utils.GenerateUUID();
-                                //             StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
-                                //                 Type = Request._Type.ACTION,
-                                //                 ID = Utils.GenerateUUID(),
-                                //                 Data = Encoder.EncodeAction(action)
-                                //             });
-                                //             StateLog.Instance.AppendAction(action);
-                                //         }
-                                //     }
-                                // });
+                                
                             }
                             
                             StateLog.Instance.ClearPeerLog(p.Client.ID);
                             StateLog.Instance.Peers.TryRemoveNode(p.Client.ID);
+                            
+                            foreach(var action in _rescheduledActions.Values)
+                            {
+                                StateLog.Instance.AppendAction(action);
+                            }
                         } else 
                         {
                             connectionsLost = StateLog.Instance.GetBatchesBehind(p.Client.ID).Count > 0;

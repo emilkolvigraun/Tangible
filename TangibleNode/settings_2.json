@@ -24,5 +24,9 @@
             "Port": 5001,
             "ID": "TcpNode1"
         }
-    ]
+    ],
+    "Testing": {
+        "DieAsFollower_MS": 80000,
+        "DieAsLeader_MS": 15000
+    }
 }

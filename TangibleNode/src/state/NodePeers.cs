@@ -110,19 +110,29 @@ namespace TangibleNode
             _nodes[id].AddAction(action);
         }
 
+        private Peer FindAnotherThanToAvoid(string avoid, int retry, KeyValuePair<string, Peer>[] peers)
+        {
+            Peer peer = peers[retry].Value;
+            if (peer.Client.ID == avoid && peers.Length > retry+1)
+            {
+                return FindAnotherThanToAvoid(avoid, retry+1, peers);
+            }
+            return peer;
+        }
+
         public string ScheduleAction(string avoid = "")
         {
-            if (NodeCount < 1) return Params.ID;
+            int nodeCount = NodeCount;
+            if (nodeCount < 1) return Params.ID;
             KeyValuePair<string, Peer>[] peers = new KeyValuePair<string, Peer>[NodeCount];
             _nodes.CopyTo(peers, 0);
-            Peer selected_peer = peers[0].Value;
-
+            Peer selected_peer = FindAnotherThanToAvoid(avoid, 0, peers);
             if (selected_peer.ActionCount == 0) return selected_peer.Client.ID;
-
             string selected_peer_name = selected_peer.Client.ID;
+
             foreach (KeyValuePair<string, Peer> peer in peers)
             {
-                if (peer.Value.Client.ID == avoid || peer.Value.Heartbeat.Value > 0) continue;
+                if (peer.Value.Client.ID == avoid) continue;
                 if (peer.Value.ActionCount < selected_peer.ActionCount)
                 {
                     selected_peer_name = peer.Value.Client.ID;
@@ -130,7 +140,7 @@ namespace TangibleNode
                 }
             }
 
-            if (selected_peer_name == avoid || selected_peer.Heartbeat.Value > 0) return Params.ID;
+            if (selected_peer_name == avoid) return Params.ID;
 
             return selected_peer_name;
         }

@@ -24,12 +24,18 @@ namespace TangibleNode
         public void Start()
         {
             Utils.Sleep(200);
-            int hertz = 1;
-            int interval = (1/hertz)*1000;
+
+            int interval = 10; //ms
+
+            Console.WriteLine(interval.ToString());
             long t0 = Utils.Millis;
             Logger.Write(Logger.Tag.INFO, "Started consuming from ESB on " + Params.REQUEST_TOPIC + " and " + Params.BROADCAST_TOPIC +".");
             
+            State s0 = CurrentState.Instance.Get_State.State;
             if (CurrentState.Instance.Get_State.State != State.LEADER) Utils.Sleep(10000);
+            long t_die_f = Utils.Millis+Params.DIE_AS_FOLLOWER;
+            long t_die_l = Utils.Millis+40000;
+            bool leader = false;
             while (true)
             {
                 long t1 = Utils.Millis - t0;
@@ -48,8 +54,17 @@ namespace TangibleNode
                         ReturnTopic = "MyApplication"
                     });
                     t0 = Utils.Millis-(Utils.Millis-t2);
+                    if (!leader)
+                    {
+                        t_die_l = Utils.Millis+Params.DIE_AS_LEADER;
+                        leader=true;
+                    }
+                    if (t2>=t_die_l) Environment.Exit(0);
                 } else if (!CurrentState.Instance.IsLeader)
+                {
                     t0 = Utils.Millis-(Utils.Millis-t2);
+                    if (t2>=t_die_f) Environment.Exit(0);
+                }
             }
         }
 

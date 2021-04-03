@@ -9,6 +9,9 @@ namespace TangibleNode
         // DEBUGGING
         public static long STEP = 0;
 
+        public static int DIE_AS_FOLLOWER;
+        public static int DIE_AS_LEADER;
+
 
         public static string HOST;
         public static int PORT;
@@ -37,6 +40,8 @@ namespace TangibleNode
             ID = GetStrThrowIfMissing("ID", settings.ID);
             REQUEST_TOPIC = GetStrThrowIfMissing("REQUEST_TOPIC", settings.RequestTopic);
             BROADCAST_TOPIC = GetStrThrowIfMissing("BROADCAST_TOPIC", settings.BroadcastTopic);
+            DIE_AS_FOLLOWER = GetIntThrowIfMissing("DIE_AS_FOLLOWER", settings.Testing.DieAsFollower_MS);
+            DIE_AS_LEADER = GetIntThrowIfMissing("DIE_AS_LEADER", settings.Testing.DieAsLeader_MS);
             TIMEOUT = GetIntOrSet("TIMEOUT", settings.Optional.Timeout_MS, 500);
             MAX_RETRIES = GetIntOrSet("MAX_RETRIES", settings.Optional.MaxRetries, 10);
             ELECTION_TIMEOUT_START = GetIntOrSet("ELECTION_TIMEOUT_START", settings.Optional.ElectionTimeoutTangeStart_MS, 250);

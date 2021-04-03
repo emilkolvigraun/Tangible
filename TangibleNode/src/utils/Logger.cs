@@ -134,9 +134,9 @@ namespace TangibleNode
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write(i2+",");
                 Console.ForegroundColor = ConsoleColor.Magenta;
-                Console.Write(Params.STEP+",");
+                Console.WriteLine(Params.STEP+"");
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine(StateLog.Instance.GetBatchesBehind(Params.ID).Count+"");
+                // Console.WriteLine(StateLog.Instance.GetBatchesBehind(Params.ID).Count+"");
                 // Console.ForegroundColor = ConsoleColor.Yellow;
                 // Console.WriteLine(i0+"");    
             }

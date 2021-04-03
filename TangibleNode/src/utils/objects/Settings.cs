@@ -20,5 +20,8 @@ namespace TangibleNode
         public Optional Optional {get; set;} = default(Optional);
 
         public List<Node> TcpNodes {get; set;} = new List<Node>();
+
+        // DEBUGGING
+        public Test Testing {get; set;} = new Test();
     }
 }
