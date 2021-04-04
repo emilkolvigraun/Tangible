@@ -1,14 +1,16 @@
 {
     "Host": "192.168.1.237",
-    "Port": 5002,
-    "ID": "TcpNode2",
+    "Port": 5001,
+    "ID": "TcpNode1",
     "RDFPath":"C:\\Model\\Is\\Located\\Somewhere\\RDF.ttl",
     "RequestTopic":"tangible.requests.1",
     "BroadcastTopic":"tangible.cluster.1",
     "DockerRemoteHost": "npipe://./pipe/docker_engine",
     "DriverHostName": "192.168.1.237",
-    "DriverPortRangeStart": 8202,
-    "DriverPortRangeEnd": 8302,
+    "DriverPortRangeStart": 8101,
+    "DriverPortRangeEnd": 8201,
+    "WaitBeforeStart_MS":8000,
+    "Frequency_Hz":5,
     "Optional":{
         "Heartbeat_MS":2000,
         "Timeout_MS":500
@@ -21,8 +23,8 @@
         },
         {
             "Host": "192.168.1.237",
-            "Port": 5001,
-            "ID": "TcpNode1"
+            "Port": 5002,
+            "ID": "TcpNode2"
         }
     ],
     "Testing": {

@@ -9,6 +9,8 @@
     "DriverHostName": "192.168.1.237",
     "DriverPortRangeStart": 8101,
     "DriverPortRangeEnd": 8201,
+    "WaitBeforeStart_MS":8000,
+    "Frequency_Hz":5,
     "Optional":{
         "Heartbeat_MS":2000,
         "Timeout_MS":500
@@ -26,7 +28,7 @@
         }
     ],
     "Testing": {
-        "DieAsFollower_MS": 80000,
-        "DieAsLeader_MS": 15000
+        "DieAsFollower_MS": 30000,
+        "DieAsLeader_MS": 80000
     }
 }

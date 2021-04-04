@@ -10,7 +10,7 @@ namespace TangibleNode
         static void Main(string[] args)
         {
             // DEBUGGING
-            Logger.EnableStateLogger();
+            // Logger.EnableStateLogger();
 
             Settings settings = default(Settings);            
             if (args.Length > 0)
@@ -31,7 +31,7 @@ namespace TangibleNode
             Params.LoadEnvironment(settings);
 
             // DEBUGGING
-            Logger.WriteStateHeader();
+            // Logger.WriteStateHeader();
 
             // run the node
             new TangibleNode(settings).Start();

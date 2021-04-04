@@ -1,1 +1,0 @@
-bin\Debug\net5.0\TangibleNode.exe settings_1.json
