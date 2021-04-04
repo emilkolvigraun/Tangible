@@ -25,11 +25,10 @@ namespace TangibleNode
         {
             Utils.Sleep(200);
             int interval = ((int)((1m/Params.HERTZ)*1000m));
-            Console.WriteLine(interval);
+            
             long t0 = Utils.Millis;
             Logger.Write(Logger.Tag.INFO, "Started consuming from ESB on " + Params.REQUEST_TOPIC + " and " + Params.BROADCAST_TOPIC +".");
             
-            State s0 = CurrentState.Instance.Get_State.State;
             if (CurrentState.Instance.Get_State.State != State.LEADER) Utils.Sleep(Params.WAIT_BEFORE_START);
             long t_die_f = Utils.Millis+Params.DIE_AS_FOLLOWER;
             long t_die_l = Utils.Millis;
