@@ -4,12 +4,13 @@ SET stateLog=%1
 IF [%1] == [] GOTO MISSINGPARAMETER
 
 CALL :TANGIBLECLUSTER
-GOTO :EOF
+GOTO EXIT
 
 :TANGIBLECLUSTER
     CALL start "TcpNode0" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_0.json TcpNode0 %stateLog%
     CALL start "TcpNode1" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_1.json TcpNode1 %stateLog%
     CALL start "TcpNode2" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_2.json TcpNode2 %stateLog%
+    GOTO EXIT
 
 :MISSINGPARAMETER
 ECHO Please define whether to run with STATE_LOG enabled, i.e., "$> ...cmd <true or false>"
