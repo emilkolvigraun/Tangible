@@ -73,10 +73,12 @@ namespace TangibleNode
     {
         private Consumer _consumer {get;}
         private TTimer _sleepingTimer {get;}
+        private HardwareInteractionEnvironment HIE {get;}
 
-        public StateMachine(Consumer consumer)
+        public StateMachine(Consumer consumer, HardwareInteractionEnvironment hie)
         {
             _consumer = consumer;
+            HIE = hie;
             _sleepingTimer = new TTimer("sleepingTimer");
         }
 
@@ -212,11 +214,31 @@ namespace TangibleNode
                     _sleepingTimer.Reset();
                 }
 
-                // Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
 
-                // Logger.WriteState();
+                if(Params.RUN_HIE)
+                {
+                    Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
+                    if (prioritizedAction != null)
+                    {
+                        Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);
+                        requiredDriver.AddRequestBehind(
+                            new PointRequest(){
+                                ID = prioritizedAction.ID,
+                                PointIDs = prioritizedAction.PointID,
+                                ReturnTopic = prioritizedAction.ReturnTopic,
+                                T0 = prioritizedAction.T0,
+                                T1 = prioritizedAction.T1,
+                                T2 = Utils.Millis.ToString(),
+                                Type = prioritizedAction.Type,
+                                Value = prioritizedAction.Value
+                        });
+                    }
+                    HIE.ForEachDriver((d) => {
+                        d.Write();
+                    });
+                    TestReceiverClient.Instance.StartClient();
+                }
             }
         }   
-
     }
 }

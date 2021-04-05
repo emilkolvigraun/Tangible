@@ -7,9 +7,9 @@ CALL :TANGIBLECLUSTER
 GOTO EXIT
 
 :TANGIBLECLUSTER
-    CALL start "TcpNode0" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_0.json TcpNode0 %stateLog%
-    CALL start "TcpNode1" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_1.json TcpNode1 %stateLog%
-    CALL start "TcpNode2" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_2.json TcpNode2 %stateLog%
+    CALL start "TcpNode0" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_0.json %stateLog% TcpNode0
+    CALL start "TcpNode1" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_1.json %stateLog% TcpNode1
+    CALL start "TcpNode2" call bin\Debug\net5.0\TangibleNode.exe settings\demo0_settings_2.json %stateLog% TcpNode2
     GOTO EXIT
 
 :MISSINGPARAMETER

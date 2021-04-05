@@ -15,13 +15,6 @@ namespace TangibleNode
         // Thread signal.  
         public ManualResetEvent allDone = new ManualResetEvent(false);
 
-        private TestReceiverClient _debuggingClient {get;}
-
-        public AsynchronousSocketListener()
-        {
-            _debuggingClient = new TestReceiverClient(Params.HOST, 9000, "TestReceiver");
-        }
-
         /// <summary>
         /// Establishes the local endpoint for the socket
         /// and starts listening for incoming connections
@@ -110,23 +103,13 @@ namespace TangibleNode
                         {
                             RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
                             StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
-                            (Response r, DriverResponse d) response = MakeResponse(requestBatch);
-                            response1 = response.r;
+                            response1 = MakeResponse(requestBatch);
                         } catch 
                         {
                             response1 = new Response(){Completed = null, Data = null, Status = null};
                         }
                             
                         Send(handler, Encoder.EncodeResponse(response1));  
-                            // send back the response to client
-
-
-                        // if (response.d!=null) 
-                        // {
-                        //     Task.Run(() => {
-                        //         _debuggingClient.StartClient(response.d);
-                        //     });
-                        // }
                         
                     } else {  
                         // Not all data received. Get more.  
@@ -140,21 +123,34 @@ namespace TangibleNode
             }
         }
 
-        private (Response, DriverResponse) MakeResponse(RequestBatch requestBatch)
+        private Response MakeResponse(RequestBatch requestBatch)
         {
-            if (requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
             Dictionary<string, bool> response = new Dictionary<string, bool>();
             foreach (Request request in requestBatch.Batch)
             {
                 response.Add(request.ID, true);
-                // if (request.Type == Request._Type.DRIVER_RESPONSE)
-                // {
-                //     return (new Response()
-                //     {
-                //         Status = response
-                //     }, Encoder.DecodeDriverResponse(request.Data)); 
-                // } else 
-                if (request.Type == Request._Type.VOTE){
+                if (request.Type == Request._Type.POINT)
+                {
+                    ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
+                    if (vr.Complete)
+                    {
+                        if (CurrentState.Instance.IsLeader)
+                        {
+                            StateLog.Instance.Leader_AddActionCompleted(vr.ActionID);
+                        }
+                        else 
+                        {
+                            StateLog.Instance.Follower_MarkActionCompleted(vr.ActionID);
+                        }
+                    }
+                    StateLog.Instance.RemoveCurrentTask(vr.ActionID);
+                    if (Params.TEST_RECEIVER_HOST!=string.Empty)
+                    {
+                        TestReceiverClient.Instance.AddEntry(vr);
+                    }
+                } 
+                else if (request.Type == Request._Type.VOTE)
+                {
                     Vote vote = Encoder.DecodeVote(request.Data);
                     Vote myVote = vote;
                     int count = StateLog.Instance.LogCount;
@@ -172,11 +168,11 @@ namespace TangibleNode
                         CurrentState.Instance.Timer.Reset(((int)(Params.HEARTBEAT_MS/2)));
                     }
                     else CurrentState.Instance.Timer.Reset();
-                    return (new Response()
+                    return new Response()
                     {
                         Status = response,
                         Data = Encoder.EncodeVote(myVote)
-                    }, null);
+                    };
 
                 } else if (request.Type == Request._Type.ACTION)
                 {
@@ -198,16 +194,24 @@ namespace TangibleNode
                 }
             }
 
-            foreach (string actionID in requestBatch.Completed)
+            if (requestBatch.Completed!=null) foreach (string actionID in requestBatch.Completed)
                 StateLog.Instance.Follower_AddActionCompleted(actionID);
+            
+            if (requestBatch.Sender!=null && requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
+            
+            List<string> completed = null;
 
-            CurrentState.Instance.Timer.Reset();
+            if (requestBatch.Sender!=null) 
+            {
+                completed = StateLog.Instance.Follower_GetCompletedActions();
+                CurrentState.Instance.Timer.Reset();
+            } 
 
-            return (new Response()
+            return new Response()
             {
                 Status = response,
-                Completed = StateLog.Instance.Follower_GetCompletedActions()
-            }, null);
+                Completed = completed
+            };
         }
 
         private void Send(Socket handler, byte[] byteData)

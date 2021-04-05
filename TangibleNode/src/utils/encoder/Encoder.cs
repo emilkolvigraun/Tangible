@@ -56,9 +56,12 @@ namespace TangibleNode
         }
         public static byte[] EncodeResponse(Response node)
         {
-            string str = JsonConvert.SerializeObject(node, Formatting.None) + "<EOF>";
-            byte[] bytes = Encoding.ASCII.GetBytes(str);
-            return Encoding.ASCII.GetBytes(str);
+            try 
+            {
+                string str = JsonConvert.SerializeObject(node, Formatting.None) + "<EOF>";
+                byte[] bytes = Encoding.ASCII.GetBytes(str);
+                return Encoding.ASCII.GetBytes(str);
+            } catch {return null;}
         }
         public static string SerializeResponse(Response node)
         {
@@ -66,7 +69,10 @@ namespace TangibleNode
         }
         public static Response DecodeResponse(string msg)
         {
-            return JsonConvert.DeserializeObject<Response>(msg.Replace("<EOF>", ""));
+            try 
+            {
+                return JsonConvert.DeserializeObject<Response>(msg.Replace("<EOF>", ""));
+            } catch {return null;}
         }
         public static byte[] EncodeESBRequest(ESBRequest node)
         {
@@ -88,25 +94,9 @@ namespace TangibleNode
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
-        public static DriverResponse DecodeDriverResponse(string msg)
-        {
-            return JsonConvert.DeserializeObject<DriverResponse>(msg);
-        }
-        public static DriverResponse DecodeDriverResponse(byte[] msg)
-        {
-            return JsonConvert.DeserializeObject<DriverResponse>(Encoding.ASCII.GetString(msg));
-        }
         public static Broadcast DecodeBroadcast(string msg)
         {
             return JsonConvert.DeserializeObject<Broadcast>(msg);
-        }
-        public static byte[] EncodeRequestResponse(RequestResponse request)
-        {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(request, Formatting.None));
-        }
-        public static byte[] EncodeDriverResponse(DriverResponse node)
-        {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
         public static byte[] EncodePointRequest(PointRequest node)
         {
@@ -118,8 +108,39 @@ namespace TangibleNode
         }
         public static PointRequest DecodePointRequest(byte[] msg)
         {
-            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg));
+            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
         }
-        
+        public static PointResponse DecodePointResponse(byte[] msg)
+        {
+            try 
+            {
+                return JsonConvert.DeserializeObject<PointResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+            } catch 
+            {
+                return null;
+            }
+        }
+        public static byte[] EncodePointRequestBatch(PointRequestBatch msg)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
+        }
+        public static PointRequestBatch DecodePointRequestBatch(byte[] msg)
+        {
+            try 
+            {
+                return JsonConvert.DeserializeObject<PointRequestBatch>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+            } catch 
+            {
+                return null;
+            }
+        }
+        public static ValueResponse DecodeValueResponse(byte[] msg)
+        {
+            return JsonConvert.DeserializeObject<ValueResponse>(Encoding.ASCII.GetString(msg));
+        }
+        public static byte[] EncodeRequestResponse(RequestResponse msg)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
+        }
     }
 }

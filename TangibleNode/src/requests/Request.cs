@@ -12,8 +12,7 @@ namespace TangibleNode
             NODE_ADD,
             NODE_DEL,
             VOTE,
-            COMPLETE,
-            DRIVER_RESPONSE
+            POINT
         }
         public string ID {get; set;}
         

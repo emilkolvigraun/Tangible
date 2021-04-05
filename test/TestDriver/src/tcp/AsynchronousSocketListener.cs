@@ -10,14 +10,18 @@ namespace TangibleDriver
 {
     public class AsynchronousSocketListener
     {
+        LingerOption _linger = new LingerOption(false, 0);
+
         // Thread signal.  
         public ManualResetEvent allDone = new ManualResetEvent(false);
-        private Handler _handler {get;}
 
-        public AsynchronousSocketListener(Handler handler)
+        BaseHandler handler;
+
+        public AsynchronousSocketListener(BaseHandler handler)
         {
-            _handler = handler;
+            this.handler = handler;
         }
+
 
         /// <summary>
         /// Establishes the local endpoint for the socket
@@ -59,19 +63,21 @@ namespace TangibleDriver
         {
             try 
             {
-            // Signal the main thread to continue.  
-            allDone.Set();  
+                // Signal the main thread to continue.  
+                allDone.Set();  
 
-            // Get the socket that handles the client request.  
-            Socket listener = (Socket) ar.AsyncState;  
-            Socket handler = listener.EndAccept(ar);  
+                // Get the socket that handles the client request.  
+                Socket listener = (Socket) ar.AsyncState;  
+                Socket handler = listener.EndAccept(ar);  
 
-            // Create the state object.  
-            StateObject state = new StateObject();  
-            state.workSocket = handler;  
-            handler.BeginReceive( state.buffer, 0, StateObject.BufferSize, 0,  
-                new AsyncCallback(ReadCallback), state);  
-            } catch {allDone.Set();}
+                // Create the state object.  
+                StateObject state = new StateObject();  
+                state.workSocket = handler;  
+                handler.BeginReceive( state.buffer, 0, StateObject.BufferSize, 0,  
+                    new AsyncCallback(ReadCallback), state);  
+            } catch (Exception e) {  
+                Console.WriteLine(e.ToString());  
+            }  
         }
 
         public void ReadCallback(IAsyncResult ar)
@@ -98,43 +104,46 @@ namespace TangibleDriver
                     content = state.sb.ToString();  
                     if (content.IndexOf("<EOF>") > -1) {  
                         // All the data has been read from the
-                        // client.              
-                        RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
-                        (Response response, Request point) response = MakeResponse(requestBatch);
+                        // client.         
+
+                        PointResponse response1 = null;
+                        try 
+                        {
+                            PointRequestBatch requestBatch = Encoder.DecodePointRequestBatch(content);
+                            response1 = MakeResponse(requestBatch);
+                        } catch 
+                        {
+                            response1 = new PointResponse(){Status = new Dictionary<string, bool>()};
+                        }
+                            
+                        Send(handler, Encoder.EncodePointResponse(response1));  
                         
-                        // send back the response to client
-                        Send(handler, Encoder.EncodeResponse(response.response));  
-                        Task.Run(() => {_handler.ProcessRequest(response.point);});
                     } else {  
                         // Not all data received. Get more.  
                         handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,  
                         new AsyncCallback(ReadCallback), state);  
                     }  
                 }  
-            } catch (Exception e){Logger.Write(Logger.Tag.ERROR, e.ToString());}
+            } catch (Exception e) 
+            {
+                Logger.Write(Logger.Tag.ERROR, e.ToString());
+            }
         }
 
-        private (Response response, Request point) MakeResponse(RequestBatch requestBatch)
+        private PointResponse MakeResponse(PointRequestBatch requestBatch)
         {
             Dictionary<string, bool> response = new Dictionary<string, bool>();
-            foreach (Request request in requestBatch.Batch)
+            foreach (PointRequest request in requestBatch.Batch)
             {
-                try 
-                {
-                    response.Add(request.ID, true);
-                    return (new Response()
-                    {
-                        Status = response
-                    }, request);
-                } catch
-                {
-                    response.Add(request.ID, false);
-                }
+                
+                handler.Requests.Enqueue(request);
+                response.Add(request.ID, true);
+                Logger.Write(Logger.Tag.INFO, "Received + [type:" + request.Type.ToString() + ", value:"+request.Value+"]");
             }
-            return (new Response()
-            {
+
+            return new PointResponse(){
                 Status = response
-            }, null);
+            };
         }
 
         private void Send(Socket handler, byte[] byteData)
@@ -144,34 +153,27 @@ namespace TangibleDriver
                 // Begin sending the data to the remote device.  
                 handler.BeginSend(byteData, 0, byteData.Length, 0,  
                     new AsyncCallback(SendCallback), handler);  
-            } catch {}
+            } catch (Exception e) {  
+                Console.WriteLine(e.ToString());  
+            }  
         }
 
         private void SendCallback(IAsyncResult ar)
         {
-            Socket handler = null;
             try
             {
                 // Retrieve the socket from the state object.  
-                handler = (Socket) ar.AsyncState;  
+                Socket handler = (Socket) ar.AsyncState;  
 
                 // Complete sending the data to the remote device.  
                 int bytesSent = handler.EndSend(ar);  
-            }
-            catch (Exception e)
-            {
+                handler.LingerState = _linger;
+                handler.Shutdown(SocketShutdown.Both);  
+                handler.Close(0);  
+                
+            } catch (Exception e) {  
                 Console.WriteLine(e.ToString());  
             }  
-
-            try
-            {
-                if (handler != null)
-                {
-                    handler.Shutdown(SocketShutdown.Both);  
-                    handler.Close();  
-                }
-            }
-            catch {}  
         }
     }
 }

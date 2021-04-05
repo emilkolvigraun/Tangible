@@ -1,0 +1,6 @@
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\test\TestReceiver\bin\Debug\net5.0\publish\TestReceiver.exe
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\test\TestReceiver\bin\Debug\net5.0\publish\TestReceiver.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\test\TestReceiver\bin\Debug\net5.0\publish\TestReceiver.deps.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\test\TestReceiver\bin\Debug\net5.0\publish\TestReceiver.runtimeconfig.json
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\test\TestReceiver\bin\Debug\net5.0\publish\TestReceiver.pdb
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\test\TestReceiver\bin\Debug\net5.0\publish\Newtonsoft.Json.dll

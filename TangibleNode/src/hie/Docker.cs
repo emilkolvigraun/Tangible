@@ -57,19 +57,26 @@ namespace TangibleNode
                     Image = config.Image,  
                     Name = config.ID,
                     Hostname = "localhost",
-                    Env = new string[]{"HOST="+config.Host, "PORT="+config.Port.ToString(), "ID="+config.ID, "NODE_HOST="+config.Maintainer.Host, "NODE_NAME="+config.Maintainer.ID, "NODE_PORT="+config.Maintainer.Port.ToString()}, 
-                    // HostConfig = new HostConfig { NetworkMode = "host" },
+                    Env = new string[]{
+                        "HOST="+config.Host, 
+                        "PORT="+config.Port.ToString(), 
+                        "ID="+config.ID, 
+                        "IMAGE="+config.Image,
+                        "NODE_HOST="+config.Maintainer.Host, 
+                        "NODE_NAME="+config.Maintainer.ID, 
+                        "NODE_PORT="+config.Maintainer.Port.ToString()
+                    }, 
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                     {
                         {
-                            config.Maintainer.Port.ToString(), default(EmptyStruct)
+                            config.Port.ToString(), default(EmptyStruct)
                         }
                     },
                     HostConfig = new HostConfig
                     {
                         PortBindings = new Dictionary<string, IList<PortBinding>>
                         {
-                            {config.Maintainer.Port.ToString(), new List<PortBinding> {new PortBinding {HostPort = config.Maintainer.Port.ToString()}}}
+                            {config.Port.ToString(), new List<PortBinding> {new PortBinding {HostPort = config.Port.ToString()}}}
                         },
                         PublishAllPorts = true
                     }
@@ -193,19 +200,26 @@ namespace TangibleNode
 
         public async Task RemoveStoppedContainers()
         {
-            string[] ids = await GetContainerIDs();
-            foreach(string id in ids)
-                await StopContainers(id);
-            IList<ContainerListResponse> t = await _client.Containers.ListContainersAsync(new ContainersListParameters()); 
-            foreach (ContainerListResponse c in t)
+            try 
             {
-                if (c.State == "exited" || c.State == "dead") 
+                string[] ids = await GetContainerIDs();
+                foreach(string id in ids)
+                    await StopContainers(id);
+                IList<ContainerListResponse> t = await _client.Containers.ListContainersAsync(new ContainersListParameters()); 
+                foreach (ContainerListResponse c in t)
                 {
-                    await _client.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters());
-                    Logger.Write(Logger.Tag.INFO, "Removed container: " + c.ID);
+                    if (c.State == "exited" || c.State == "dead") 
+                    {
+                        await _client.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters());
+                        Logger.Write(Logger.Tag.WARN, "Removed container: " + c.ID);
+                    }
                 }
+                await _client.Containers.PruneContainersAsync();
+            } catch(DockerApiException)
+            {
+                Utils.Sleep(10);
+                RemoveStoppedContainers();
             }
-            await _client.Containers.PruneContainersAsync();
         }
 
         private static readonly object _lock = new object();

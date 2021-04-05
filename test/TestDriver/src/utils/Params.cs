@@ -4,25 +4,31 @@ namespace TangibleDriver
 {
     class Params 
     {
+        // Tangible variables
         public static string HOST;
         public static int PORT;
         public static string ID;
-        public static int TIMEOUT;
-
-        public static string NODE_NAME;
+        // Tangible variables
+        public static string IMAGE;
         public static string NODE_HOST;
         public static int NODE_PORT;
-        
+        public static string NODE_NAME;
+
+
+        // Server and client variables
+        public static int TIMEOUT;
 
         public static void LoadEnvironment()
         {
-            ID = GetStrThrowIfMissing("ID");
             HOST = GetStrThrowIfMissing("HOST");
             PORT = GetIntThrowIfMissing("PORT");
-            NODE_NAME = GetStrThrowIfMissing("NODE_NAME");
+            ID = GetStrThrowIfMissing("ID");
+            IMAGE = GetStrThrowIfMissing("IMAGE");
             NODE_HOST = GetStrThrowIfMissing("NODE_HOST");
             NODE_PORT = GetIntThrowIfMissing("NODE_PORT");
-            TIMEOUT = GetIntOrSet("TIMEOUT", 500);
+            NODE_NAME = GetStrThrowIfMissing("NODE_NAME");
+
+            TIMEOUT = GetIntOrSet("TIMEOUT", 500);            
         }
 
         private static string GetStrThrowIfMissing(string var)
@@ -31,7 +37,6 @@ namespace TangibleDriver
             if (str==null||str==string.Empty) Logger.Write(Logger.Tag.FATAL, var + " NOT SET. ");
             return str;
         }
-
         private static int GetIntThrowIfMissing(string var)
         {
             string str = Environment.GetEnvironmentVariable(var);
@@ -40,7 +45,6 @@ namespace TangibleDriver
             if (i<0) Logger.Write(Logger.Tag.FATAL, var + " NOT SET. ");
             return i;
         }
-        
         private static int GetIntOrSet(string var, int alt)
         {
             string str = Environment.GetEnvironmentVariable(var);

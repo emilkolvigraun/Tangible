@@ -28,7 +28,7 @@ namespace TangibleNode
             Consumer consumer = new Consumer(HA);
 
             // initializing the node itself [as a statemachine]
-            StateMachine _stateMachine = new StateMachine(consumer);
+            StateMachine _stateMachine = new StateMachine(consumer, hie);
 
             _stateMachineThread = new Thread(() => {
                 _stateMachine.Start(settings.TcpNodes);

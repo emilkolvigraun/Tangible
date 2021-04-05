@@ -54,7 +54,9 @@ namespace TangibleNode
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write("ms,");
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write("log,");
+                Console.Write("ac,");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("lc,");
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write("pc,");
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -62,6 +64,29 @@ namespace TangibleNode
                 Console.ForegroundColor = ConsoleColor.Magenta;
                 Console.WriteLine("step");
                 Console.ForegroundColor = ConsoleColor.White;
+            }
+        }
+        
+        public static void WriteNormalHeader()
+        {
+            lock(Instance._lock)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("ms|");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write("ac,");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("lc,");
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.Write("pc,");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write("node,");
+                Console.ForegroundColor = ConsoleColor.Magenta;
+                Console.Write("step|");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write("tag|");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine("msg");
             }
         }
 
@@ -76,13 +101,32 @@ namespace TangibleNode
                 else if (_tags.Contains(tag))
                 {
                     Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.Write(Utils.Millis+"|");            
+                    Console.Write(Utils.Millis); 
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write("|"); 
+                    int i0 = StateLog.Instance.ActionCount;
+                    int lc = StateLog.Instance.LogCount;
+                    int i1 = StateLog.Instance.PriorityQueue.Count;
+                    int i2 = StateLog.Instance.Peers.NodeCount;
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.Write(tag.ToString().PadRight(6)+"|");            
+                    Console.Write(i0+",");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write(lc+",");
+                    Console.ForegroundColor = ConsoleColor.Blue;
+                    Console.Write(i1+",");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write(i2+",");
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.Write(Params.STEP);           
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write("|");           
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write(tag.ToString().PadRight(6));            
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write("|");           
                     SetColor(tag);
                     Console.WriteLine(message);         
                     Console.ForegroundColor = ConsoleColor.White;
-
 
                     if (tag==Tag.FATAL) Environment.Exit(0);   
                 }
@@ -122,13 +166,16 @@ namespace TangibleNode
             lock(_lock)
             {
                 long f = Utils.Millis;
-                int i0 = StateLog.Instance.LogCount;
+                int i0 = StateLog.Instance.ActionCount;
+                int lc = StateLog.Instance.LogCount;
                 int i1 = StateLog.Instance.PriorityQueue.Count;
                 int i2 = StateLog.Instance.Peers.NodeCount;
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(f+",");
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.Write(i0+",");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(lc+",");
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write(i1+",");
                 Console.ForegroundColor = ConsoleColor.Green;

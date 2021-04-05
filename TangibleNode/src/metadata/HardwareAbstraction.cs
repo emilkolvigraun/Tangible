@@ -11,10 +11,16 @@ namespace TangibleNode
 
         public void LoadDriverImages(HardwareInteractionEnvironment hie)
         {
-            // foreach(string image in Get_Images)
-            // {
-            //     hie.PrepareWarmStart(image);
-            // }
+            if (Params.RUN_HIE)
+            {
+                Logger.Write(Logger.Tag.WARN, "Removing dangeling containers...");
+                Docker.Instance.RemoveStoppedContainers().GetAwaiter().GetResult();
+                Logger.Write(Logger.Tag.INFO, "Preparing warm start...");
+                foreach(string image in Get_Images)
+                {
+                    hie.PrepareWarmStart(image);
+                }
+            }
         }
 
         private List<string> Get_Images

@@ -1,20 +1,22 @@
 ﻿using System;
-using System.Threading;
 
-namespace Server
+namespace TestReceiver
 {
     class Program
     {
+
+        public static string HOST;
+        public static int PORT;
+
         static void Main(string[] args)
         {
-            Environment.SetEnvironmentVariable("HOST", "192.168.1.237");
-            Environment.SetEnvironmentVariable("NAME", "TestReceiverServer");
-            Environment.SetEnvironmentVariable("PORT", "5006");
-            Params.LoadParams();
-            new Thread(()=>{
-                WriteQueue.Instance.Run();
-            }).Start();
-            Serv.RunServer();
+            HOST = "192.168.1.237";
+            PORT = 4000;
+
+            Logger.PrintHeader();
+
+            AsynchronousSocketListener listener = new AsynchronousSocketListener();
+            listener.StartListening();
         }
     }
 }

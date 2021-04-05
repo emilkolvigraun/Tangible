@@ -7,12 +7,15 @@ namespace TangibleNode
     {
         public NodePeers Peers {get;} = new NodePeers();
         public PQueue PriorityQueue {get;} = new PQueue(); 
+        
+        // action id, point ids
+        private TDict<string, List<string>> _currentTasks {get;} = new TDict<string, List<string>>();
 
         private TDict<string, TDict<string, Request>> BatchesBehind {get;} = new TDict<string, TDict<string, Request>>();
         private TDict<string, List<string>> ActionsCompleted {get;} = new TDict<string, List<string>>();
         private TSet<string> MyCompletedActions {get;} = new TSet<string>();
-        private object _batch_lock = new object();
-        private object _action_lock = new object();
+        private object _batch_lock {get;} = new object();
+        private object _action_lock {get;} = new object();
 
         public List<string> Leader_GetActionsCompleted(string peerID)
         {
@@ -40,7 +43,7 @@ namespace TangibleNode
                         this.ActionsCompleted.Add(p.Client.ID, new List<string>());
                     this.ActionsCompleted[p.Client.ID].Add(actionID);
                 });
-                
+                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETE [action:" + actionID.Substring(0,10)+"...]");
             }
         }
 
@@ -52,13 +55,12 @@ namespace TangibleNode
                 Peers.ForEachPeer((p) => {
                     p.RemoveAction(actionID);
                 });
-                Logger.Write(Logger.Tag.COMMIT, "Commited " + actionID);
+                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETE [action:" + actionID.Substring(0,10)+"...]");
             }
         }
 
         public void Follower_MarkActionCompleted(string actionID)
         {
-            Logger.Write(Logger.Tag.INFO, "Marked " + actionID + " completed.");
             MyCompletedActions.Add(actionID);
         }
 
@@ -128,10 +130,21 @@ namespace TangibleNode
             });
         }
 
+        public void RemoveCurrentTask(string actionID)
+        {
+            if (_currentTasks.ContainsKey(actionID))
+            {
+                _currentTasks.Remove(actionID);
+            }
+        }
+
         public void AppendAction(Action action)
         {
             if (action.Assigned == Params.ID)
             {
+                if (!_currentTasks.ContainsKey(action.ID))
+                    _currentTasks.Add(action.ID, action.PointID); 
+                else _currentTasks[action.ID].AddRange(action.PointID);
                 PriorityQueue.Enqueue(action);
             } else 
             {
@@ -139,11 +152,26 @@ namespace TangibleNode
             }
         }
 
+        public int ActionCount
+        {
+            get 
+            {
+                int i0 = 0;
+                _currentTasks.Values.ToList().ForEach((l) => {
+                    i0 += l.Count;
+                });
+                return i0;
+            }
+        }
+
         public int LogCount 
         {
             get 
             {
-                int i0 = PriorityQueue.Count;
+                int i0 = 0;
+                _currentTasks.Values.ToList().ForEach((l) => {
+                    i0 += l.Count;
+                });
                 int i1 = Peers.PeerLogCount;
                 return i0+i1;
             }

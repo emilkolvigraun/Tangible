@@ -1,3 +1,4 @@
+using System.Linq;
 
 namespace TangibleNode
 {
@@ -7,14 +8,18 @@ namespace TangibleNode
 
         public void PrepareWarmStart(string image)
         {
-            Logger.Write(Logger.Tag.INFO, "Removing dangeling containers...");
-            Docker.Instance.RemoveStoppedContainers().GetAwaiter().GetResult();
-            Logger.Write(Logger.Tag.INFO, "Preparing warm start...");
             if (!_drivers.ContainsKey(image))
             {
                 // create driver
                 _drivers.Add(image, Driver.MakeDriver(image, _drivers.Count));
             }
+        }
+
+        public void ForEachDriver(System.Action<Driver> action)
+        {
+            _drivers.Values.ToList().ForEach((d) => {
+                action(d);
+            });
         }
 
         public Driver GetOrCreateDriver(Action action)

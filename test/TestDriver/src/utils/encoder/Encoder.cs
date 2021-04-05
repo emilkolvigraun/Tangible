@@ -6,18 +6,6 @@ namespace TangibleDriver
 {
     class Encoder 
     {
-        public static byte[] EncodeAction(Action action)
-        {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(action, Formatting.None));
-        }
-        public static Action DecodeAction(string msg)
-        {
-            return JsonConvert.DeserializeObject<Action>(msg);
-        }
-        public static Action DecodeAction(byte[] msg)
-        {
-            return JsonConvert.DeserializeObject<Action>(Encoding.ASCII.GetString(msg));
-        }
         public static byte[] EncodeNode(Node node)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
@@ -48,7 +36,12 @@ namespace TangibleDriver
         }
         public static byte[] EncodeResponse(Response node)
         {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None) + "<EOF>");
+            try 
+            {
+                string str = JsonConvert.SerializeObject(node, Formatting.None) + "<EOF>";
+                byte[] bytes = Encoding.ASCII.GetBytes(str);
+                return Encoding.ASCII.GetBytes(str);
+            } catch {return null;}
         }
         public static string SerializeResponse(Response node)
         {
@@ -56,7 +49,10 @@ namespace TangibleDriver
         }
         public static Response DecodeResponse(string msg)
         {
-            return JsonConvert.DeserializeObject<Response>(msg.Replace("<EOF>", ""));
+            try 
+            {
+                return JsonConvert.DeserializeObject<Response>(msg.Replace("<EOF>", ""));
+            } catch {return null;}
         }
         public static byte[] EncodePointRequest(PointRequest node)
         {
@@ -68,11 +64,43 @@ namespace TangibleDriver
         }
         public static PointRequest DecodePointRequest(byte[] msg)
         {
-            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg));
+            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
         }
-        public static byte[] EncodeDriverResponse(DriverResponse node)
+        public static PointResponse DecodePointResponse(byte[] msg)
         {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
+            try 
+            {
+                return JsonConvert.DeserializeObject<PointResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+            } catch 
+            {
+                return null;
+            }
+        }
+        public static byte[] EncodePointResponse(PointResponse response)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(response, Formatting.None));
+        }
+        public static byte[] EncodePointRequestBatch(PointRequestBatch msg)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
+        }
+        public static PointRequestBatch DecodePointRequestBatch(byte[] msg)
+        {
+            try 
+            {
+                return JsonConvert.DeserializeObject<PointRequestBatch>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+            } catch 
+            {
+                return null;
+            }
+        }
+        public static PointRequestBatch DecodePointRequestBatch(string msg)
+        {
+            return JsonConvert.DeserializeObject<PointRequestBatch>(msg.Replace("<EOF>",""));
+        }
+        public static byte[] EncodeValueResponse(ValueResponse msg)
+        {
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None));
         }
     }
 }

@@ -12,6 +12,9 @@ namespace TangibleNode
         public static int DIE_AS_LEADER;
         public static int WAIT_BEFORE_START;
         public static decimal HERTZ;
+        public static bool RUN_HIE;
+        public static string TEST_RECEIVER_HOST;
+        public static int TEST_RECEIVER_PORT;
 
 
         // Tangible variables
@@ -48,7 +51,10 @@ namespace TangibleNode
             DIE_AS_FOLLOWER = GetIntThrowIfMissing("DIE_AS_FOLLOWER", settings.Testing.DieAsFollower_MS);
             DIE_AS_LEADER = GetIntThrowIfMissing("DIE_AS_LEADER", settings.Testing.DieAsLeader_MS);
             WAIT_BEFORE_START = GetIntOrSet("WAIT_BEFORE_START", settings.WaitBeforeStart_MS, 10000, 2000);
+            TEST_RECEIVER_HOST = settings.Testing.TestReceiverHost;
+            TEST_RECEIVER_PORT = settings.Testing.TestReceiverPort;
             HERTZ = settings.Frequency_Hz;
+            RUN_HIE = settings.Testing.RunHIE;
 
             TIMEOUT = GetIntOrSet("TIMEOUT", settings.Optional.Timeout_MS, 500);
             MAX_RETRIES = GetIntOrSet("MAX_RETRIES", settings.Optional.MaxRetries, 10);
@@ -90,7 +96,7 @@ namespace TangibleNode
 
         public static int GetIntThrowIfMissing(string var, int i)
         {
-            if (i<0) Logger.Write(Logger.Tag.FATAL, var + " NOT SET. ");
+            if (i!=-1&&i<0) Logger.Write(Logger.Tag.FATAL, var + " NOT SET. ");
             return i;
         }
         private static int GetIntThrowIfMissing(string var)

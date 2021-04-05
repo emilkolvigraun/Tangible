@@ -29,6 +29,7 @@
     ],
     "Testing": {
         "DieAsFollower_MS": 45000,
-        "DieAsLeader_MS": 80000
+        "DieAsLeader_MS": 80000,
+        "RunHIE":false
     }
 }

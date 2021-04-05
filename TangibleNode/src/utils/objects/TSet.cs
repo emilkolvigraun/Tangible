@@ -91,5 +91,13 @@ namespace TangibleNode
             return r;
         }
 
+        public List<T> ToList()
+        {
+            _lock.EnterReadLock();
+            HashSet<T> _copy = _complete;
+            _lock.ExitReadLock();
+            return _copy.ToList();
+        }   
+
     }
 }

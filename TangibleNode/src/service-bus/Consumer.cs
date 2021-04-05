@@ -56,11 +56,11 @@ namespace TangibleNode
                         t_die_l = Utils.Millis+Params.DIE_AS_LEADER;
                         leader=true;
                     }
-                    if (t2>=t_die_l) Environment.Exit(0);
+                    if (Params.DIE_AS_LEADER!=-1&&t2>=t_die_l) Environment.Exit(0);
                 } else if (!CurrentState.Instance.IsLeader)
                 {
                     t0 = Utils.Millis-(Utils.Millis-t2);
-                    if (t2>=t_die_f) Environment.Exit(0);
+                    if (Params.DIE_AS_FOLLOWER!=-1&&t2>=t_die_f) Environment.Exit(0);
                 }
             }
         }

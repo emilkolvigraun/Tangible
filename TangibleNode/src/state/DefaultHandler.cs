@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+
 namespace TangibleNode
 {
     class DefaultHandler : IResponseHandler
@@ -19,9 +21,13 @@ namespace TangibleNode
                     StateLog.Instance.AddRequestBehind(receiverID, r);
                 }
             });
-            if (sender.Completed!=null) sender.Completed.ForEach((a) => {
-                StateLog.Instance.Leader_RemoveActionsCompleted(receiverID, a);
-            });
+
+            if (sender.Completed!=null)
+            {
+                sender.Completed.ToList().ForEach((a) => {
+                    StateLog.Instance.Leader_RemoveActionsCompleted(receiverID, a);
+                });
+            }                
 
             try 
             {
