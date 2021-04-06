@@ -84,9 +84,9 @@ print(log2node)
 
 
 # polyline
-ax.plot(log2ms, log2pc, zorder=_zorders['log2'], c=_colors['log2'])
-ax.plot(log0ms, log0pc, zorder=_zorders['log0'], c=_colors['log0'])
-ax.plot(log1ms, log1pc, zorder=_zorders['log1'], c=_colors['log1'])
+ax.plot(log2ms, log2pc, zorder=_zorders['log2'], c=_colors['log2'], lw=4)
+ax.plot(log0ms, log0pc, zorder=_zorders['log0'], c=_colors['log0'], lw=4)
+ax.plot(log1ms, log1pc, zorder=_zorders['log1'], c=_colors['log1'], lw=4)
 ax.scatter([log0ms[-1]], [log0pc[-1]], zorder=_zorders['log0'], marker="X", label="TcpNode0", c=_colors['log0'], s=150)
 ax.scatter([log1ms[-1]], [log1pc[-1]], zorder=_zorders['log1'], marker="X", label="TcpNode1", c=_colors['log1'], s=150)
 ax.scatter([log2ms[-1]], [log2pc[-1]], zorder=_zorders['log2'], marker="X", label="TcpNode2", c=_colors['log2'], s=150)
@@ -104,17 +104,17 @@ ax.annotate("Wait before start timer",
 # end markers
 axT = ax.twinx()
 if (_zorders['log2']==1):
-    axT.plot(log2ms, log2node, zorder=_zorders['log2'], c='black', ls="--", label="# of nodes")
-    axT.plot(log0ms[:2], log0node[:2], zorder=_zorders['log0'], c='black', ls="--")
-    axT.plot(log1ms[:2], log1node[:2], zorder=_zorders['log1'], c='black', ls="--")
+    axT.plot(log2ms, log2node, zorder=_zorders['log2'], c='black', ls="--", label="# of nodes", lw=4)
+    axT.plot(log0ms[:2], log0node[:2], zorder=_zorders['log0'], c='black', ls="--", lw=4)
+    axT.plot(log1ms[:2], log1node[:2], zorder=_zorders['log1'], c='black', ls="--", lw=4)
 elif (_zorders['log0']==1):
-    axT.plot(log2ms[:2], log2node[:2], zorder=_zorders['log2'], c='black', ls="--")
-    axT.plot(log1ms[:2], log1node[:2], zorder=_zorders['log1'], c='black', ls="--")
-    axT.plot(log0ms, log0node, zorder=_zorders['log0'], c='black', ls="--", label="# of nodes")
+    axT.plot(log2ms[:2], log2node[:2], zorder=_zorders['log2'], c='black', ls="--", lw=4)
+    axT.plot(log1ms[:2], log1node[:2], zorder=_zorders['log1'], c='black', ls="--", lw=4)
+    axT.plot(log0ms, log0node, zorder=_zorders['log0'], c='black', ls="--", label="# of nodes", lw=4)
 elif (_zorders['log1']==1):
-    axT.plot(log2ms[:2], log2node[:2], zorder=_zorders['log2'], c='black', ls="--")
-    axT.plot(log0ms[:2], log0node[:2], zorder=_zorders['log0'], c='black', ls="--")
-    axT.plot(log1ms, log1node, zorder=_zorders['log1'], c='black', ls="--", label="# of nodes")
+    axT.plot(log2ms[:2], log2node[:2], zorder=_zorders['log2'], c='black', ls="--", lw=4)
+    axT.plot(log0ms[:2], log0node[:2], zorder=_zorders['log0'], c='black', ls="--", lw=4)
+    axT.plot(log1ms, log1node, zorder=_zorders['log1'], c='black', ls="--", label="# of nodes", lw=4)
 axT.scatter([log0ms[-1]], [log0node[-1]], zorder=_zorders['log0'], marker="X", c=_colors['log0'], s=150)
 axT.scatter([log1ms[-1]], [log1node[-1]], zorder=_zorders['log1'], marker="X", c=_colors['log1'], s=150)
 axT.scatter([log2ms[-1]], [log2node[-1]], zorder=_zorders['log2'], marker="X", c=_colors['log2'], s=150)
@@ -125,6 +125,6 @@ axT.set_yticks([0,1,2])
 
 # showing
 ax.grid()
-ax.legend(loc="center right", prop={'size': 12})
+ax.legend(loc="center right", prop={'size': 16})
 plt.tight_layout()
 plt.show()

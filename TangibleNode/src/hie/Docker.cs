@@ -49,9 +49,9 @@ namespace TangibleNode
             bool status = await PullImage(config.Image);
             if (!status) return ID;
             
-            CancellationTokenSource cts = new CancellationTokenSource(8000);
-            cts.CancelAfter(8000);
-            Task.Run(async () => {
+            // CancellationTokenSource cts = new CancellationTokenSource(8000);
+            // cts.CancelAfter(8000);
+            // Task.Run(async () => {
                 var response = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
                 { 
                     Image = config.Image,  
@@ -61,7 +61,8 @@ namespace TangibleNode
                         "HOST="+config.Host, 
                         "PORT="+config.Port.ToString(), 
                         "ID="+config.ID, 
-                        "IMAGE="+config.Image,
+                        "TIMEOUT="+Params.TIMEOUT.ToString(),
+                        "BATCH_SIZE="+Params.BATCH_SIZE.ToString(),
                         "NODE_HOST="+config.Maintainer.Host, 
                         "NODE_NAME="+config.Maintainer.ID, 
                         "NODE_PORT="+config.Maintainer.Port.ToString()
@@ -80,14 +81,14 @@ namespace TangibleNode
                         },
                         PublishAllPorts = true
                     }
-                });      
-
+                } );      
                 
                 Logger.Write(Logger.Tag.INFO, "Created container: " + response.ID);
                 ID = response.ID;
 
-                #pragma warning disable CS4014
-                _client.Containers.StartContainerAsync(response.ID, null, cts.Token).GetAwaiter().GetResult();
+                // #pragma warning disable CS4014
+                // _client.Containers.StartContainerAsync(response.ID, null, cts.Token).GetAwaiter().GetResult();
+                _client.Containers.StartContainerAsync(response.ID, null).GetAwaiter().GetResult();
 
                 Logger.Write(Logger.Tag.INFO, "Started container: " + response.ID);
 
@@ -96,7 +97,8 @@ namespace TangibleNode
                 status = info.running;
 
                 Logger.Write(Logger.Tag.COMMIT, "Container now running: " + response.ID);
-            }).Wait(8000, cts.Token);
+            // // }).Wait(8000, cts.Token);
+            // }).Wait(8000);
 
             if (ID == null || !status) Logger.Write(Logger.Tag.ERROR, "Did not manage to spin up container."); 
             
@@ -218,7 +220,7 @@ namespace TangibleNode
             } catch(DockerApiException)
             {
                 Utils.Sleep(10);
-                RemoveStoppedContainers();
+                await RemoveStoppedContainers();
             }
         }
 

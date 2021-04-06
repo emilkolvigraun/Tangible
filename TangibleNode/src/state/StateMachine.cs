@@ -99,146 +99,182 @@ namespace TangibleNode
 
             while (true)
             {
-                bool morePeers = (StateLog.Instance.Peers.NodeCount > 0);
-                bool timerActive = CurrentState.Instance.Timer.Active;
-                (State State, bool TimePassed) state = CurrentState.Instance.Get_State;
-                
-                if (!morePeers && timerActive) 
+                try 
                 {
-                    CurrentState.Instance.Timer.End();
-                    _sleepingTimer.Begin();
-                } else if(morePeers && !timerActive) 
+                    Loop();
+                } catch (Exception e)
                 {
-                    CurrentState.Instance.Timer.Begin();
-                    _sleepingTimer.End();
+                    Console.WriteLine(e.ToString());
                 }
+            }
+        }
 
-                if (Utils.IsCandidate(state.State))
+        private void Loop()
+        {
+            bool morePeers = (StateLog.Instance.Peers.NodeCount > 0);
+            bool timerActive = CurrentState.Instance.Timer.Active;
+            (State State, bool TimePassed) state = CurrentState.Instance.Get_State;
+            
+            if (!morePeers && timerActive) 
+            {
+                CurrentState.Instance.Timer.End();
+                _sleepingTimer.Begin();
+            } else if(morePeers && !timerActive) 
+            {
+                CurrentState.Instance.Timer.Begin();
+                _sleepingTimer.End();
+            }
+
+            if (Utils.IsCandidate(state.State))
+            {
+                List<Request> batch = new List<Request>{
+                    new Request(){
+                        Type = Request._Type.VOTE,
+                        ID = Utils.GenerateUUID(),
+                        Data = Encoder.EncodeVote(new Vote(){
+                            ID = Params.ID,
+                            LogCount = StateLog.Instance.LogCount
+                        })
+                    }
+                };
+                VoteResponseHandler handler = new VoteResponseHandler()
                 {
-                    List<Request> batch = new List<Request>{
-                        new Request(){
-                            Type = Request._Type.VOTE,
-                            ID = Utils.GenerateUUID(),
-                            Data = Encoder.EncodeVote(new Vote(){
-                                ID = Params.ID,
-                                LogCount = StateLog.Instance.LogCount
-                            })
-                        }
+                    Quorum = StateLog.Instance.Peers.NodeCount
+                };
+                Task[] tasks;
+                StateLog.Instance.Peers.ForEachAsync((p) => {
+                    RequestBatch rb = new RequestBatch(){
+                        Batch = batch,
+                        Sender = Node.Self
                     };
-                    VoteResponseHandler handler = new VoteResponseHandler()
+                    p.Client.StartClient(rb, handler);
+                }, out tasks);
+                Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
+                Task.WaitAll(tasks);
+            }
+
+            if (CurrentState.Instance.IsLeader)
+            {
+                bool connectionsLost = false;
+                StateLog.Instance.Peers.ForEachPeer((p) => {
+                    if (p.Heartbeat.Value >= Params.MAX_RETRIES)
                     {
-                        Quorum = StateLog.Instance.Peers.NodeCount
-                    };
+                        connectionsLost = true;
+                        StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
+                            Type = Request._Type.NODE_DEL,
+                            ID = Utils.GenerateUUID(),
+                            Data = Encoder.EncodeNode(p.AsNode)
+                        });
+
+                        Peer peer = null;
+                        bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
+                        Dictionary<string, Action> _rescheduledActions = new Dictionary<string, Action>();
+
+                        if (success)
+                        {
+                            peer.ForEachAction((a)=>{
+                                if (!_rescheduledActions.ContainsKey(a.ID))
+                                {
+                                    Action action = a;
+                                    action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
+                                    action.ID = Utils.GenerateUUID();
+                                    StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
+                                        Type = Request._Type.ACTION,
+                                        ID = Utils.GenerateUUID(),
+                                        Data = Encoder.EncodeAction(action)
+                                    });
+                                    _rescheduledActions.Add(a.ID, action);
+                                }
+                            });
+                        }
+                        
+                        StateLog.Instance.ClearPeerLog(p.Client.ID);
+                        StateLog.Instance.Peers.TryRemoveNode(p.Client.ID);
+                        
+                        foreach(var action in _rescheduledActions.Values)
+                        {
+                            StateLog.Instance.AppendAction(action);
+                        }
+                    } else 
+                    {
+                        connectionsLost = StateLog.Instance.GetBatchesBehind(p.Client.ID).Count > 0;
+                    }
+                });
+
+                // if(CurrentState.Instance.Timer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))) || connectionsLost)
+                // {
+
+                    // if (CurrentState.Instance.IsLeader)
+                    // {
+                        // bool ready = true;
+                        // foreach (Node n in StateLog.Instance.Peers.AsNodes)
+                        // {
+                        //     if (StateLog.Instance.BatchesBehindCount(n.ID) != 0 || StateLog.Instance.Leader_GetActionsCompletedCount(n.ID) != 0)
+                        //     {
+                        //         ready = false;
+                        //         break;
+                        //     } 
+                        // }
+                        
+                    // }
+                bool ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
+                bool passed = CurrentState.Instance.Timer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2)));
+
+                if (!ready || passed || connectionsLost)
+                {
                     Task[] tasks;
                     StateLog.Instance.Peers.ForEachAsync((p) => {
+                        List<string> acp = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID);
                         RequestBatch rb = new RequestBatch(){
-                            Batch = batch,
+                            Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
+                            Completed = acp,
                             Sender = Node.Self
                         };
-                        p.Client.StartClient(rb, handler);
+                        p.Client.StartClient(rb, new DefaultHandler());
                     }, out tasks);
                     Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
                     Task.WaitAll(tasks);
                 }
 
-                if (CurrentState.Instance.IsLeader)
-                {
-                    bool connectionsLost = false;
-                    StateLog.Instance.Peers.ForEachPeer((p) => {
-                        if (p.Heartbeat.Value >= Params.MAX_RETRIES)
-                        {
-                            connectionsLost = true;
-                            StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
-                                Type = Request._Type.NODE_DEL,
-                                ID = Utils.GenerateUUID(),
-                                Data = Encoder.EncodeNode(p.AsNode)
-                            });
-
-                            Peer peer = null;
-                            bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
-                            Dictionary<string, Action> _rescheduledActions = new Dictionary<string, Action>();
-
-                            if (success)
-                            {
-                                peer.ForEachAction((a)=>{
-                                    if (!_rescheduledActions.ContainsKey(a.ID))
-                                    {
-                                        Action action = a;
-                                        action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
-                                        action.ID = Utils.GenerateUUID();
-                                        StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
-                                            Type = Request._Type.ACTION,
-                                            ID = Utils.GenerateUUID(),
-                                            Data = Encoder.EncodeAction(action)
-                                        });
-                                        _rescheduledActions.Add(a.ID, action);
-                                    }
-                                });
-                                
-                            }
-                            
-                            StateLog.Instance.ClearPeerLog(p.Client.ID);
-                            StateLog.Instance.Peers.TryRemoveNode(p.Client.ID);
-                            
-                            foreach(var action in _rescheduledActions.Values)
-                            {
-                                StateLog.Instance.AppendAction(action);
-                            }
-                        } else 
-                        {
-                            connectionsLost = StateLog.Instance.GetBatchesBehind(p.Client.ID).Count > 0;
-                        }
-                    });
-
-                    if(CurrentState.Instance.Timer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))) || connectionsLost)
-                    {
-                        Task[] tasks;
-                        StateLog.Instance.Peers.ForEachAsync((p) => {
-                            RequestBatch rb = new RequestBatch(){
-                                Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
-                                Completed = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID),
-                                Sender = Node.Self
-                            };
-                            p.Client.StartClient(rb, new DefaultHandler());
-                        }, out tasks);
-                        Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
-                        Task.WaitAll(tasks);
-                        CurrentState.Instance.Timer.Reset();
-                        Producer.Instance.Broadcast();
-                    } 
-                }
-
-                if (state.State == State.SLEEPER && _sleepingTimer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))))
+                if (passed)
                 {
                     Producer.Instance.Broadcast();
-                    _sleepingTimer.Reset();
+                    CurrentState.Instance.Timer.Reset();
                 }
-
-
-                if(Params.RUN_HIE)
-                {
-                    Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
-                    if (prioritizedAction != null)
-                    {
-                        Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);
-                        requiredDriver.AddRequestBehind(
-                            new PointRequest(){
-                                ID = prioritizedAction.ID,
-                                PointIDs = prioritizedAction.PointID,
-                                ReturnTopic = prioritizedAction.ReturnTopic,
-                                T0 = prioritizedAction.T0,
-                                T1 = prioritizedAction.T1,
-                                T2 = Utils.Millis.ToString(),
-                                Type = prioritizedAction.Type,
-                                Value = prioritizedAction.Value
-                        });
-                    }
-                    HIE.ForEachDriver((d) => {
-                        d.Write();
-                    });
-                    TestReceiverClient.Instance.StartClient();
-                }
+            // } 
+                ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
+                _consumer.MarkReady(ready);
             }
-        }   
+
+            if (state.State == State.SLEEPER && _sleepingTimer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))))
+            {
+                Producer.Instance.Broadcast();
+                _sleepingTimer.Reset();
+            }
+
+            if(Params.RUN_HIE)
+            {
+                Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
+                if (prioritizedAction != null)
+                {
+                    Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);
+                    requiredDriver.AddRequestBehind(
+                        new PointRequest(){
+                            ID = prioritizedAction.ID,
+                            PointIDs = prioritizedAction.PointID,
+                            ReturnTopic = prioritizedAction.ReturnTopic,
+                            T0 = prioritizedAction.T0,
+                            T1 = prioritizedAction.T1,
+                            T2 = Utils.Millis.ToString(),
+                            Type = prioritizedAction.Type,
+                            Value = prioritizedAction.Value
+                    });
+                }
+                HIE.ForEachDriver((d) => {
+                    d.Write();
+                });
+                TestReceiverClient.Instance.StartClient();
+            }
+        }
     }
 }

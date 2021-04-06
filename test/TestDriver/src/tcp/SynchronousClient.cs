@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;  
 using System.Text;
 using System.Collections.Generic;  
+using System.Threading.Tasks;
 
 namespace TangibleDriver 
 {
@@ -51,7 +52,7 @@ namespace TangibleDriver
                         int bytesSent = sender.Send(msg);  
 
                         // Data buffer for incoming data.  
-                        byte[] bytes = new byte[6144];  // hope thats enough
+                        byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
 
                         // Receive the response from the remote device.  
                         int bytesRec = sender.Receive(bytes);  
@@ -67,8 +68,6 @@ namespace TangibleDriver
                         {
                             HandleFailure(request, rh);
                         }
-
-
                         _notified = true;
                     }
                 } catch (ArgumentNullException ane) {  

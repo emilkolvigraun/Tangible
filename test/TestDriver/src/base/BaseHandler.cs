@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
+using System;
 
 namespace TangibleDriver
 {
@@ -33,32 +34,44 @@ namespace TangibleDriver
         {
             while (true)
             {
-                if (Requests.Count > 0)
+                try 
                 {
-                    PointRequest request = Requests.Dequeue();
-                    List<ValueResponse> response = handler.OnRequest(request);
-
-                    List<Request> batches;
-                    lock(_lock)
+                    if (Requests.Count > 0)
                     {
-                        batches = _requestsBehind.Values.ToList();
-                    }
-                    response.ForEach((rs) => {
-                        batches.Add(
-                            new Request(){
-                                ID = Utils.GenerateUUID(),
-                                Type = Request._Type.POINT,
-                                Data = Encoder.EncodeValueResponse(rs)
-                            }
-                        );
-                    });
+                        PointRequest request = Requests.Dequeue();
+                        List<ValueResponse> response = handler.OnRequest(request);
 
-                    _client.StartClient(new RequestBatch(){
-                        Batch = batches,
-                        Sender = null,
-                        Step = 0,
-                        Completed = null
-                    }, this);
+                        List<Request> batches = new List<Request>();
+                        lock(_lock)
+                        {
+                            foreach(Request r in _requestsBehind.Values.ToList())
+                            {
+                                batches.Add(r);
+                                if (batches.Count > Params.BATCH_SIZE) break;
+                            }
+                        }
+
+                        response.ForEach((rs) => {
+                            batches.Add(
+                                new Request(){
+                                    ID = Utils.GenerateUUID(),
+                                    Type = Request._Type.POINT,
+                                    Data = Encoder.EncodeValueResponse(rs)
+                                }
+                            );
+                        });
+
+                        _client.StartClient(new RequestBatch(){
+                            Batch = batches,
+                            Sender = null,
+                            Step = 0,
+                            Completed = null
+                        }, this);
+                    }
+                } catch (Exception e)
+                {   
+                    Console.WriteLine(e.ToString());
+                    continue;
                 }
             }
         }

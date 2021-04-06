@@ -38,6 +38,8 @@ namespace TangibleDriver
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try {  
+                listener.SendTimeout = Params.TIMEOUT;
+                listener.ReceiveTimeout = Params.TIMEOUT;
                 listener.Bind(localEndPoint);  
                 listener.Listen(100);  
                 Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);

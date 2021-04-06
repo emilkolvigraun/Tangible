@@ -9,17 +9,22 @@
     "DriverHostName": "192.168.1.237",
     "DriverPortRangeStart": 8000,
     "DriverPortRangeEnd": 8100,
-    "WaitBeforeStart_MS":8000,
-    "Frequency_Hz":1,
     "Optional":{
         "Heartbeat_MS":2000,
-        "Timeout_MS":500
+        "Timeout_MS":500,
+        "WaitBeforeStart_MS":8000,
+        "BatchSize":10
     },
     "TcpNodes": [
         {
             "Host": "192.168.1.237",
             "Port": 5001,
             "ID": "TcpNode1"
+        },
+        {
+            "Host": "192.168.1.237",
+            "Port": 5002,
+            "ID": "TcpNode2"
         }
     ],
     "Testing": {
@@ -27,6 +32,7 @@
         "DieAsLeader_MS": -1,
         "RunHIE": true,
         "TestReceiverHost": "192.168.1.237",
+        "Frequency_Hz":100,
         "TestReceiverPort": 4000
     }
 }

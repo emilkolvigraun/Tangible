@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Collections.Generic; 
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace TangibleNode
 {
@@ -59,7 +60,13 @@ namespace TangibleNode
                 lock(_lock)
                 {
                     if (Count < 1) return null;
-                    return new RequestResponse(){Batch=_responsesNotSend.Values.ToList()};
+                    RequestResponse rs = new RequestResponse(){Batch=new List<ESBResponse>()};
+                    foreach (ESBResponse r in _responsesNotSend.Values.ToList())
+                    {
+                        rs.Batch.Add(r);
+                        if (rs.Batch.Count >= Params.BATCH_SIZE) break;
+                    }
+                    return rs;
                 }
             }
         }
@@ -98,21 +105,25 @@ namespace TangibleNode
                         // Send the data through the socket.  
                         int bytesSent = sender.Send(msg);  
 
-                        // Data buffer for incoming data.  
-                        byte[] bytes = new byte[6144];  // hope thats enough
+                        bool sendSuccess = Task.Run(() => {
+                            // Data buffer for incoming data.  
+                            byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
 
-                        // Receive the response from the remote device.  
-                        int bytesRec = sender.Receive(bytes);  
+                            // Receive the response from the remote device.  
+                            int bytesRec = sender.Receive(bytes);  
 
-                        if (bytesRec < 1) HandleFailure(response);
+                            if (bytesRec < 1) HandleFailure(response);
 
-                        try 
-                        {
-                            PointResponse r1 = Encoder.DecodePointResponse(bytes);
-                            OnResponse(response, r1); 
-                        }
-                        catch {HandleFailure(response);}
-                        _notified = true;
+                            try 
+                            {
+                                PointResponse r1 = Encoder.DecodePointResponse(bytes);
+                                OnResponse(response, r1); 
+                            }
+                            catch {HandleFailure(response);}
+                            _notified = true;
+                        }).Wait(Params.TIMEOUT);
+
+                        if (!sendSuccess && !_notified) HandleFailure(response);
                     }
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));

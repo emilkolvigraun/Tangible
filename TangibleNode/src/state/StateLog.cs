@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace TangibleNode
 {
@@ -10,27 +11,46 @@ namespace TangibleNode
         
         // action id, point ids
         private TDict<string, List<string>> _currentTasks {get;} = new TDict<string, List<string>>();
-
         private TDict<string, TDict<string, Request>> BatchesBehind {get;} = new TDict<string, TDict<string, Request>>();
         private TDict<string, List<string>> ActionsCompleted {get;} = new TDict<string, List<string>>();
         private TSet<string> MyCompletedActions {get;} = new TSet<string>();
-        private object _batch_lock {get;} = new object();
-        private object _action_lock {get;} = new object();
+        private readonly object _batch_lock = new object();
+        private readonly object _action_lock = new object();
+        private readonly object _request_lock = new object();
 
         public List<string> Leader_GetActionsCompleted(string peerID)
         {
             lock (_action_lock)
             {
                 if (!ActionsCompleted.ContainsKey(peerID)) return new List<string>();
-                List<string> behind = ActionsCompleted[peerID];
+                List<string> behind = new List<string>();
+                foreach(string s in ActionsCompleted[peerID].ToList())
+                {
+                    behind.Add(s);
+                }
                 return behind;
+            }
+        }
+
+        public int Leader_GetActionsCompletedCount(string peerID)
+        {
+            lock (_action_lock)
+            {
+                if (!ActionsCompleted.ContainsKey(peerID)) return 0;
+                return ActionsCompleted[peerID].Count;
             }
         }
 
         public void Leader_RemoveActionsCompleted(string peerID, string action)
         {
-            if (ActionsCompleted.ContainsKey(peerID))
-                ActionsCompleted[peerID].Remove(action);
+            lock (_action_lock)
+            {
+                if (ActionsCompleted.ContainsKey(peerID))
+                {
+                    ActionsCompleted[peerID].Remove(action);
+                    // Logger.Write(Logger.Tag.INFO, "Removed " + action.Substring(0,10) +"... from " + peerID);
+                } else ActionsCompleted.Add(peerID, new List<string>());
+            }
         }
 
         public void Leader_AddActionCompleted(string actionID)
@@ -42,9 +62,26 @@ namespace TangibleNode
                     if (!this.ActionsCompleted.ContainsKey(p.Client.ID))
                         this.ActionsCompleted.Add(p.Client.ID, new List<string>());
                     this.ActionsCompleted[p.Client.ID].Add(actionID);
+                    Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
                 });
-                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETE [action:" + actionID.Substring(0,10)+"...]");
             }
+        }
+
+        public bool NotAnyBatchOrCompleteBehind()
+        {
+            // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
+            // {
+                bool ready = true;
+                foreach (Node n in Peers.AsNodes)
+                {
+                    if (BatchesBehindCount(n.ID) != 0 || Leader_GetActionsCompletedCount(n.ID) != 0)
+                    {
+                        ready = false;
+                        break;
+                    } 
+                }
+                return ready;
+            // }
         }
 
         public void Follower_AddActionCompleted(string actionID)
@@ -55,22 +92,29 @@ namespace TangibleNode
                 Peers.ForEachPeer((p) => {
                     p.RemoveAction(actionID);
                 });
-                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETE [action:" + actionID.Substring(0,10)+"...]");
+                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETION [action:" + actionID.Substring(0,10)+"...]");
             }
         }
 
         public void Follower_MarkActionCompleted(string actionID)
         {
-            MyCompletedActions.Add(actionID);
+            lock (_action_lock)
+                MyCompletedActions.Add(actionID);
         }
 
         public List<string> Follower_GetCompletedActions()
         {
-            List<string> completed = new List<string>();
-            MyCompletedActions.ForEachRead((a) => {
-                completed.Add(a);
-            });
-            return completed;
+            lock (_action_lock)
+            {
+                List<string> completed = new List<string>();
+                foreach(string s in MyCompletedActions.ToList())
+                {
+                    completed.Add(s);
+                    if (completed.Count >= Params.BATCH_SIZE) break;
+                }
+                return completed;
+                // return  MyCompletedActions.ToList();
+            }
         }
 
         public List<Request> GetBatchesBehind(string peerID)
@@ -78,28 +122,51 @@ namespace TangibleNode
             lock (_batch_lock)
             {
                 if (!BatchesBehind.ContainsKey(peerID)) return new List<Request>();
-                List<Request> behind = BatchesBehind[peerID].Values.ToList();
+                List<Request> behind = new List<Request>();
+                foreach (Request r in BatchesBehind[peerID].Values.ToList())
+                {
+                    behind.Add(r);
+                    if (behind.Count > Params.BATCH_SIZE) break;
+                }
                 return behind;
+            }
+        }
+
+        public int BatchesBehindCount(string peerID)
+        {
+            lock (_batch_lock)
+            {
+                if (!BatchesBehind.ContainsKey(peerID)) return 0;
+                return BatchesBehind[peerID].Values.Count;
             }
         }
 
         public void RemoveBatchBehind(string peerID, Request request)
         {
-            if (BatchesBehind.ContainsKey(peerID))
+            lock(_batch_lock)
             {
-                BatchesBehind[peerID].Remove(request.ID);
-            } 
+                if (BatchesBehind.ContainsKey(peerID))
+                {
+                    BatchesBehind[peerID].Remove(request.ID);
+                } 
+            }
         }
 
         public void ClearPeerLog(string peerID)
         {
-            if (BatchesBehind.ContainsKey(peerID))
+            lock(_batch_lock)
             {
-                BatchesBehind.Remove(peerID);
-            } 
-            if (ActionsCompleted.ContainsKey(peerID))
+                if (BatchesBehind.ContainsKey(peerID))
+                {
+                    BatchesBehind.Remove(peerID);
+                } 
+            }
+            lock(_action_lock)
             {
-                ActionsCompleted.Remove(peerID);
+                if (ActionsCompleted.ContainsKey(peerID))
+                {
+                    ActionsCompleted.Remove(peerID);
+                }
             }
         }
 
@@ -116,39 +183,51 @@ namespace TangibleNode
 
         public void AddRequestBehindToAllBut(string peerID, Request request)
         {
-            Peers.ForEachPeer((p)=>{
-                if (p.Client.ID != peerID)
-                {
-                    AddRequestBehind(p.Client.ID, request);
-                }
-            });
+            lock(_request_lock)
+            {
+                Peers.ForEachPeer((p)=>{
+                    if (p.Client.ID != peerID)
+                    {
+                        AddRequestBehind(p.Client.ID, request);
+                    }
+                });
+            }
         }
         public void AddRequestBehindToAll(Request request)
         {
-            Peers.ForEachPeer((p)=>{
-                AddRequestBehind(p.Client.ID, request);
-            });
+            lock(_request_lock)
+            {
+                Peers.ForEachPeer((p)=>{
+                    AddRequestBehind(p.Client.ID, request);
+                });
+            }
         }
 
         public void RemoveCurrentTask(string actionID)
         {
-            if (_currentTasks.ContainsKey(actionID))
+            lock (_task_lock)
             {
-                _currentTasks.Remove(actionID);
+                if (_currentTasks.ContainsKey(actionID))
+                {
+                    _currentTasks.Remove(actionID);
+                }
             }
         }
 
         public void AppendAction(Action action)
         {
-            if (action.Assigned == Params.ID)
+            lock (_action_lock)
             {
-                if (!_currentTasks.ContainsKey(action.ID))
-                    _currentTasks.Add(action.ID, action.PointID); 
-                else _currentTasks[action.ID].AddRange(action.PointID);
-                PriorityQueue.Enqueue(action);
-            } else 
-            {
-                Peers.AppendAction(action.Assigned, action);
+                if (action.Assigned == Params.ID)
+                {
+                    if (!_currentTasks.ContainsKey(action.ID))
+                        _currentTasks.Add(action.ID, action.PointID); 
+                    else _currentTasks[action.ID].AddRange(action.PointID);
+                    PriorityQueue.Enqueue(action);
+                } else 
+                {
+                    Peers.AppendAction(action.Assigned, action);
+                }
             }
         }
 
@@ -156,11 +235,14 @@ namespace TangibleNode
         {
             get 
             {
-                int i0 = 0;
-                _currentTasks.Values.ToList().ForEach((l) => {
-                    i0 += l.Count;
-                });
-                return i0;
+                lock (_task_lock)
+                {
+                    int i0 = 0;
+                    _currentTasks.Values.ToList().ForEach((l) => {
+                        if (l!=null) i0 += l.Count;
+                    });
+                    return i0;
+                }
             }
         }
 
@@ -168,16 +250,20 @@ namespace TangibleNode
         {
             get 
             {
-                int i0 = 0;
-                _currentTasks.Values.ToList().ForEach((l) => {
-                    i0 += l.Count;
-                });
-                int i1 = Peers.PeerLogCount;
-                return i0+i1;
+                lock(_task_lock)
+                {
+                    int i0 = 0;
+                    _currentTasks.Values.ToList().ForEach((l) => {
+                        if (l!=null) i0 += l.Count;
+                    });
+                    int i1 = Peers.PeerLogCount;
+                    return i0+i1;
+                }
             }
         }
 
         private static readonly object _lock = new object();
+        private readonly object _task_lock = new object();
         private static StateLog _instance = null;
         public static StateLog Instance 
         {

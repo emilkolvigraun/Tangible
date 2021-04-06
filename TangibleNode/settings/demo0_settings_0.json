@@ -10,7 +10,7 @@
     "DriverPortRangeStart": 8000,
     "DriverPortRangeEnd": 8100,
     "WaitBeforeStart_MS":8000,
-    "Frequency_Hz":5,
+    "Frequency_Hz":200,
     "Optional":{
         "Heartbeat_MS":2000,
         "Timeout_MS":500

@@ -2,18 +2,18 @@
     "Host": "192.168.1.237",
     "Port": 5002,
     "ID": "TcpNode2",
-    "RDFPath":"C:\\Model\\Is\\Located\\Somewhere\\RDF.ttl",
-    "RequestTopic":"tangible.requests.1",
-    "BroadcastTopic":"tangible.cluster.1",
+    "RDFPath": "C:\\Model\\Is\\Located\\Somewhere\\RDF.ttl",
+    "RequestTopic": "tangible.requests.1",
+    "BroadcastTopic": "tangible.cluster.1",
     "DockerRemoteHost": "npipe://./pipe/docker_engine",
     "DriverHostName": "192.168.1.237",
-    "DriverPortRangeStart": 8202,
-    "DriverPortRangeEnd": 8302,
-    "WaitBeforeStart_MS":8000,
-    "Frequency_Hz":200,
+    "DriverPortRangeStart": 8200,
+    "DriverPortRangeEnd": 8300,
     "Optional":{
         "Heartbeat_MS":2000,
-        "Timeout_MS":500
+        "Timeout_MS":500,
+        "WaitBeforeStart_MS":8000,
+        "BatchSize":10
     },
     "TcpNodes": [
         {
@@ -28,8 +28,11 @@
         }
     ],
     "Testing": {
-        "DieAsFollower_MS": 80000,
-        "DieAsLeader_MS": 15000,
-        "RunHIE":false
+        "DieAsFollower_MS": -1,
+        "DieAsLeader_MS": -1,
+        "RunHIE": true,
+        "TestReceiverHost": "192.168.1.237",
+        "Frequency_Hz":100,
+        "TestReceiverPort": 4000
     }
 }

@@ -8,9 +8,32 @@ namespace TangibleNode
     {
         private HardwareAbstraction HA {get;}
         private bool _running {get; set;} = false;
+
+        private bool _ready {get; set;} = false;
+        private readonly object _ready_lock = new object();
+
         public Consumer (HardwareAbstraction HA)
         {
             this.HA = HA;
+        }
+
+        public void MarkReady(bool b)
+        {
+            lock(_ready_lock)
+            {
+                _ready = b;
+            }
+        }
+
+        public bool IsReady
+        {
+            get 
+            {
+                lock(_ready_lock)
+                {
+                    return _ready;
+                }
+            }
         }
 
         public void Handle(ESBRequest request)
@@ -37,7 +60,7 @@ namespace TangibleNode
             {
                 long t1 = Utils.Millis - t0;
                 long t2 = Utils.Millis;
-                if (t1 >= interval && CurrentState.Instance.IsLeader)
+                if (t1 >= interval && CurrentState.Instance.IsLeader && IsReady && Params.STEP < 3000)
                 {
                     Params.STEP++;
                     ReceiveDataRequest(new DataRequest(){
@@ -57,6 +80,7 @@ namespace TangibleNode
                         leader=true;
                     }
                     if (Params.DIE_AS_LEADER!=-1&&t2>=t_die_l) Environment.Exit(0);
+                    MarkReady(false);
                 } else if (!CurrentState.Instance.IsLeader)
                 {
                     t0 = Utils.Millis-(Utils.Millis-t2);
@@ -69,17 +93,17 @@ namespace TangibleNode
         {
             List<Request> requests = HA.MarshallDataRequest(dataRequest);
 
-            Task[] tasks;
-            StateLog.Instance.Peers.ForEachAsync((p) => {
-                RequestBatch rb = new RequestBatch(){
-                    Batch = requests,
-                    Completed = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID),
-                    Sender = Node.Self
-                };
-                p.Client.StartClient(rb, new DefaultHandler());
-            }, out tasks);
-            Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
-            Task.WaitAll(tasks);
+        //     Task[] tasks;
+        //     StateLog.Instance.Peers.ForEachAsync((p) => {
+        //         RequestBatch rb = new RequestBatch(){
+        //             Batch = requests,
+        //             Completed = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID),
+        //             Sender = Node.Self
+        //         };
+        //         p.Client.StartClient(rb, new DefaultHandler());
+        //     }, out tasks);
+        //     Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
+        //     Task.WaitAll(tasks);
         }
 
         public void ReceiveBroadcast(Broadcast broadcast)

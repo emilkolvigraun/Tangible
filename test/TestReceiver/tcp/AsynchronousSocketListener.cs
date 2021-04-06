@@ -30,6 +30,8 @@ namespace TestReceiver
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try {  
+                listener.SendTimeout = 500;
+                listener.ReceiveTimeout = 500;
                 listener.Bind(localEndPoint);  
                 listener.Listen(100);  
                 while (true) {  
@@ -45,8 +47,8 @@ namespace TestReceiver
                     allDone.WaitOne();  
                 }  
 
-            } catch{  
-                
+            } catch (Exception e) {  
+                Console.WriteLine(e.ToString());
             }  
         }
 
@@ -102,8 +104,9 @@ namespace TestReceiver
                         {
                             RequestResponse requestBatch = Encoder.DecodeRequestResponse(content);
                             response1 = MakeResponse(requestBatch);
-                        } catch 
+                        } catch (Exception e) 
                         {
+                            Console.WriteLine(e.ToString());
                             response1 = new PointResponse(){Status = null};
                         }
                             
@@ -115,9 +118,9 @@ namespace TestReceiver
                         new AsyncCallback(ReadCallback), state);  
                     }  
                 }  
-            } catch
-            {
-            }
+            } catch (Exception e) {  
+                Console.WriteLine(e.ToString());
+            }  
         }
 
         private PointResponse MakeResponse(RequestResponse requestBatch)

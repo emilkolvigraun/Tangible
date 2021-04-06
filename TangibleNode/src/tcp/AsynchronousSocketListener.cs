@@ -15,6 +15,80 @@ namespace TangibleNode
         // Thread signal.  
         public ManualResetEvent allDone = new ManualResetEvent(false);
 
+    //     public void StartListening() 
+    //     {  
+    //         // Data buffer for incoming data.  
+    //         byte[] bytes = new Byte[1024];  
+
+    //         // Establish the local endpoint for the socket.  
+    //         // Dns.GetHostName returns the name of the
+    //         // host running the application.   
+    //         IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Parse(Params.HOST), Params.PORT);  
+
+    //         // Create a TCP/IP socket.  
+    //         Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);  
+
+    //         // Bind the socket to the local endpoint and
+    //         // listen for incoming connections.  
+    //         try {  
+    //             listener.SendTimeout = Params.TIMEOUT;
+    //             listener.ReceiveTimeout = Params.TIMEOUT;
+    //             listener.Bind(localEndPoint);  
+    //             listener.Listen();  
+
+    //             // Start listening for connections.  
+    //             while (true) {  
+
+    //                 Socket handler = listener.Accept();  
+                    
+    //                 try 
+    //                 {
+    //                     // Program is suspended while waiting for an incoming connection.  
+
+    //                     string data = null;
+
+    //                     // An incoming connection needs to be processed.  
+    //                     while (true) {  
+    //                         try 
+    //                         {
+    //                             int bytesRec = handler.Receive(bytes);  
+    //                             data += Encoding.ASCII.GetString(bytes,0,bytesRec);  
+    //                             if (data.IndexOf("<EOF>") > -1) {  
+    //                                 break;  
+    //                             }  
+    //                         } catch (Exception e)
+    //                         {
+    //                             Console.WriteLine(e.ToString());
+    //                         }
+    //                     }  
+
+    //                     Response response1 = new Response(){Completed = null, Data = null, Status = null};;
+    //                     try 
+    //                     {
+    //                         RequestBatch requestBatch = Encoder.DecodeRequestBatch(data);
+    //                         StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
+    //                         response1 = MakeResponse(requestBatch);
+    //                     } catch (Exception e)
+    //                     {   
+    //                         Console.WriteLine(e.ToString());
+    //                     }
+                            
+    //                     int bytesSend = handler.Send(Encoder.EncodeResponse(response1));  
+
+    //                 } catch (Exception e)
+    //                 {
+    //                     Console.WriteLine(e.ToString());
+    //                 } finally {
+    //                     handler.Shutdown(SocketShutdown.Both);  
+    //                     handler.Close(0);  
+    //                 }
+    //             }  
+
+    //         } catch (Exception e) {  
+    //             Console.WriteLine("FATAL:" + e.ToString());  
+    //         }  
+    // }  
+
         /// <summary>
         /// Establishes the local endpoint for the socket
         /// and starts listening for incoming connections
@@ -30,20 +104,29 @@ namespace TangibleNode
 
             // Bind the socket to the local endpoint and listen for incoming connections.  
             try {  
+                listener.SendTimeout = Params.TIMEOUT;
+                listener.ReceiveTimeout = Params.TIMEOUT;
                 listener.Bind(localEndPoint);  
                 listener.Listen(100);  
                 Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);
-                while (true) {  
-                    // Set the event to nonsignaled state.  
-                    allDone.Reset();  
+                while (true) 
+                {  
+                    try 
+                    {
+                        // Set the event to nonsignaled state.  
+                        allDone.Reset();  
 
-                    // Start an asynchronous socket to listen for connections.  
-                    listener.BeginAccept(
-                        new AsyncCallback(AcceptCallback),  
-                        listener );  
+                        // Start an asynchronous socket to listen for connections.  
+                        listener.BeginAccept(
+                            new AsyncCallback(AcceptCallback),  
+                            listener );  
 
-                    // Wait until a connection is made before continuing.  
-                    allDone.WaitOne();  
+                        // Wait until a connection is made before continuing.  
+                        allDone.WaitOne();  
+                    } catch (Exception e)
+                    {   
+                        Console.WriteLine(e.ToString());
+                    }
                 }  
 
             } catch (Exception e) {  
@@ -86,7 +169,7 @@ namespace TangibleNode
                 // Read data from the client socket.
                 int bytesRead = handler.EndReceive(ar);  
 
-                if (bytesRead > 0) {  
+                if (bytesRead > 0 && state.Retries<2) {  
                     // There  might be more data, so store the data received so far.  
                     state.sb.Append(Encoding.ASCII.GetString(  
                         state.buffer, 0, bytesRead));  
@@ -94,25 +177,26 @@ namespace TangibleNode
                     // Check for end-of-file tag. If it is not there, read
                     // more data.  
                     content = state.sb.ToString();  
-                    if (content.IndexOf("<EOF>") > -1) {  
+                    if (content.IndexOf("<EOF>") > -1 || state.Retries>2) {  
                         // All the data has been read from the
                         // client.         
 
-                        Response response1 = null;
+                        Response response1 = new Response(){Completed = null, Data = null, Status = null};;
                         try 
                         {
                             RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
                             StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
                             response1 = MakeResponse(requestBatch);
-                        } catch 
-                        {
-                            response1 = new Response(){Completed = null, Data = null, Status = null};
+                        } catch (Exception e)
+                        {   
+                            Console.WriteLine(e.ToString());
                         }
                             
                         Send(handler, Encoder.EncodeResponse(response1));  
                         
                     } else {  
                         // Not all data received. Get more.  
+                        state.Retries+=1;
                         handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,  
                         new AsyncCallback(ReadCallback), state);  
                     }  
@@ -195,7 +279,9 @@ namespace TangibleNode
             }
 
             if (requestBatch.Completed!=null) foreach (string actionID in requestBatch.Completed)
+            {
                 StateLog.Instance.Follower_AddActionCompleted(actionID);
+            }
             
             if (requestBatch.Sender!=null && requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
             

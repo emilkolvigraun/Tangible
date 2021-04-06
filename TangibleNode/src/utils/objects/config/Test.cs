@@ -9,5 +9,6 @@ namespace TangibleNode
 
         public string TestReceiverHost {get; set;} = string.Empty;
         public int TestReceiverPort {get; set;} = -1;
+        public decimal Frequency_Hz {get; set;} = 2m;
     }
 }

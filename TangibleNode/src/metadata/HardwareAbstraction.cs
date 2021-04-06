@@ -54,11 +54,15 @@ namespace TangibleNode
                     ReturnTopic = dataRequest.ReturnTopic
                 };
                 StateLog.Instance.AppendAction(action);
-                requests.Add(new Request() {
+                Request r0 = new Request() {
                     ID = Utils.GenerateUUID(),
                     Data = Encoder.EncodeAction(action),
                     Type = Request._Type.ACTION
-                });
+                };
+
+                StateLog.Instance.AddRequestBehindToAll(r0);
+                
+                requests.Add(r0);
             }
             return requests;
         }

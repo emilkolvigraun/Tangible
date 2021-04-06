@@ -16,8 +16,6 @@ namespace TangibleNode
         public string DriverHostName {get; set;} = string.Empty;
         public int DriverPortRangeStart {get; set;} = 8000;
         public int DriverPortRangeEnd {get; set;} = 8100;
-        public int WaitBeforeStart_MS {get; set;} = 8000;
-        public decimal Frequency_Hz {get; set;} = 2m;
 
         public Optional Optional {get; set;} = default(Optional);
 

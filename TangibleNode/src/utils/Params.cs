@@ -25,6 +25,7 @@ namespace TangibleNode
         // Server and client variables
         public static int MAX_RETRIES;
         public static int TIMEOUT;
+        public static int BATCH_SIZE;
 
         // RAFT variables
         public static int ELECTION_TIMEOUT_START;
@@ -50,14 +51,15 @@ namespace TangibleNode
 
             DIE_AS_FOLLOWER = GetIntThrowIfMissing("DIE_AS_FOLLOWER", settings.Testing.DieAsFollower_MS);
             DIE_AS_LEADER = GetIntThrowIfMissing("DIE_AS_LEADER", settings.Testing.DieAsLeader_MS);
-            WAIT_BEFORE_START = GetIntOrSet("WAIT_BEFORE_START", settings.WaitBeforeStart_MS, 10000, 2000);
+            WAIT_BEFORE_START = GetIntOrSet("WAIT_BEFORE_START", settings.Optional.WaitBeforeStart_MS, 10000, 2000);
             TEST_RECEIVER_HOST = settings.Testing.TestReceiverHost;
             TEST_RECEIVER_PORT = settings.Testing.TestReceiverPort;
-            HERTZ = settings.Frequency_Hz;
+            HERTZ = settings.Testing.Frequency_Hz;
             RUN_HIE = settings.Testing.RunHIE;
 
             TIMEOUT = GetIntOrSet("TIMEOUT", settings.Optional.Timeout_MS, 500);
             MAX_RETRIES = GetIntOrSet("MAX_RETRIES", settings.Optional.MaxRetries, 10);
+            BATCH_SIZE = settings.Optional.BatchSize;
             
             REQUEST_TOPIC = GetStrThrowIfMissing("REQUEST_TOPIC", settings.RequestTopic);
             BROADCAST_TOPIC = GetStrThrowIfMissing("BROADCAST_TOPIC", settings.BroadcastTopic);

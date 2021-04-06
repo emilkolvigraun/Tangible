@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;  
 using System.Text;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace TangibleNode
 {
@@ -90,20 +91,24 @@ namespace TangibleNode
                         // Send the data through the socket.  
                         int bytesSent = sender.Send(msg);  
 
-                        // Data buffer for incoming data.  
-                        // TODO: implement proper parsing of incoming response data
-                        byte[] bytes = new byte[6144];  // hope thats enough
+                        bool sendSuccess = Task.Run(() => {
+                            // Data buffer for incoming data.  
+                            // TODO: implement proper parsing of incoming response data
+                            byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
 
-                        // Receive the response from the remote device.  
-                        int bytesRec = sender.Receive(bytes);  
+                            // Receive the response from the remote device.  
+                            int bytesRec = sender.Receive(bytes);  
 
-                        if (bytesRec < 1) HandleFailure(driver, request);
+                            if (bytesRec < 1) HandleFailure(driver, request);
 
-                        PointResponse response = Encoder.DecodePointResponse(bytes);
-                        if (response==null) HandleFailure(driver, request);
-                        else new DriverResponseHandler().OnResponse(driver, request, response); 
-                        
-                        _notified = true;
+                            PointResponse response = Encoder.DecodePointResponse(bytes);
+                            if (response==null) HandleFailure(driver, request);
+                            else new DriverResponseHandler().OnResponse(driver, request, response); 
+                            
+                            _notified = true;
+                        }).Wait(Params.TIMEOUT);
+
+                        if (!sendSuccess && !_notified) HandleFailure(driver, request);
                     }
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));
@@ -175,7 +180,13 @@ namespace TangibleNode
 
         public List<PointRequest> GetRequestsBehind()
         {
-            return _requestsBehind.Values.ToList();
+            List<PointRequest> requests = new List<PointRequest>();
+            foreach (PointRequest r0 in _requestsBehind.Values.ToList())
+            {
+                requests.Add(r0);
+                if (requests.Count >= Params.BATCH_SIZE) break;
+            }
+            return requests;
         }
 
         public void Write()

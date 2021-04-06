@@ -9,10 +9,10 @@ namespace TangibleDriver
         public static int PORT;
         public static string ID;
         // Tangible variables
-        public static string IMAGE;
         public static string NODE_HOST;
         public static int NODE_PORT;
         public static string NODE_NAME;
+        public static int BATCH_SIZE;
 
 
         // Server and client variables
@@ -20,10 +20,10 @@ namespace TangibleDriver
 
         public static void LoadEnvironment()
         {
+            BATCH_SIZE = GetIntThrowIfMissing("BATCH_SIZE");
             HOST = GetStrThrowIfMissing("HOST");
             PORT = GetIntThrowIfMissing("PORT");
             ID = GetStrThrowIfMissing("ID");
-            IMAGE = GetStrThrowIfMissing("IMAGE");
             NODE_HOST = GetStrThrowIfMissing("NODE_HOST");
             NODE_PORT = GetIntThrowIfMissing("NODE_PORT");
             NODE_NAME = GetStrThrowIfMissing("NODE_NAME");
