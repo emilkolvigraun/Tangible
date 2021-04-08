@@ -42,12 +42,9 @@ namespace TangibleNode
                 ESBResponse esbResponse = new ESBResponse()
                 {
                     ID = Utils.GenerateUUID(),
-                    T0 = response.T0,
-                    T1 = response.T1,
-                    T2 = response.T2,
-                    T3 = response.Timestamp,
-                    Timestamp = Utils.Millis,
-                    Value = response.Value
+                    Message = response.Message,
+                    Timestamp = Utils.Micros.ToString(),
+                    T01234 = response.T0123+","+response.Timestamp
                 };
                 _responsesNotSend.Add(esbResponse.ID, esbResponse);
             }
@@ -73,7 +70,6 @@ namespace TangibleNode
 
         public void StartClient()
         {   
-
             RequestResponse response = GetBatch;
             if (response == null) return;
 
@@ -105,7 +101,7 @@ namespace TangibleNode
                         // Send the data through the socket.  
                         int bytesSent = sender.Send(msg);  
 
-                        bool sendSuccess = Task.Run(() => {
+                        // bool sendSuccess = Task.Run(() => {
                             // Data buffer for incoming data.  
                             byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
 
@@ -118,12 +114,13 @@ namespace TangibleNode
                             {
                                 PointResponse r1 = Encoder.DecodePointResponse(bytes);
                                 OnResponse(response, r1); 
+                                _notified = true;
                             }
                             catch {HandleFailure(response);}
-                            _notified = true;
-                        }).Wait(Params.TIMEOUT);
+                        // }).Wait(Params.TIMEOUT);
 
-                        if (!sendSuccess && !_notified) HandleFailure(response);
+                        if (!_notified) HandleFailure(response);
+                        // if (!sendSuccess && !_notified) HandleFailure(response);
                     }
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));

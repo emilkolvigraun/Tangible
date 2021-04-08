@@ -14,7 +14,17 @@ namespace TangibleNode
             if (Params.RUN_HIE)
             {
                 Logger.Write(Logger.Tag.WARN, "Removing dangeling containers...");
-                Docker.Instance.RemoveStoppedContainers().GetAwaiter().GetResult();
+                while(true)
+                {
+                    try 
+                    {
+                        Docker.Instance.RemoveStoppedContainers().GetAwaiter().GetResult();
+                        break;
+                    } catch 
+                    {
+                        Utils.Sleep(Utils.GetRandomInt(Params.ELECTION_TIMEOUT_START, Params.ELECTION_TIMEOUT_END));
+                    }
+                }
                 Logger.Write(Logger.Tag.INFO, "Preparing warm start...");
                 foreach(string image in Get_Images)
                 {
@@ -32,13 +42,12 @@ namespace TangibleNode
             }
         }
 
-        public List<Request> MarshallDataRequest(DataRequest dataRequest)
+        public void MarshallDataRequest(DataRequest dataRequest)
         {
 
             Dictionary<string, List<string>> table = ExtractFromRDF(dataRequest.Benv);
 
             List<Request> requests = new List<Request>();
-            
             foreach(KeyValuePair<string, List<string>> r1 in table)
             {
                 Action action = new Action(){
@@ -50,7 +59,7 @@ namespace TangibleNode
                     ID = Utils.GenerateUUID(),
                     Assigned = StateLog.Instance.Peers.ScheduleAction(),
                     T0 = dataRequest.T0,
-                    T1 = Utils.Millis.ToString(),
+                    // T1 = Utils.Micros.ToString(),
                     ReturnTopic = dataRequest.ReturnTopic
                 };
                 StateLog.Instance.AppendAction(action);
@@ -64,7 +73,7 @@ namespace TangibleNode
                 
                 requests.Add(r0);
             }
-            return requests;
+            // return requests;
         }
 
         private Dictionary<string, List<string>> ExtractFromRDF(Location location)

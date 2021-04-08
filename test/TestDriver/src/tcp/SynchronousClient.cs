@@ -64,12 +64,16 @@ namespace TangibleDriver
                             Response response = Encoder.DecodeResponse(Encoding.ASCII.GetString(bytes));
                             rh.OnResponse(request, response); 
                         }
-                        catch 
-                        {
+                        catch (Exception e)
+                        {   
+                            Console.WriteLine(e.ToString());
                             HandleFailure(request, rh);
                         }
                         _notified = true;
                     }
+                    
+
+
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));
                 } catch (SocketException se) {  

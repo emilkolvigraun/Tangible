@@ -9,9 +9,10 @@ namespace TangibleNode
         {
             if (sender.Completed!=null)
             {
-                sender.Completed.ForEach((a) => {
+                foreach(string a in sender.Completed)
+                {
                     StateLog.Instance.Leader_RemoveActionsCompleted(receiverID, a);
-                });
+                }
             }                
 
             if(response==null||receiverID==null) return;

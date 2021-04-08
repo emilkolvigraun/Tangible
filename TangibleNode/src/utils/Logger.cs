@@ -12,10 +12,11 @@ namespace TangibleNode
             COMMIT,
             WARN,
             ERROR,
+            ACTION,
             FATAL
         }
 
-        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL};
+        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL}; //{Tag.INFO, Tag.ACTION, Tag.WARN};//
 
         private static readonly object _i_lock = new object();
         private readonly object _lock = new object();
@@ -92,14 +93,14 @@ namespace TangibleNode
 
         private void Log(Tag tag, string message)
         {
-            lock(_lock)
-            {   
-                if (_stateLogger)
-                {
-                    if (tag==Tag.COMMIT) WriteState();
-                }
-                else if (_tags.Contains(tag))
-                {
+            if (_stateLogger)
+            {
+                if (tag==Tag.COMMIT) WriteState();
+            }
+            else if (_tags.Contains(tag))
+            {
+                lock(_lock)
+                {   
                     Console.ForegroundColor = ConsoleColor.Cyan;
                     Console.Write(Utils.Millis); 
                     Console.ForegroundColor = ConsoleColor.White;
@@ -140,7 +141,7 @@ namespace TangibleNode
                 case Tag.DEBUG: 
                     Console.ForegroundColor = ConsoleColor.White; 
                     break;
-                case Tag.INFO:
+                case Tag.INFO or Tag.ACTION:
                     Console.ForegroundColor = ConsoleColor.Green; 
                     break;
                 case Tag.ERROR:

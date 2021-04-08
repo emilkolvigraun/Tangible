@@ -39,7 +39,7 @@ namespace TangibleDriver
                     if (Requests.Count > 0)
                     {
                         PointRequest request = Requests.Dequeue();
-                        List<ValueResponse> response = handler.OnRequest(request);
+                        ValueResponse response = handler.OnRequest(request);
 
                         List<Request> batches = new List<Request>();
                         lock(_lock)
@@ -51,16 +51,19 @@ namespace TangibleDriver
                             }
                         }
 
-                        response.ForEach((rs) => {
+                        if (batches.Count < Params.BATCH_SIZE-1)
+                        {
+                            response.Timestamp = Utils.Micros.ToString();
                             batches.Add(
                                 new Request(){
                                     ID = Utils.GenerateUUID(),
                                     Type = Request._Type.POINT,
-                                    Data = Encoder.EncodeValueResponse(rs)
+                                    Data = Encoder.EncodeValueResponse(response)
                                 }
                             );
-                        });
-
+                        }
+                        
+                        Logger.Write(Logger.Tag.INFO, "Returned batch of " + batches.Count);
                         _client.StartClient(new RequestBatch(){
                             Batch = batches,
                             Sender = null,

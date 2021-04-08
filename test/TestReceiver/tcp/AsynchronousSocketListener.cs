@@ -125,17 +125,22 @@ namespace TestReceiver
 
         private PointResponse MakeResponse(RequestResponse requestBatch)
         {
-            Dictionary<string, bool> response = new Dictionary<string, bool>();
-            foreach (ESBResponse request in requestBatch.Batch)
+            try 
             {
-                response.Add(request.ID, true);
-                Logger.Write(request);
-            } 
-
-
-            return new PointResponse(){
-                Status = response
-            };
+                Dictionary<string, bool> response = new Dictionary<string, bool>();
+                foreach (ESBResponse request in requestBatch.Batch)
+                {
+                    response.Add(request.ID, true);
+                    Logger.Write(request);
+                } 
+                return new PointResponse(){
+                    Status = response
+                };
+            } catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            return null;
         }
 
         private void Send(Socket handler, byte[] byteData)

@@ -17,11 +17,54 @@ namespace TangibleNode
             this.HA = HA;
         }
 
+        int amount = 0;
+        // int interval = 100;
+        // long t0 = Utils.Millis+500;
         public void MarkReady(bool b)
         {
             lock(_ready_lock)
-            {
+            { 
                 _ready = b;
+                // if (Utils.Millis > t0 && _ready && amount < 10)
+                if (_ready && amount < 1000001)
+                {
+                    // if (IsReady && amount < 2000000)
+                    // {
+                        amount++;
+                        Params.STEP++;
+                        ReceiveDataRequest(new DataRequest(){
+                            Type = Action._Type.WRITE,
+                            Benv = new Location(){
+                                HasPoint = new List<Point>{
+                                    new Point(){ID = "1abc"}
+                                    // new Point(){ID = "2abc"}
+                                    }
+                            },
+                            Priority = 2,
+                            Value = Params.STEP.ToString(),
+                            T0 = Utils.Micros.ToString(),
+                            ReturnTopic = "MyApplication"
+                        });
+                        // interval = ((int)((1m/Params.HERTZ)*1000m));
+                        // t0 = Utils.Millis+500;
+
+                        // if (!leader)
+                        // {
+                        //     t_die_l = Utils.Millis+Params.DIE_AS_LEADER;
+                        //     leader=true;
+                        // }
+                        // if (Params.DIE_AS_LEADER!=-1&&t2>=t_die_l) Environment.Exit(0);
+                        // if (amount >= 1000) 
+                        // {
+                        //     if (Params.HERTZ==1m) Params.HERTZ += 9m;
+                        //     else Params.HERTZ+=10m;
+                        //     interval = ((int)((1m/Params.HERTZ)*1000m));
+                        //     amount = 0;
+                        // } if (Params.HERTZ > 2000) Environment.Exit(0);
+                        MarkReady(false);
+                    // }
+                }
+                // if (!_ready) t0 = Utils.Millis-(Utils.Millis-t2);
             }
         }
 
@@ -44,66 +87,76 @@ namespace TangibleNode
                 ReceiveBroadcast(Encoder.DecodeBroadcast(request.Data));
         }
 
+        // long t0 = 0;
+        // long t1 = 0;
+        // long t2 = 0;
+        private readonly object _t_lock = new object();
         public void Start()
         {
-            Utils.Sleep(200);
-            int interval = ((int)((1m/Params.HERTZ)*1000m));
+            // Utils.Sleep(200);
+            // int interval = ((int)((1m/Params.HERTZ)*1000m));
             
-            long t0 = Utils.Millis;
-            Logger.Write(Logger.Tag.INFO, "Started consuming from ESB on " + Params.REQUEST_TOPIC + " and " + Params.BROADCAST_TOPIC +".");
+            // lock(_t_lock)
+            // {
+                // t0 = Utils.Millis;
+            // }
+            // Logger.Write(Logger.Tag.INFO, "Started consuming from ESB on " + Params.REQUEST_TOPIC + " and " + Params.BROADCAST_TOPIC +".");
             
-            if (CurrentState.Instance.Get_State.State != State.LEADER) Utils.Sleep(Params.WAIT_BEFORE_START);
-            long t_die_f = Utils.Millis+Params.DIE_AS_FOLLOWER;
-            long t_die_l = Utils.Millis;
-            bool leader = false;
-            while (true)
-            {
-                long t1 = Utils.Millis - t0;
-                long t2 = Utils.Millis;
-                if (t1 >= interval && CurrentState.Instance.IsLeader && IsReady && Params.STEP < 3000)
-                {
-                    Params.STEP++;
-                    ReceiveDataRequest(new DataRequest(){
-                        Type = Action._Type.WRITE,
-                        Benv = new Location(){
-                            HasPoint = new List<Point>{new Point(){ID = "123abc"}}
-                        },
-                        Priority = 2,
-                        Value = Params.STEP.ToString(),
-                        T0 = Utils.Millis.ToString(),
-                        ReturnTopic = "MyApplication"
-                    });
-                    t0 = Utils.Millis-(Utils.Millis-t2);
-                    if (!leader)
-                    {
-                        t_die_l = Utils.Millis+Params.DIE_AS_LEADER;
-                        leader=true;
-                    }
-                    if (Params.DIE_AS_LEADER!=-1&&t2>=t_die_l) Environment.Exit(0);
-                    MarkReady(false);
-                } else if (!CurrentState.Instance.IsLeader)
-                {
-                    t0 = Utils.Millis-(Utils.Millis-t2);
-                    if (Params.DIE_AS_FOLLOWER!=-1&&t2>=t_die_f) Environment.Exit(0);
-                }
-            }
+            // if (CurrentState.Instance.Get_State.State != State.LEADER) Utils.Sleep(Params.WAIT_BEFORE_START);
+            // long t_die_f = Utils.Millis+Params.DIE_AS_FOLLOWER;
+            // long t_die_l = Utils.Millis;
+            // bool leader = false;
+            // int amount = 0;
+            // while (true)
+            // {
+            //     lock(_t_lock)
+            //     {
+            //         // t1 = Utils.Millis - t0;
+            //         // t2 = Utils.Millis;
+            //         // bool timePassed = t1>=interval;
+            //         // if (timePassed && CurrentState.Instance.IsLeader && IsReady)
+            //         if (IsReady && amount < 2000000)
+            //         {
+            //             amount++;
+            //             Params.STEP++;
+            //             ReceiveDataRequest(new DataRequest(){
+            //                 Type = Action._Type.WRITE,
+            //                 Benv = new Location(){
+            //                     HasPoint = new List<Point>{new Point(){ID = "123abc"}}
+            //                 },
+            //                 Priority = 2,
+            //                 Value = Params.STEP.ToString(),
+            //                 T0 = Utils.Millis.ToString(),
+            //                 ReturnTopic = "MyApplication"
+            //             });
+            //             // if (!leader)
+            //             // {
+            //             //     t_die_l = Utils.Millis+Params.DIE_AS_LEADER;
+            //             //     leader=true;
+            //             // }
+            //             // if (Params.DIE_AS_LEADER!=-1&&t2>=t_die_l) Environment.Exit(0);
+            //             // if (amount >= 1000) 
+            //             // {
+            //             //     if (Params.HERTZ==1m) Params.HERTZ += 9m;
+            //             //     else Params.HERTZ+=10m;
+            //             //     interval = ((int)((1m/Params.HERTZ)*1000m));
+            //             //     amount = 0;
+            //             // } if (Params.HERTZ > 2000) Environment.Exit(0);
+            //             MarkReady(false);
+            //         }
+            //     }
+            //     // else if (!CurrentState.Instance.IsLeader)
+            //     // {
+            //     //     t0 = Utils.Millis-(Utils.Millis-t2);
+            //     //     if (Params.DIE_AS_FOLLOWER!=-1&&t2>=t_die_f) Environment.Exit(0);
+            //     // }
+            // }
         }
 
         public void ReceiveDataRequest(DataRequest dataRequest)
         {
-            List<Request> requests = HA.MarshallDataRequest(dataRequest);
-
-        //     Task[] tasks;
-        //     StateLog.Instance.Peers.ForEachAsync((p) => {
-        //         RequestBatch rb = new RequestBatch(){
-        //             Batch = requests,
-        //             Completed = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID),
-        //             Sender = Node.Self
-        //         };
-        //         p.Client.StartClient(rb, new DefaultHandler());
-        //     }, out tasks);
-        //     Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
-        //     Task.WaitAll(tasks);
+            // List<Request> requests = HA.MarshallDataRequest(dataRequest);
+            HA.MarshallDataRequest(dataRequest);
         }
 
         public void ReceiveBroadcast(Broadcast broadcast)

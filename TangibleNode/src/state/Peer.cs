@@ -30,7 +30,7 @@ namespace TangibleNode
             if (!_tasks.ContainsKey(action.ID))
             {
                 _tasks.AddSafe(new KeyValuePair<string, Action>(action.ID, action));
-                Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
+                Logger.Write(Logger.Tag.ACTION, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
             } 
         }
 

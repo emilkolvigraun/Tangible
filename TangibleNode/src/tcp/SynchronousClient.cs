@@ -64,16 +64,16 @@ namespace TangibleNode
                         int bytesSent = sender.Send(msg);  
 
                         // bool sendSuccess = Task.Run(()=>{
-                            // Data buffer for incoming data.  
-                            byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
+                        // Data buffer for incoming data.  
+                        byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
 
-                            // Receive the response from the remote device.  
-                            int bytesRec = sender.Receive(bytes);  
+                        // Receive the response from the remote device.  
+                        int bytesRec = sender.Receive(bytes);  
 
-                            if (bytesRec < 1) HandleFailure(request, rh);
+                        if (bytesRec < 1) HandleFailure(request, rh);
 
-                            rh.OnResponse(ID, request, Encoding.ASCII.GetString(bytes)); 
-                            _notified = true;
+                        rh.OnResponse(ID, request, Encoding.ASCII.GetString(bytes)); 
+                        _notified = true;
                         // }).Wait(Params.TIMEOUT);
 
                         // if (!sendSuccess && !_notified) HandleFailure(request, rh);

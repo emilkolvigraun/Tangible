@@ -17,7 +17,7 @@ ECHO Please define whether to run with STATE_LOG enabled, i.e., "$> ...cmd <true
 GOTO EXIT
 
 :TESTRECEIVER
-test\TestReceiver\bin\Debug\net5.0\TestReceiver.exe >> receiver_log.txt
+test\TestReceiver\bin\Debug\net5.0\TestReceiver.exe 
 GOTO EXIT
 
 :EXIT

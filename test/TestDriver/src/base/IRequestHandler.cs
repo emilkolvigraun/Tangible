@@ -4,6 +4,6 @@ namespace TangibleDriver
 {
     public interface IRequestHandler 
     {
-        List<ValueResponse> OnRequest(PointRequest request);
+        ValueResponse OnRequest(PointRequest request);
     }
 }

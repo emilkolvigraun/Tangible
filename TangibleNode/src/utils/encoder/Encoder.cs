@@ -120,6 +120,16 @@ namespace TangibleNode
                 return null;
             }
         }
+        public static PointResponse DecodePointResponse(string msg)
+        {
+            try 
+            {
+                return JsonConvert.DeserializeObject<PointResponse>(msg.Replace("<EOF>",""));
+            } catch 
+            {
+                return null;
+            }
+        }
         public static byte[] EncodePointRequestBatch(PointRequestBatch msg)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");

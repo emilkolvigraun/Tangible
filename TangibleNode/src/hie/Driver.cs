@@ -91,6 +91,37 @@ namespace TangibleNode
                         // Send the data through the socket.  
                         int bytesSent = sender.Send(msg);  
 
+                        // An incoming connection needs to be processed.  
+                        // string data = null;
+                        // bool sendSuccess = Task.Run(() => {
+                        //     while (true) {  
+                        //         try 
+                        //         {
+                        //             byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
+                        //             int bytesRec = sender.Receive(bytes);  
+                        //             data += Encoding.ASCII.GetString(bytes,0,bytesRec);  
+                        //             if (data.IndexOf("<EOF>") > -1) {  
+                        //                 break;  
+                        //             }  
+                        //         } catch (Exception e)
+                        //         { 
+                        //             Logger.Write(Logger.Tag.ERROR, string.Format("ReceivingException : {0}", e.ToString()));
+                        //             HandleFailure(driver, request);
+                        //             break;
+                        //         }
+                        //     }  
+
+                        // }).Wait(Params.TIMEOUT);
+
+                        // if (sendSuccess)
+                        // {
+                        //     PointResponse response = Encoder.DecodePointResponse(data);
+                        //     if (response==null) HandleFailure(driver, request);
+                        //     else new DriverResponseHandler().OnResponse(driver, request, response); 
+                        //     _notified = true;
+                        // }
+
+
                         bool sendSuccess = Task.Run(() => {
                             // Data buffer for incoming data.  
                             // TODO: implement proper parsing of incoming response data
@@ -109,6 +140,7 @@ namespace TangibleNode
                         }).Wait(Params.TIMEOUT);
 
                         if (!sendSuccess && !_notified) HandleFailure(driver, request);
+                        if (!_notified) HandleFailure(driver, request);
                     }
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));

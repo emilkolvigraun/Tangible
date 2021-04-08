@@ -15,7 +15,7 @@ namespace TangibleDriver
             FATAL
         }
 
-        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL};
+        private HashSet<Tag> _tags = new HashSet<Tag>(){Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL};
 
         private static readonly object _i_lock = new object();
         private readonly object _lock = new object();

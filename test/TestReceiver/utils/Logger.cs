@@ -28,53 +28,72 @@ namespace TestReceiver
 
         public static void PrintHeader()
         {
-            Instance.Print(ConsoleColor.Green, "val");
+            Instance.Print(ConsoleColor.Green, "time");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Red, "node");
+            Instance.Print(ConsoleColor.Cyan, "node");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Yellow, "T0");
+            Instance.Print(ConsoleColor.Yellow, "point");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Blue, "T1");
+            Instance.Print(ConsoleColor.Red, "val");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Magenta, "T2");
+            Instance.Print(ConsoleColor.Blue, "val_time");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Green, "T3");
+            Instance.Print(ConsoleColor.Magenta, "T0,T1,T2,T3,T4");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Red, "T4");
-            Instance.Comma();
-            Instance.PrintLine(ConsoleColor.Red, "T5");
+            Instance.PrintLine(ConsoleColor.Magenta, "amount");
             Console.ForegroundColor = ConsoleColor.White;
         }
 
         private void Log(ESBResponse response)
         {
+            string time = Utils.Micros.ToString();
+            string n = response.Node;
+            string amount = response.Message.Keys.Count.ToString();
             lock(_lock)
             {   
-                string value = response.Value;
-                string T0 = response.T0;
-                string T1 = response.T1;
-                string T2 = response.T2;
-                string T3 = response.T3;
-                string T4 = response.Timestamp.ToString();
-                string node = response.Node;
-                string T5 = Utils.Millis.ToString();
+                foreach(KeyValuePair<string, (string Value, string Time)> entry in response.Message)
+                {
+                    Print(ConsoleColor.Green, time);
+                    Comma();
+                    Print(ConsoleColor.Cyan, n);
+                    Comma();
+                    Print(ConsoleColor.Yellow, entry.Key);
+                    Comma();
+                    Print(ConsoleColor.Red, entry.Value.Value);
+                    Comma();
+                    Print(ConsoleColor.Blue, entry.Value.Time);
+                    Comma();
+                    Print(ConsoleColor.Magenta, response.T01234);
+                    Comma();
+                    PrintLine(ConsoleColor.Gray, amount);
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                // string value = response.Value;
+                // string T0 = response.T0;
+                // string T1 = response.T1;
+                // string T2 = response.T2;
+                // string T3 = response.T3;
+                // string T4 = response.Timestamp.ToString();
+                // string T5 = Utils.Micros.ToString();
+                // string node = response.Node;
+                // string point = response.Point;
 
-                Print(ConsoleColor.Green, value);
-                Comma();
-                Print(ConsoleColor.Red, node);
-                Comma();
-                Print(ConsoleColor.Yellow, T0);
-                Comma();
-                Print(ConsoleColor.Blue, T1);
-                Comma();
-                Print(ConsoleColor.Magenta, T2);
-                Comma();
-                Print(ConsoleColor.Green, T3);
-                Comma();
-                Print(ConsoleColor.Red, T4);
-                Comma();
-                PrintLine(ConsoleColor.Yellow, T5);
-                Console.ForegroundColor = ConsoleColor.White;
+                // Print(ConsoleColor.Green, value);
+                // Comma();
+                // Print(ConsoleColor.Red, node);
+                // Comma();
+                // Print(ConsoleColor.Yellow, T0);
+                // Comma();
+                // Print(ConsoleColor.Blue, T1);
+                // Comma();
+                // Print(ConsoleColor.Magenta, T2);
+                // Comma();
+                // Print(ConsoleColor.Green, T3);
+                // Comma();
+                // Print(ConsoleColor.Red, T4);
+                // Comma();
+                // PrintLine(ConsoleColor.Yellow, T5);
+                // Console.ForegroundColor = ConsoleColor.White;
             }
         }
 

@@ -5,28 +5,21 @@ namespace TangibleDriver
 {
     class TestRequestHandler : IRequestHandler
     {
-        public List<ValueResponse> OnRequest(PointRequest request)
+        public ValueResponse OnRequest(PointRequest request)
         {
-            List<ValueResponse> response = new List<ValueResponse>();
             int count = 1;
+            string t0 = Utils.Micros.ToString();
+            Dictionary<string, (string Value, string Time)> r0 = new Dictionary<string, (string Value, string Time)>();
             request.PointIDs.ForEach((s) => {
-                bool complete = request.PointIDs.Count<=count?true:false;
-                response.Add(
-                    new ValueResponse(){
-                        ActionID = request.ID,
-                        Complete = complete,
-                        ReturnTopic = request.ReturnTopic,
-                        Point = s,
-                        T0 = request.T0,
-                        T1 = request.T1,
-                        T2 = request.T2,
-                        Timestamp = Utils.Millis.ToString(),
-                        Value = request.Value
-                    }
-                );
+                r0.Add(s, (request.Value, t0));
                 count++;
             });
-            return response;
+            Logger.Write(Logger.Tag.INFO, "Received point request of " + request.PointIDs.Count);
+            return new ValueResponse(){
+                ActionID = request.ID,
+                Message = r0,
+                T0123 = request.T0+","+request.T1+","+request.T2+","+request.T3
+            };
         }
     }
 

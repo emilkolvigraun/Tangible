@@ -12,6 +12,7 @@ namespace TangibleNode
             bool _enableStateLog = false;
             // DEBUGGING
 
+
             Settings settings = default(Settings);            
             
             if (args.Length > 1)
@@ -22,6 +23,7 @@ namespace TangibleNode
                     Logger.EnableStateLogger();
                 }
             }
+
 
             if (args.Length > 0)
             {
@@ -50,8 +52,7 @@ namespace TangibleNode
                 }
             } else Logger.Write(Logger.Tag.INFO, "No settings provided.");
 
-
-
+            Utils.Sleep(settings.Optional.WaitBeforeStart_MS);
             // parse the settings
             Params.LoadEnvironment(settings);
             // run the node

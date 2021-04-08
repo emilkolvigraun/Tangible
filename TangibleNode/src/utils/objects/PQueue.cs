@@ -25,7 +25,7 @@ namespace TangibleNode
                 if(!_dict[action.Priority].Any((a) => a.ID == action.ID)) 
                 {
                     _dict[action.Priority].Enqueue(action);
-                    Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to self");
+                    Logger.Write(Logger.Tag.ACTION, "Committed [action:"+action.ID.Substring(0,10)+"...] to self");
                 }
             }
         }

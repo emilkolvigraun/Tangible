@@ -94,9 +94,8 @@ namespace TangibleNode
                         Self = node 
                     }
                 );
-
             _sleepingTimer.Begin();
-
+            Logger.Write(Logger.Tag.WARN, "Started");
             while (true)
             {
                 try 
@@ -108,7 +107,8 @@ namespace TangibleNode
                 }
             }
         }
-
+        
+        long wait = Utils.Millis+Params.WAIT_BEFORE_START;
         private void Loop()
         {
             bool morePeers = (StateLog.Instance.Peers.NodeCount > 0);
@@ -224,7 +224,7 @@ namespace TangibleNode
                 {
                     Task[] tasks;
                     StateLog.Instance.Peers.ForEachAsync((p) => {
-                        List<string> acp = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID);
+                        HashSet<string> acp = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID);
                         RequestBatch rb = new RequestBatch(){
                             Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
                             Completed = acp,
@@ -242,8 +242,11 @@ namespace TangibleNode
                     CurrentState.Instance.Timer.Reset();
                 }
             // } 
-                ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
-                _consumer.MarkReady(ready);
+                if (wait < Utils.Millis)
+                {
+                    ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
+                    _consumer.MarkReady(ready);
+                }
             }
 
             if (state.State == State.SLEEPER && _sleepingTimer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))))
@@ -262,10 +265,10 @@ namespace TangibleNode
                         new PointRequest(){
                             ID = prioritizedAction.ID,
                             PointIDs = prioritizedAction.PointID,
-                            ReturnTopic = prioritizedAction.ReturnTopic,
+                            // ReturnTopic = prioritizedAction.ReturnTopic,
                             T0 = prioritizedAction.T0,
                             T1 = prioritizedAction.T1,
-                            T2 = Utils.Millis.ToString(),
+                            T2 = Utils.Micros.ToString(),
                             Type = prioritizedAction.Type,
                             Value = prioritizedAction.Value
                     });

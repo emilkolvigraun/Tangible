@@ -137,7 +137,7 @@ namespace TangibleDriver
             Dictionary<string, bool> response = new Dictionary<string, bool>();
             foreach (PointRequest request in requestBatch.Batch)
             {
-                
+                request.T3 = Utils.Micros.ToString();
                 handler.Requests.Enqueue(request);
                 response.Add(request.ID, true);
                 Logger.Write(Logger.Tag.INFO, "Received + [type:" + request.Type.ToString() + ", value:"+request.Value+"]");

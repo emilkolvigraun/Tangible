@@ -107,7 +107,7 @@ namespace TangibleNode
                 listener.SendTimeout = Params.TIMEOUT;
                 listener.ReceiveTimeout = Params.TIMEOUT;
                 listener.Bind(localEndPoint);  
-                listener.Listen(100);  
+                listener.Listen();  
                 Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);
                 while (true) 
                 {  
@@ -210,14 +210,14 @@ namespace TangibleNode
         private Response MakeResponse(RequestBatch requestBatch)
         {
             Dictionary<string, bool> response = new Dictionary<string, bool>();
-            foreach (Request request in requestBatch.Batch)
+
+            if (requestBatch.Sender == null)
             {
-                response.Add(request.ID, true);
-                if (request.Type == Request._Type.POINT)
+                foreach (Request request in requestBatch.Batch)
                 {
-                    ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
-                    if (vr.Complete)
+                    if (request.Type == Request._Type.POINT)
                     {
+                        ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
                         if (CurrentState.Instance.IsLeader)
                         {
                             StateLog.Instance.Leader_AddActionCompleted(vr.ActionID);
@@ -226,78 +226,127 @@ namespace TangibleNode
                         {
                             StateLog.Instance.Follower_MarkActionCompleted(vr.ActionID);
                         }
-                    }
-                    StateLog.Instance.RemoveCurrentTask(vr.ActionID);
-                    if (Params.TEST_RECEIVER_HOST!=string.Empty)
-                    {
-                        TestReceiverClient.Instance.AddEntry(vr);
-                    }
-                } 
-                else if (request.Type == Request._Type.VOTE)
-                {
-                    Vote vote = Encoder.DecodeVote(request.Data);
-                    Vote myVote = vote;
-                    int count = StateLog.Instance.LogCount;
-                    if (vote.LogCount < count)
-                    {
-                        myVote = new Vote()
+                        StateLog.Instance.RemoveCurrentTask(vr.ActionID);
+                        if (Params.TEST_RECEIVER_HOST!=string.Empty)
                         {
-                            ID = Params.ID,
-                            LogCount = count
+                            try 
+                            {
+                                TestReceiverClient.Instance.AddEntry(vr);
+                            } catch (Exception e)
+                            {
+                                Logger.Write(Logger.Tag.ERROR, "ADD_ENTRY: " + e.ToString());
+                            }
+                        }
+                        response.Add(request.ID, true);
+                    } else 
+                    {
+                        response.Add(request.ID, false);
+                    }
+                }
+
+                return new Response(){
+                    Status = response
+                };
+            }
+            else 
+            {
+                foreach (Request request in requestBatch.Batch)
+                {
+                    // if (request.Type == Request._Type.POINT)
+                    // {
+                    //     ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
+                    //     if (vr.Complete)
+                    //     {
+                    //         if (CurrentState.Instance.IsLeader)
+                    //         {
+                    //             StateLog.Instance.Leader_AddActionCompleted(vr.ActionID);
+                    //         }
+                    //         else 
+                    //         {
+                    //             StateLog.Instance.Follower_MarkActionCompleted(vr.ActionID);
+                    //         }
+                    //     }
+                    //     StateLog.Instance.RemoveCurrentTask(vr.ActionID);
+                    //     if (Params.TEST_RECEIVER_HOST!=string.Empty)
+                    //     {
+                    //         TestReceiverClient.Instance.AddEntry(vr);
+                    //     }
+                    // } 
+                    // else 
+                    if (request.Type == Request._Type.VOTE)
+                    {
+                        Vote vote = Encoder.DecodeVote(request.Data);
+                        Vote myVote = vote;
+                        int count = StateLog.Instance.LogCount;
+                        if (vote.LogCount < count)
+                        {
+                            myVote = new Vote()
+                            {
+                                ID = Params.ID,
+                                LogCount = count
+                            };
+                        }
+                        else if (Utils.IsCandidate(CurrentState.Instance.Get_State.State)) 
+                        {
+                            CurrentState.Instance.CancelState();
+                            CurrentState.Instance.Timer.Reset(((int)(Params.HEARTBEAT_MS/2)));
+                        }
+                        else CurrentState.Instance.Timer.Reset();
+                        response.Add(request.ID, true);
+                        return new Response()
+                        {
+                            Status = response,
+                            Data = Encoder.EncodeVote(myVote)
                         };
-                    }
-                    else if (Utils.IsCandidate(CurrentState.Instance.Get_State.State)) 
+
+                    } else if (request.Type == Request._Type.ACTION)
                     {
+                        Action action = Encoder.DecodeAction(request.Data);
+                        action.T1 = Utils.Micros.ToString();
+                        StateLog.Instance.AppendAction(action);
                         CurrentState.Instance.CancelState();
-                        CurrentState.Instance.Timer.Reset(((int)(Params.HEARTBEAT_MS/2)));
-                    }
-                    else CurrentState.Instance.Timer.Reset();
-                    return new Response()
+                        response.Add(request.ID, true);
+                    } else if (request.Type == Request._Type.NODE_ADD)
                     {
-                        Status = response,
-                        Data = Encoder.EncodeVote(myVote)
-                    };
-
-                } else if (request.Type == Request._Type.ACTION)
-                {
-                    Action action = Encoder.DecodeAction(request.Data);
-                    StateLog.Instance.AppendAction(action);
-                    CurrentState.Instance.CancelState();
-                } else if (request.Type == Request._Type.NODE_ADD)
-                {
-                    Node node = Encoder.DecodeNode(request.Data);
-                    StateLog.Instance.Peers.AddNewNode(node);
-                    CurrentState.Instance.CancelState();
+                        Node node = Encoder.DecodeNode(request.Data);
+                        StateLog.Instance.Peers.AddNewNode(node);
+                        CurrentState.Instance.CancelState();
+                        response.Add(request.ID, true);
+                    }
+                    else if (request.Type == Request._Type.NODE_DEL)
+                    {
+                        Node node = Encoder.DecodeNode(request.Data);
+                        StateLog.Instance.ClearPeerLog(node.ID);
+                        StateLog.Instance.Peers.TryRemoveNode(node.ID);
+                        CurrentState.Instance.CancelState();
+                        response.Add(request.ID, true);
+                    } else 
+                    {
+                        response.Add(request.ID, false);
+                    }
                 }
-                else if (request.Type == Request._Type.NODE_DEL)
+
+                if (requestBatch.Completed!=null) foreach (string actionID in requestBatch.Completed)
                 {
-                    Node node = Encoder.DecodeNode(request.Data);
-                    StateLog.Instance.ClearPeerLog(node.ID);
-                    StateLog.Instance.Peers.TryRemoveNode(node.ID);
-                    CurrentState.Instance.CancelState();
+                    StateLog.Instance.Follower_AddActionCompleted(actionID);
                 }
+                
+                if (requestBatch.Sender!=null && requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
+                
+                List<string> completed = null;
+
+                if (requestBatch.Sender!=null) 
+                {
+                    completed = StateLog.Instance.Follower_GetCompletedActions();
+                    CurrentState.Instance.Timer.Reset();
+                } 
+
+                return new Response()
+                {
+                    Status = response,
+                    Completed = completed
+                };
             }
-
-            if (requestBatch.Completed!=null) foreach (string actionID in requestBatch.Completed)
-            {
-                StateLog.Instance.Follower_AddActionCompleted(actionID);
-            }
-            
-            if (requestBatch.Sender!=null && requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
-            
-            List<string> completed = null;
-
-            if (requestBatch.Sender!=null) 
-            {
-                completed = StateLog.Instance.Follower_GetCompletedActions();
-                CurrentState.Instance.Timer.Reset();
-            } 
-
-            return new Response()
-            {
-                Status = response,
-                Completed = completed
-            };
         }
 
         private void Send(Socket handler, byte[] byteData)

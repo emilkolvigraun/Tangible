@@ -12,21 +12,22 @@ namespace TangibleNode
         // action id, point ids
         private TDict<string, List<string>> _currentTasks {get;} = new TDict<string, List<string>>();
         private TDict<string, TDict<string, Request>> BatchesBehind {get;} = new TDict<string, TDict<string, Request>>();
-        private TDict<string, List<string>> ActionsCompleted {get;} = new TDict<string, List<string>>();
+        private TDict<string, HashSet<string>> ActionsCompleted {get;} = new TDict<string, HashSet<string>>();
         private TSet<string> MyCompletedActions {get;} = new TSet<string>();
         private readonly object _batch_lock = new object();
         private readonly object _action_lock = new object();
         private readonly object _request_lock = new object();
 
-        public List<string> Leader_GetActionsCompleted(string peerID)
+        public HashSet<string> Leader_GetActionsCompleted(string peerID)
         {
             lock (_action_lock)
             {
-                if (!ActionsCompleted.ContainsKey(peerID)) return new List<string>();
-                List<string> behind = new List<string>();
+                if (!ActionsCompleted.ContainsKey(peerID)) return new HashSet<string>();
+                HashSet<string> behind = new HashSet<string>();
                 foreach(string s in ActionsCompleted[peerID].ToList())
                 {
-                    behind.Add(s);
+                    if (!behind.Contains(s))
+                        behind.Add(s);
                 }
                 return behind;
             }
@@ -47,9 +48,9 @@ namespace TangibleNode
             {
                 if (ActionsCompleted.ContainsKey(peerID))
                 {
-                    ActionsCompleted[peerID].Remove(action);
+                    if (ActionsCompleted[peerID].Contains(action)) ActionsCompleted[peerID].Remove(action);
                     // Logger.Write(Logger.Tag.INFO, "Removed " + action.Substring(0,10) +"... from " + peerID);
-                } else ActionsCompleted.Add(peerID, new List<string>());
+                } else ActionsCompleted.Add(peerID, new HashSet<string>());
             }
         }
 
@@ -60,9 +61,12 @@ namespace TangibleNode
                 Peers.ForEachPeer((p) => {
                     p.RemoveAction(actionID);
                     if (!this.ActionsCompleted.ContainsKey(p.Client.ID))
-                        this.ActionsCompleted.Add(p.Client.ID, new List<string>());
-                    this.ActionsCompleted[p.Client.ID].Add(actionID);
-                    Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
+                        this.ActionsCompleted.Add(p.Client.ID, new HashSet<string>());
+                    if (!this.ActionsCompleted[p.Client.ID].Contains(actionID))
+                    {
+                        this.ActionsCompleted[p.Client.ID].Add(actionID);
+                        Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
+                    }
                 });
             }
         }

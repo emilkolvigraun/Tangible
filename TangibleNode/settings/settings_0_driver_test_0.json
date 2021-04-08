@@ -12,8 +12,8 @@
     "Optional":{
         "Heartbeat_MS":2000,
         "Timeout_MS":500,
-        "WaitBeforeStart_MS":8000,
-        "BatchSize":10
+        "WaitBeforeStartConsumer_MS":8000,
+        "BatchSize":100
     },
     "TcpNodes": [
         {
@@ -32,7 +32,7 @@
         "DieAsLeader_MS": -1,
         "RunHIE": true,
         "TestReceiverHost": "192.168.1.237",
-        "Frequency_Hz":100,
+        "Frequency_Hz":1,
         "TestReceiverPort": 4000
     }
 }
