@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "oY/YJqvUzCT5ulLvqkmOGMWp/Zf5W9ncZs0izF/1ioHdjOiT/cOT5DJiquNM8IGxv+JhULkSUzjqMRWjt+ViTA==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\emilk\\OneDrive\\tangible\\Node\\Tangible\\test\\TestReceiver\\TestReceiver.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\emilk\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
