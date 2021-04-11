@@ -10,19 +10,8 @@ namespace TangibleNode
         static void Main(string[] args)
         {
             bool _enableStateLog = false;
-            // DEBUGGING
-
 
             Settings settings = default(Settings);            
-            
-            if (args.Length > 1)
-            {
-                _enableStateLog = bool.Parse(args[1]);
-                if (_enableStateLog)
-                {
-                    Logger.EnableStateLogger();
-                }
-            }
 
 
             if (args.Length > 0)
@@ -36,15 +25,7 @@ namespace TangibleNode
                         settings.ID = args[2];
                     }
                     Console.WriteLine(args[0] +" : "+JsonConvert.SerializeObject(settings, Formatting.Indented));
-                    
-                    if (_enableStateLog)
-                    {
-                        Logger.WriteStateHeader();
-                    } else 
-                    {
-                        Logger.WriteNormalHeader();
-                    }
-                    
+                    Logger.WriteHeader();
                     Logger.Write(Logger.Tag.INFO, "Loaded settings.");
                 } catch
                 {
@@ -55,6 +36,18 @@ namespace TangibleNode
             Utils.Sleep(settings.Optional.WaitBeforeStart_MS);
             // parse the settings
             Params.LoadEnvironment(settings);
+
+            if (args.Length > 1)
+            {
+                _enableStateLog = bool.Parse(args[1]);
+                if (_enableStateLog)
+                {
+                    FileLogger.EnableFileLog();
+                }
+            }
+
+            FileLogger.Instance.CreateLogFile();
+            FileLogger.Instance.WriteHeader();
             // run the node
             new TangibleNode(settings).Start();
         }

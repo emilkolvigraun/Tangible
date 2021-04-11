@@ -19,10 +19,10 @@ namespace TangibleNode
     {
         public void OnResponse(Driver driver, PointRequestBatch request, PointResponse response)
         {
-
             if (response!=null && response.Status != null)
             {
                 request.Batch.ForEach((r0) => {
+                    driver.CurrentlySending.Remove(r0.ID);
                     
                     if (response.Status.ContainsKey(r0.ID) && response.Status[r0.ID])
                     {
@@ -33,8 +33,14 @@ namespace TangibleNode
                         driver.AddRequestBehind(r0);
                     }
                 });
+            } else 
+            {
+                request.Batch.ForEach((r0) => {
+                    driver.CurrentlySending.Remove(r0.ID);
+                    driver.AddRequestBehind(r0);
+                });
             }
-            driver.SetIsSending(false);
+            // driver.SetIsSending(false);
         }
     }
 
@@ -89,7 +95,8 @@ namespace TangibleNode
                         byte[] msg = Encoder.EncodePointRequestBatch(request);
 
                         // Send the data through the socket.  
-                        int bytesSent = sender.Send(msg);  
+                        bool sendSuccess = Task.Run(() => {
+                            int bytesSent = sender.Send(msg);  
 
                         // An incoming connection needs to be processed.  
                         // string data = null;
@@ -121,12 +128,10 @@ namespace TangibleNode
                         //     _notified = true;
                         // }
 
-
-                        bool sendSuccess = Task.Run(() => {
                             // Data buffer for incoming data.  
                             // TODO: implement proper parsing of incoming response data
-                            byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
-
+                            byte[] bytes = new byte[2048*Params.BATCH_SIZE];  // hope thats enough
+                            // byte[] bytes = new byte[10240];  // hope thats enough
                             // Receive the response from the remote device.  
                             int bytesRec = sender.Receive(bytes);  
 
@@ -190,6 +195,7 @@ namespace TangibleNode
         private TDict<string, PointRequest> _requestsBehind {get;}
         public TInt Heartbeat {get;} = new TInt();
         private bool _sending {get; set;} = false;
+        public TSet<string> CurrentlySending {get;} = new TSet<string>();
 
         public Driver(DriverConfig Config, string Image)
         {
@@ -215,19 +221,26 @@ namespace TangibleNode
             List<PointRequest> requests = new List<PointRequest>();
             foreach (PointRequest r0 in _requestsBehind.Values.ToList())
             {
-                requests.Add(r0);
-                if (requests.Count >= Params.BATCH_SIZE) break;
+                if (!CurrentlySending.Contains(r0.ID))
+                {
+                    requests.Add(r0);
+                    CurrentlySending.Add(r0.ID);
+                    // int s = (Params.BATCH_SIZE-10)/r0.PointIDs.Count;
+                    // // if (s>8)s=8;
+                    // if (requests.Count >= s) break;
+                }
             }
             return requests;
         }
 
         public void Write()
         {
-            if (_requestsBehind.Count < 1 && IsSending) return;
+            // if (_requestsBehind.Count < 1 && IsSending) return;
+            if (_requestsBehind.Count < 1) return;
             List<PointRequest> requests = GetRequestsBehind();
             if (requests.Count > 0)
             {
-                SetIsSending(true);
+                // SetIsSending(true);
                 _connector.StartClient(this, 
                     new PointRequestBatch()
                     {
@@ -266,7 +279,32 @@ namespace TangibleNode
                 Maintainer = Node.Self,
                 Image = image
             };
-            Docker.Instance.Containerize(config).GetAwaiter().GetResult();
+
+            try 
+            {
+                (bool running, string id) info = Docker.Instance.IsContainerRunning(name).GetAwaiter().GetResult();
+                
+                if (info.running==true && info.id != null)
+                {
+                    Docker.Instance.StopContainers(info.id).GetAwaiter().GetResult();
+                    Docker.Instance.RemoveStoppedContainers().GetAwaiter().GetResult();
+                }
+            } catch { }
+
+            while (true)
+            {
+                try 
+                {
+                    Docker.Instance.Containerize(config).GetAwaiter().GetResult();
+                    break;
+                }
+                catch 
+                {
+                    Utils.Sleep(Utils.GetRandomInt(Params.ELECTION_TIMEOUT_START, Params.ELECTION_TIMEOUT_END));
+                    (bool running, string id) info = Docker.Instance.IsContainerRunning(name).GetAwaiter().GetResult();
+                    if (info.running) break;
+                }
+            }
             return new Driver(config, image);
         }
         public static Driver MakeDriver(Action action, int replica)

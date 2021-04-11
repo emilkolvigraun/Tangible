@@ -42,9 +42,9 @@ namespace TangibleNode
                 ESBResponse esbResponse = new ESBResponse()
                 {
                     ID = Utils.GenerateUUID(),
-                    Message = response.Message,
-                    Timestamp = Utils.Micros.ToString(),
-                    T01234 = response.T0123+","+response.Timestamp
+                    Message = response.Message
+                    // Timestamp = Utils.Micros.ToString(),
+                    // T01234 = response.T0123+","+response.Timestamp
                 };
                 _responsesNotSend.Add(esbResponse.ID, esbResponse);
             }
@@ -61,7 +61,9 @@ namespace TangibleNode
                     foreach (ESBResponse r in _responsesNotSend.Values.ToList())
                     {
                         rs.Batch.Add(r);
-                        if (rs.Batch.Count >= Params.BATCH_SIZE) break;
+                        // int s = ((Params.BATCH_SIZE-10)/r.Message.Count);
+                        // // if (s>8)s=8;
+                        // if (rs.Batch.Count >= s) break;
                     }
                     return rs;
                 }
@@ -103,8 +105,8 @@ namespace TangibleNode
 
                         // bool sendSuccess = Task.Run(() => {
                             // Data buffer for incoming data.  
-                            byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
-
+                            byte[] bytes = new byte[2048*Params.BATCH_SIZE];  // hope thats enough
+                            // byte[] bytes = new byte[10240];  // hope thats enough
                             // Receive the response from the remote device.  
                             int bytesRec = sender.Receive(bytes);  
 

@@ -14,6 +14,6 @@ namespace TangibleNode
         public string ReturnTopic {get; set;}
 
         // DEBUGGING
-        public string T0 {get; set;}
+        // public string T0 {get; set;}
     }
 }

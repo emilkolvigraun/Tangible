@@ -10,7 +10,7 @@ namespace TangibleNode
         public PQueue PriorityQueue {get;} = new PQueue(); 
         
         // action id, point ids
-        private TDict<string, List<string>> _currentTasks {get;} = new TDict<string, List<string>>();
+        private TSet<string> _currentTasks {get;} = new TSet<string>();
         private TDict<string, TDict<string, Request>> BatchesBehind {get;} = new TDict<string, TDict<string, Request>>();
         private TDict<string, HashSet<string>> ActionsCompleted {get;} = new TDict<string, HashSet<string>>();
         private TSet<string> MyCompletedActions {get;} = new TSet<string>();
@@ -26,7 +26,7 @@ namespace TangibleNode
                 HashSet<string> behind = new HashSet<string>();
                 foreach(string s in ActionsCompleted[peerID].ToList())
                 {
-                    if (!behind.Contains(s))
+                    if (!behind.Contains(s) && behind.Count < 10)
                         behind.Add(s);
                 }
                 return behind;
@@ -114,7 +114,7 @@ namespace TangibleNode
                 foreach(string s in MyCompletedActions.ToList())
                 {
                     completed.Add(s);
-                    if (completed.Count >= Params.BATCH_SIZE) break;
+                    if (completed.Count >= 10) break;
                 }
                 return completed;
                 // return  MyCompletedActions.ToList();
@@ -130,7 +130,14 @@ namespace TangibleNode
                 foreach (Request r in BatchesBehind[peerID].Values.ToList())
                 {
                     behind.Add(r);
-                    if (behind.Count > Params.BATCH_SIZE) break;
+                    int s = Params.BATCH_SIZE-10;
+                    if (r.Type == Request._Type.ACTION)
+                    {
+                        Action a = Encoder.DecodeAction(r.Data);
+                        s = (Params.BATCH_SIZE-10)/a.PointID.Count;
+                        // if (s>8)s=8;
+                    }
+                    if (behind.Count >= s) break;
                 }
                 return behind;
             }
@@ -211,26 +218,26 @@ namespace TangibleNode
         {
             lock (_task_lock)
             {
-                if (_currentTasks.ContainsKey(actionID))
+                if (_currentTasks.Contains(actionID))
                 {
                     _currentTasks.Remove(actionID);
                 }
             }
         }
 
-        public void AppendAction(Action action)
+        public bool AppendAction(Action action)
         {
             lock (_action_lock)
             {
                 if (action.Assigned == Params.ID)
                 {
-                    if (!_currentTasks.ContainsKey(action.ID))
-                        _currentTasks.Add(action.ID, action.PointID); 
-                    else _currentTasks[action.ID].AddRange(action.PointID);
+                    if (!_currentTasks.Contains(action.ID))
+                        _currentTasks.Add(action.ID); 
                     PriorityQueue.Enqueue(action);
+                    return true;
                 } else 
                 {
-                    Peers.AppendAction(action.Assigned, action);
+                    return Peers.AppendAction(action.Assigned, action);
                 }
             }
         }
@@ -241,10 +248,7 @@ namespace TangibleNode
             {
                 lock (_task_lock)
                 {
-                    int i0 = 0;
-                    _currentTasks.Values.ToList().ForEach((l) => {
-                        if (l!=null) i0 += l.Count;
-                    });
+                    int i0 = _currentTasks.ToList().Count;
                     return i0;
                 }
             }
@@ -256,12 +260,10 @@ namespace TangibleNode
             {
                 lock(_task_lock)
                 {
-                    int i0 = 0;
-                    _currentTasks.Values.ToList().ForEach((l) => {
-                        if (l!=null) i0 += l.Count;
-                    });
-                    int i1 = Peers.PeerLogCount;
-                    return i0+i1;
+                    // int i0 = _currentTasks.ToList().Count;
+                    // int i1 = Peers.PeerLogCount;
+                    // return i0+i1;
+                    return Peers.PeerLogCount;
                 }
             }
         }

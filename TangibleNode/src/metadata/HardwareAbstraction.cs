@@ -28,6 +28,7 @@ namespace TangibleNode
                 Logger.Write(Logger.Tag.INFO, "Preparing warm start...");
                 foreach(string image in Get_Images)
                 {
+                    Utils.Sleep(Utils.GetRandomInt(Params.ELECTION_TIMEOUT_START, Params.ELECTION_TIMEOUT_END));
                     hie.PrepareWarmStart(image);
                 }
             }
@@ -58,7 +59,7 @@ namespace TangibleNode
                     Value = dataRequest.Value,
                     ID = Utils.GenerateUUID(),
                     Assigned = StateLog.Instance.Peers.ScheduleAction(),
-                    T0 = dataRequest.T0,
+                    // T0 = dataRequest.T0,
                     // T1 = Utils.Micros.ToString(),
                     ReturnTopic = dataRequest.ReturnTopic
                 };
@@ -68,7 +69,6 @@ namespace TangibleNode
                     Data = Encoder.EncodeAction(action),
                     Type = Request._Type.ACTION
                 };
-
                 StateLog.Instance.AddRequestBehindToAll(r0);
                 
                 requests.Add(r0);

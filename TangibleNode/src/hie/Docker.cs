@@ -150,18 +150,7 @@ namespace TangibleNode
 
         public async Task<(bool running, string id)> IsContainerRunning(string name)  
         {  
-            IList<ContainerListResponse> t = await _client.Containers.ListContainersAsync(
-                new ContainersListParameters
-                {
-                    Filters = new Dictionary<string, IDictionary<string, bool>>
-                    {
-                        ["name"] = new Dictionary<string, bool>
-                        {
-                            [name] = true
-                        }
-                    },
-                    Limit = 1
-                }); 
+            IList<ContainerListResponse> t = await ListContainers();
 
             foreach (ContainerListResponse c in t)
             {
@@ -178,8 +167,7 @@ namespace TangibleNode
         public async Task<string[]> GetContainerIDs(string name = "")  
         {  
             if (name=="") name = Params.ID;
-            IList<ContainerListResponse> t = await _client.Containers.ListContainersAsync(
-                new ContainersListParameters()); 
+            IList<ContainerListResponse> t = await ListContainers();
 
             List<string> ids = new List<string>();
             foreach (ContainerListResponse c in t)
@@ -188,11 +176,12 @@ namespace TangibleNode
                 {
                     if (n.ToString().Contains(name))
                     {
-                        if (c.State == "running" || c.State == "created") 
-                        {
-                            ids.Add(c.ID);
-                            break;
-                        }    
+                        ids.Add(c.ID);
+                        break;
+                        // if (c.State == "running" || c.State == "created" || c.State == "exited") 
+                        // {
+                        //     break;
+                        // }    
                     }
                 }
                 
@@ -200,23 +189,51 @@ namespace TangibleNode
             return ids.ToArray();
         }  
 
+        public async Task<IList<ContainerListResponse>> ListContainers()
+        {
+            var parameters = new ContainersListParameters
+            {
+                Filters = new Dictionary<string, IDictionary<string, bool>>
+                {
+                    {
+                        "status", new Dictionary<string, bool>
+                        {
+                            { "running", true},
+                            { "created", true},
+                            { "dead", true},
+                            { "exited", true},
+                        }
+                    }
+                }
+            };
+            IList<ContainerListResponse> nl = new List<ContainerListResponse>();
+            var containers = await _client.Containers.ListContainersAsync(parameters);
+            foreach (ContainerListResponse c in containers)
+            {
+                foreach (string n in c.Names)
+                {
+                    if (n.ToString().Contains(Params.ID))
+                    {
+                        nl.Add(c);  
+                    }
+                }
+            }
+            return nl;
+        }
         public async Task RemoveStoppedContainers()
         {
             try 
             {
-                string[] ids = await GetContainerIDs();
-                foreach(string id in ids)
-                    await StopContainers(id);
-                IList<ContainerListResponse> t = await _client.Containers.ListContainersAsync(new ContainersListParameters()); 
+                // string[] ids = await GetContainerIDs();
+                // foreach(string id in ids)
+                IList<ContainerListResponse> t = await ListContainers();
                 foreach (ContainerListResponse c in t)
                 {
-                    if (c.State == "exited" || c.State == "dead") 
-                    {
-                        await _client.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters());
-                        Logger.Write(Logger.Tag.WARN, "Removed container: " + c.ID);
-                    }
+                    await StopContainers(c.ID);
+                    await _client.Containers.RemoveContainerAsync(c.ID, new ContainerRemoveParameters());
+                    Logger.Write(Logger.Tag.WARN, "Removed container: " + c.ID);
                 }
-                await _client.Containers.PruneContainersAsync();
+                // await _client.Containers.PruneContainersAsync();
             } catch(DockerApiException)
             {
                 Utils.Sleep(10);

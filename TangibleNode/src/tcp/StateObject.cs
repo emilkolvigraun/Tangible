@@ -7,7 +7,7 @@ namespace TangibleNode
     public class StateObject
     {
         // Size of receive buffer.  
-        public static int BufferSize = 1024*Params.BATCH_SIZE;
+        public static int BufferSize = 2048*Params.BATCH_SIZE;
 
         // Receive buffer.  
         public byte[] buffer = new byte[BufferSize];

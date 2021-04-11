@@ -10,7 +10,7 @@ namespace TangibleNode
         public static string GenerateUUID()
         {
             // chars only
-            return Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");//string.Join<char>("", (Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")).Where((ch, index) => (index & 1) == 0));
+            return Guid.NewGuid().ToString("N").Substring(0,10) + Guid.NewGuid().ToString("N").Substring(0,10);//string.Join<char>("", (Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")).Where((ch, index) => (index & 1) == 0));
         }
 
         /// <summary>Class to get current timestamp with enough precision</summary>
@@ -18,7 +18,7 @@ namespace TangibleNode
 
         /// <summary>Get current timestamp in milliseconds</summary>
         public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
-        public static long Micros { get { return (long)(DateTime.UtcNow.Ticks / (TimeSpan.TicksPerMillisecond / 1000));}}
+        // public static long Micros { get { return (long)(DateTime.UtcNow.Ticks / (TimeSpan.TicksPerMillisecond / 1000));}}
 
         /// <summary>Validates whether an ID equals my own. If so, returns true.</summary>
         public static bool IsMe(string ID)
@@ -48,6 +48,21 @@ namespace TangibleNode
         public static bool IsCandidate(State state)
         {
             return (state == State.CANDIDATE);
+        }
+
+        public static (double cpu, double memory) ResourceUsage
+        {
+            get 
+            {
+                double memory = 0.0;
+                double cpu = 0.0;
+                using (Process proc = Process.GetCurrentProcess())
+                {
+                    memory = proc.PrivateMemorySize64 / (1024*1024);
+                    cpu = proc.TotalProcessorTime.TotalSeconds;
+                }
+                return (cpu, memory);
+            }
         }
     }   
 }

@@ -15,80 +15,6 @@ namespace TangibleNode
         // Thread signal.  
         public ManualResetEvent allDone = new ManualResetEvent(false);
 
-    //     public void StartListening() 
-    //     {  
-    //         // Data buffer for incoming data.  
-    //         byte[] bytes = new Byte[1024];  
-
-    //         // Establish the local endpoint for the socket.  
-    //         // Dns.GetHostName returns the name of the
-    //         // host running the application.   
-    //         IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Parse(Params.HOST), Params.PORT);  
-
-    //         // Create a TCP/IP socket.  
-    //         Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);  
-
-    //         // Bind the socket to the local endpoint and
-    //         // listen for incoming connections.  
-    //         try {  
-    //             listener.SendTimeout = Params.TIMEOUT;
-    //             listener.ReceiveTimeout = Params.TIMEOUT;
-    //             listener.Bind(localEndPoint);  
-    //             listener.Listen();  
-
-    //             // Start listening for connections.  
-    //             while (true) {  
-
-    //                 Socket handler = listener.Accept();  
-                    
-    //                 try 
-    //                 {
-    //                     // Program is suspended while waiting for an incoming connection.  
-
-    //                     string data = null;
-
-    //                     // An incoming connection needs to be processed.  
-    //                     while (true) {  
-    //                         try 
-    //                         {
-    //                             int bytesRec = handler.Receive(bytes);  
-    //                             data += Encoding.ASCII.GetString(bytes,0,bytesRec);  
-    //                             if (data.IndexOf("<EOF>") > -1) {  
-    //                                 break;  
-    //                             }  
-    //                         } catch (Exception e)
-    //                         {
-    //                             Console.WriteLine(e.ToString());
-    //                         }
-    //                     }  
-
-    //                     Response response1 = new Response(){Completed = null, Data = null, Status = null};;
-    //                     try 
-    //                     {
-    //                         RequestBatch requestBatch = Encoder.DecodeRequestBatch(data);
-    //                         StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
-    //                         response1 = MakeResponse(requestBatch);
-    //                     } catch (Exception e)
-    //                     {   
-    //                         Console.WriteLine(e.ToString());
-    //                     }
-                            
-    //                     int bytesSend = handler.Send(Encoder.EncodeResponse(response1));  
-
-    //                 } catch (Exception e)
-    //                 {
-    //                     Console.WriteLine(e.ToString());
-    //                 } finally {
-    //                     handler.Shutdown(SocketShutdown.Both);  
-    //                     handler.Close(0);  
-    //                 }
-    //             }  
-
-    //         } catch (Exception e) {  
-    //             Console.WriteLine("FATAL:" + e.ToString());  
-    //         }  
-    // }  
-
         /// <summary>
         /// Establishes the local endpoint for the socket
         /// and starts listening for incoming connections
@@ -107,7 +33,7 @@ namespace TangibleNode
                 listener.SendTimeout = Params.TIMEOUT;
                 listener.ReceiveTimeout = Params.TIMEOUT;
                 listener.Bind(localEndPoint);  
-                listener.Listen();  
+                listener.Listen(200);  
                 Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);
                 while (true) 
                 {  
@@ -177,7 +103,7 @@ namespace TangibleNode
                     // Check for end-of-file tag. If it is not there, read
                     // more data.  
                     content = state.sb.ToString();  
-                    if (content.IndexOf("<EOF>") > -1 || state.Retries>2) {  
+                    if (content.IndexOf("<EOF>") > -1 || state.Retries>0) {  
                         // All the data has been read from the
                         // client.         
 
@@ -185,8 +111,11 @@ namespace TangibleNode
                         try 
                         {
                             RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
-                            StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
-                            response1 = MakeResponse(requestBatch);
+                            if (requestBatch!=null)
+                            {
+                                StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
+                                response1 = MakeResponse(requestBatch);
+                            }
                         } catch (Exception e)
                         {   
                             Console.WriteLine(e.ToString());
@@ -203,7 +132,10 @@ namespace TangibleNode
                 }  
             } catch (Exception e) 
             {
-                Logger.Write(Logger.Tag.ERROR, e.ToString());
+                if (!e.GetType().IsAssignableFrom(typeof(SocketException)))
+                {
+                    Logger.Write(Logger.Tag.ERROR, e.ToString());
+                }
             }
         }
 
@@ -243,36 +175,21 @@ namespace TangibleNode
                         response.Add(request.ID, false);
                     }
                 }
-
                 return new Response(){
                     Status = response
                 };
             }
             else 
             {
+                HashSet<string> cpa = new HashSet<string>();
+                if (requestBatch.Completed!=null) 
+                {
+                    cpa = new HashSet<string>(requestBatch.Completed);
+                    foreach (string actionID in cpa)
+                        StateLog.Instance.Follower_AddActionCompleted(actionID);
+                }
                 foreach (Request request in requestBatch.Batch)
                 {
-                    // if (request.Type == Request._Type.POINT)
-                    // {
-                    //     ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
-                    //     if (vr.Complete)
-                    //     {
-                    //         if (CurrentState.Instance.IsLeader)
-                    //         {
-                    //             StateLog.Instance.Leader_AddActionCompleted(vr.ActionID);
-                    //         }
-                    //         else 
-                    //         {
-                    //             StateLog.Instance.Follower_MarkActionCompleted(vr.ActionID);
-                    //         }
-                    //     }
-                    //     StateLog.Instance.RemoveCurrentTask(vr.ActionID);
-                    //     if (Params.TEST_RECEIVER_HOST!=string.Empty)
-                    //     {
-                    //         TestReceiverClient.Instance.AddEntry(vr);
-                    //     }
-                    // } 
-                    // else 
                     if (request.Type == Request._Type.VOTE)
                     {
                         Vote vote = Encoder.DecodeVote(request.Data);
@@ -293,6 +210,7 @@ namespace TangibleNode
                         }
                         else CurrentState.Instance.Timer.Reset();
                         response.Add(request.ID, true);
+                        Logger.Write(Logger.Tag.WARN, "Received VOTE.");
                         return new Response()
                         {
                             Status = response,
@@ -302,15 +220,18 @@ namespace TangibleNode
                     } else if (request.Type == Request._Type.ACTION)
                     {
                         Action action = Encoder.DecodeAction(request.Data);
-                        action.T1 = Utils.Micros.ToString();
-                        StateLog.Instance.AppendAction(action);
+                        // action.T1 = Utils.Micros.ToString();
+                        bool b = true;
+                        if (!cpa.Contains(action.ID))
+                            b = StateLog.Instance.AppendAction(action);
                         CurrentState.Instance.CancelState();
-                        response.Add(request.ID, true);
+                        response.Add(request.ID, b);
                     } else if (request.Type == Request._Type.NODE_ADD)
                     {
                         Node node = Encoder.DecodeNode(request.Data);
                         StateLog.Instance.Peers.AddNewNode(node);
-                        CurrentState.Instance.CancelState();
+                        // if (CurrentState.Instance.IsLeader)
+                        // CurrentState.Instance.CancelState();
                         response.Add(request.ID, true);
                     }
                     else if (request.Type == Request._Type.NODE_DEL)
@@ -324,11 +245,6 @@ namespace TangibleNode
                     {
                         response.Add(request.ID, false);
                     }
-                }
-
-                if (requestBatch.Completed!=null) foreach (string actionID in requestBatch.Completed)
-                {
-                    StateLog.Instance.Follower_AddActionCompleted(actionID);
                 }
                 
                 if (requestBatch.Sender!=null && requestBatch.Step>Params.STEP) Params.STEP = requestBatch.Step;
@@ -369,7 +285,7 @@ namespace TangibleNode
                 Socket handler = (Socket) ar.AsyncState;  
 
                 // Complete sending the data to the remote device.  
-                int bytesSent = handler.EndSend(ar);  
+                int bytesSent = handler.EndSend(ar); 
                 handler.LingerState = _linger;
                 handler.Shutdown(SocketShutdown.Both);  
                 handler.Close(0);  

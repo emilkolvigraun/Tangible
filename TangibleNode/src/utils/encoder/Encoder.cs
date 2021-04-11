@@ -52,7 +52,10 @@ namespace TangibleNode
         }
         public static RequestBatch DecodeRequestBatch(string msg)
         {
-            return JsonConvert.DeserializeObject<RequestBatch>(msg.Replace("<EOF>",""));
+            try 
+            {
+                return JsonConvert.DeserializeObject<RequestBatch>(msg.Replace("<EOF>",""));
+            } catch {return null;}
         }
         public static byte[] EncodeResponse(Response node)
         {

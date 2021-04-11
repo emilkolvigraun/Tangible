@@ -61,11 +61,13 @@ namespace TangibleNode
                         byte[] msg = Encoder.EncodeRequestBatch(request);
 
                         // Send the data through the socket.  
+                        
                         int bytesSent = sender.Send(msg);  
 
                         // bool sendSuccess = Task.Run(()=>{
                         // Data buffer for incoming data.  
-                        byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
+                        byte[] bytes = new byte[2048*Params.BATCH_SIZE];  // hope thats enough
+                        // byte[] bytes = new byte[10240];  // hope thats enough
 
                         // Receive the response from the remote device.  
                         int bytesRec = sender.Receive(bytes);  
@@ -80,8 +82,8 @@ namespace TangibleNode
                     }
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));
-                } catch (SocketException se) {  
-                    Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", se.ToString()));
+                } catch (SocketException) {  
+                    // Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", se.ToString()));
                 } catch (Exception e) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", e.ToString()));
                 }  
@@ -110,7 +112,9 @@ namespace TangibleNode
 
             // Activate the responsehandler
             rh.OnResponse(ID, request, Encoder.SerializeResponse(new Response(){
-                Status = r0
+                Status = r0,
+                Completed = null,
+                Data = null
             }));  
             
             Logger.Write(Logger.Tag.WARN, "Unable to connect to [node:" + ID +"][retries:"+StateLog.Instance.Peers.GetHeartbeat(ID)+"]");

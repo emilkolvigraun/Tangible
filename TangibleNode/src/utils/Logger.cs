@@ -16,7 +16,7 @@ namespace TangibleNode
             FATAL
         }
 
-        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL}; //{Tag.INFO, Tag.ACTION, Tag.WARN};//
+        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.ACTION, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL}; //{Tag.INFO, Tag.ACTION, Tag.WARN};//{Tag.WARN};//
 
         private static readonly object _i_lock = new object();
         private readonly object _lock = new object();
@@ -38,37 +38,8 @@ namespace TangibleNode
         {
             Instance.Log(tag, message);
         }
-
-        private bool _stateLogger = false;
-        public static void EnableStateLogger()
-        {
-            lock(Instance._lock)
-            {
-                Instance._stateLogger=true;
-            }
-        }
-
-        public static void WriteStateHeader()
-        {
-            lock(Instance._lock)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write("ms,");
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write("ac,");
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("lc,");
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.Write("pc,");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write("node,");
-                Console.ForegroundColor = ConsoleColor.Magenta;
-                Console.WriteLine("step");
-                Console.ForegroundColor = ConsoleColor.White;
-            }
-        }
         
-        public static void WriteNormalHeader()
+        public static void WriteHeader()
         {
             lock(Instance._lock)
             {
@@ -93,11 +64,7 @@ namespace TangibleNode
 
         private void Log(Tag tag, string message)
         {
-            if (_stateLogger)
-            {
-                if (tag==Tag.COMMIT) WriteState();
-            }
-            else if (_tags.Contains(tag))
+            if (_tags.Contains(tag))
             {
                 lock(_lock)
                 {   
@@ -159,34 +126,6 @@ namespace TangibleNode
                 default:
                     Console.ForegroundColor = ConsoleColor.White; 
                     break;
-            }
-        }
-    
-        public void WriteState()
-        {
-            lock(_lock)
-            {
-                long f = Utils.Millis;
-                int i0 = StateLog.Instance.ActionCount;
-                int lc = StateLog.Instance.LogCount;
-                int i1 = StateLog.Instance.PriorityQueue.Count;
-                int i2 = StateLog.Instance.Peers.NodeCount;
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write(f+",");
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write(i0+",");
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write(lc+",");
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.Write(i1+",");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write(i2+",");
-                Console.ForegroundColor = ConsoleColor.Magenta;
-                Console.WriteLine(Params.STEP+"");
-                Console.ForegroundColor = ConsoleColor.White;
-                // Console.WriteLine(StateLog.Instance.GetBatchesBehind(Params.ID).Count+"");
-                // Console.ForegroundColor = ConsoleColor.Yellow;
-                // Console.WriteLine(i0+"");    
             }
         }
     }

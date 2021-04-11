@@ -74,6 +74,7 @@ namespace TangibleNode
         private Consumer _consumer {get;}
         private TTimer _sleepingTimer {get;}
         private HardwareInteractionEnvironment HIE {get;}
+        private long FileLogTS {get; set;} = Utils.Millis;
 
         public StateMachine(Consumer consumer, HardwareInteractionEnvironment hie)
         {
@@ -95,7 +96,6 @@ namespace TangibleNode
                     }
                 );
             _sleepingTimer.Begin();
-            Logger.Write(Logger.Tag.WARN, "Started");
             while (true)
             {
                 try 
@@ -197,7 +197,7 @@ namespace TangibleNode
                         }
                     } else 
                     {
-                        connectionsLost = StateLog.Instance.GetBatchesBehind(p.Client.ID).Count > 0;
+                        connectionsLost = StateLog.Instance.BatchesBehindCount(p.Client.ID) > 0;
                     }
                 });
 
@@ -233,7 +233,11 @@ namespace TangibleNode
                         p.Client.StartClient(rb, new DefaultHandler());
                     }, out tasks);
                     Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
-                    Task.WaitAll(tasks);
+                    Task t = Task.WhenAll(tasks);
+                    try {
+                        t.Wait();
+                    }
+                    catch {}   
                 }
 
                 if (passed)
@@ -251,8 +255,11 @@ namespace TangibleNode
 
             if (state.State == State.SLEEPER && _sleepingTimer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))))
             {
-                Producer.Instance.Broadcast();
-                _sleepingTimer.Reset();
+                try 
+                {
+                    Producer.Instance.Broadcast();
+                    _sleepingTimer.Reset();
+                } catch {}
             }
 
             if(Params.RUN_HIE)
@@ -266,17 +273,33 @@ namespace TangibleNode
                             ID = prioritizedAction.ID,
                             PointIDs = prioritizedAction.PointID,
                             // ReturnTopic = prioritizedAction.ReturnTopic,
-                            T0 = prioritizedAction.T0,
-                            T1 = prioritizedAction.T1,
-                            T2 = Utils.Micros.ToString(),
+                            // T0 = prioritizedAction.T0,
+                            // T1 = prioritizedAction.T1,
+                            // T2 = Utils.Micros.ToString(),
                             Type = prioritizedAction.Type,
-                            Value = prioritizedAction.Value
+                            Value = prioritizedAction.Value,
+                            ReturnTopic = prioritizedAction.ReturnTopic
                     });
                 }
                 HIE.ForEachDriver((d) => {
                     d.Write();
                 });
                 TestReceiverClient.Instance.StartClient();
+            }
+
+            if (FileLogger.Instance.IsEnabled && Utils.Millis > FileLogTS+1000)
+            {
+                long f = Utils.Millis;
+                int i0 = StateLog.Instance.ActionCount;
+                int lc = StateLog.Instance.LogCount;
+                int i1 = StateLog.Instance.PriorityQueue.Count;
+                int i2 = StateLog.Instance.Peers.NodeCount;
+                (double cpu, double ram) usage = Utils.ResourceUsage;
+                FileLogger.Instance.WriteToFile(
+                    string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                    f.ToString(), i0.ToString(), lc.ToString(), i1.ToString(), i2.ToString(), state.State.ToString(), usage.cpu.ToString(), usage.ram.ToString())
+                );
+                FileLogTS = Utils.Millis;
             }
         }
     }

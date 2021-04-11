@@ -105,9 +105,14 @@ namespace TangibleNode
             );
         }
 
-        public void AppendAction(string id, Action action)
+        public bool AppendAction(string id, Action action)
         {
-            _nodes[id].AddAction(action);
+            if (_nodes.ContainsKey(id))
+            {
+                _nodes[id].AddAction(action);
+                return true;
+            }
+            return false;
         }
 
         private Peer FindAnotherThanToAvoid(string avoid, int retry, KeyValuePair<string, Peer>[] peers)
