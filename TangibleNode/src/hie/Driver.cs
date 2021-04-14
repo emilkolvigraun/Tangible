@@ -72,8 +72,8 @@ namespace TangibleNode
         /// </summary>
         public void StartClient(Driver driver, PointRequestBatch request) 
         {   
-            // Connect to a remote device.  
             _received.Clear();
+
             remoteEP = new IPEndPoint(IPAddress.Parse(Host),Port); 
             sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp );  
             
@@ -242,20 +242,18 @@ namespace TangibleNode
             return requests;
         }
 
-        private bool _writing = false;
-        private object _write_lock = new object();
         public void Write()
         {
             
             if (IsSending) return;
 
-            Task.Run(() => {
+            // Task.Run(() => {
                 SetIsSending(true);
                 // if (_requestsBehind.Count < 1 && IsSending) return;
                 List<PointRequest> requests = GetRequestsBehind();
 
-                while (requests.Count > 0)
-                {
+                // while (requests.Count > 0)
+                // {
                     // SetIsSending(true);
                     _connector.StartClient(this, 
                         new PointRequestBatch()
@@ -263,11 +261,11 @@ namespace TangibleNode
                             Batch = requests
                         });
                     
-                    requests = GetRequestsBehind();
-                }
+                    // requests = GetRequestsBehind();
+                // }
 
                 SetIsSending(false);
-            });
+            // });
         }
 
         private readonly object _lock = new object();

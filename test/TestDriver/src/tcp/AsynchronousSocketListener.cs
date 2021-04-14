@@ -41,7 +41,7 @@ namespace TangibleDriver
                 listener.SendTimeout = Params.TIMEOUT;
                 listener.ReceiveTimeout = Params.TIMEOUT;
                 listener.Bind(localEndPoint);  
-                listener.Listen(100);  
+                listener.Listen(1000);  
                 Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);
                 while (true) {  
                     // Set the event to nonsignaled state.  
