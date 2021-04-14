@@ -1,0 +1,1 @@
+test\TestReceiver\bin\Debug\net5.0\TestReceiver.exe
