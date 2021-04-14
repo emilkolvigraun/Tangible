@@ -10,7 +10,7 @@ def calc(steps, mn, mx):
     return rng
 
 amount = 20
-cluster = 'timeout2'
+cluster = 'timeout'
 data = 'y'
 l = 0
 boxes = []

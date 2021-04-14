@@ -42,7 +42,8 @@ namespace TangibleNode
                 ESBResponse esbResponse = new ESBResponse()
                 {
                     ID = Utils.GenerateUUID(),
-                    Message = response.Message
+                    Message = response.Message,
+                    NodeReceived = response.NodeReceived
                     // Timestamp = Utils.Micros.ToString(),
                     // T01234 = response.T0123+","+response.Timestamp
                 };

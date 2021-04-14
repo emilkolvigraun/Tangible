@@ -22,7 +22,7 @@ namespace TangibleNode
         public string ReturnTopic {get; set;}
 
         // DEBUGGING
-        // public string T0  {get; set;}
+        public string Received  {get; set;}
         // public string T1  {get; set;}
     }   
 }

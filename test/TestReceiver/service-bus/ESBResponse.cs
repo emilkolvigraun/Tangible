@@ -12,6 +12,7 @@ namespace TestReceiver
         // DEBUGGING
         public string ID {get; set;}
         public string Node {get; set;}
+        public string NodeReceived {get; set;} 
         
         // public string T01234 {get; set;} 
     }

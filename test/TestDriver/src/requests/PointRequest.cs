@@ -12,6 +12,7 @@ namespace TangibleDriver
         public List<string> PointIDs {get; set;}
         public string Value {get; set;}
         public string ReturnTopic {get; set;}
+        public string Received {get; set;} 
         // DEBUGGING
         // public string T0 {get; set;} 
         // public string T1 {get; set;}

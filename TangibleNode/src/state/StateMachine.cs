@@ -276,6 +276,7 @@ namespace TangibleNode
                             // T0 = prioritizedAction.T0,
                             // T1 = prioritizedAction.T1,
                             // T2 = Utils.Micros.ToString(),
+                            Received = prioritizedAction.Received,
                             Type = prioritizedAction.Type,
                             Value = prioritizedAction.Value,
                             ReturnTopic = prioritizedAction.ReturnTopic
@@ -294,10 +295,11 @@ namespace TangibleNode
                 int lc = StateLog.Instance.LogCount;
                 int i1 = StateLog.Instance.PriorityQueue.Count;
                 int i2 = StateLog.Instance.Peers.NodeCount;
-                (double cpu, double ram) usage = Utils.ResourceUsage;
+                string ram = Utils.MemoryUsage.ToString();
+                string cpu = Utils.CPUUsage.ToString();
                 FileLogger.Instance.WriteToFile(
                     string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                    f.ToString(), i0.ToString(), lc.ToString(), i1.ToString(), i2.ToString(), state.State.ToString(), usage.cpu.ToString(), usage.ram.ToString())
+                    f.ToString(), i0.ToString(), lc.ToString(), i1.ToString(), i2.ToString(), state.State.ToString(), cpu, ram)
                 );
                 FileLogTS = Utils.Millis;
             }

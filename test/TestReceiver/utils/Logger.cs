@@ -38,8 +38,12 @@ namespace TestReceiver
             Instance.Comma();
             Instance.Print(ConsoleColor.Blue, "point_value_time");
             Instance.Comma();
+            Instance.Print(ConsoleColor.Magenta, "node_received");
+            Instance.Comma();
+            Instance.Print(ConsoleColor.Magenta, "points");
+            Instance.Comma();
             // Instance.Print(ConsoleColor.Magenta, "T0,T1,T2,T3,T4");
-            Instance.PrintLine(ConsoleColor.Magenta, "node_time");
+            Instance.PrintLine(ConsoleColor.Green, "node_completed");
             // Instance.Comma();
             // Instance.Print(ConsoleColor.Gray, "amount");
             // Instance.Comma();
@@ -49,7 +53,7 @@ namespace TestReceiver
 
         private void Log(ESBResponse response)
         {
-            string time = Utils.Millis.ToString();
+            string time = Utils.Micros.ToString();
             string n = response.Node;
             // string amount = response.Message.Keys.Count.ToString();
             lock(_lock)
@@ -66,7 +70,11 @@ namespace TestReceiver
                     Comma();
                     Print(ConsoleColor.Blue, entry.Value.Time);
                     Comma();
-                    PrintLine(ConsoleColor.Magenta, response.Timestamp);
+                    Print(ConsoleColor.Magenta, response.NodeReceived);
+                    Comma();
+                    Print(ConsoleColor.Green, response.Message.Count.ToString());
+                    Comma();
+                    PrintLine(ConsoleColor.Cyan, response.Timestamp);
                     // Comma();
                     // PrintLine(ConsoleColor.Gray, amount);
                     Console.ForegroundColor = ConsoleColor.White;

@@ -27,6 +27,7 @@ namespace TangibleNode
             lock(_lock)
             {
                 Instance._fileLog=true;
+                Logger.Write(Logger.Tag.INFO, "File-Logger enabled -> " + Params.ID + ".txt");
             }
         }
         
@@ -45,7 +46,7 @@ namespace TangibleNode
         {
             if (Instance._fileLog)
             {
-                WriteToFile("time,action_count,log_count,priority_queue_count,node_count");
+                WriteToFile("time,action_count,log_count,priority_queue_count,node_count,state,cpu_time,memory_usage");
             }
         }
 

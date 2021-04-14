@@ -16,7 +16,7 @@ namespace TestReceiver
 
         /// <summary>Get current timestamp in milliseconds</summary>
         public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
-        public static long Micros { get { return (long)(DateTime.UtcNow.Ticks / (TimeSpan.TicksPerMillisecond / 1000));}}
+        public static long Micros { get { return (long)((DateTime.UtcNow - Jan1St1970).Ticks / 10);}}
 
         private static Random random = new Random();
 

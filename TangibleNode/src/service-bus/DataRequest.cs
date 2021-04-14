@@ -12,8 +12,6 @@ namespace TangibleNode
         public string Value {get; set;}
         public int Priority {get; set;}
         public string ReturnTopic {get; set;}
-
-        // DEBUGGING
-        // public string T0 {get; set;}
+        public string Received {get; set;}
     }
 }

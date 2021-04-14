@@ -5,3 +5,9 @@ C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\pub
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\TangibleNode.pdb
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\Docker.DotNet.dll
 C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\Newtonsoft.Json.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\System.Configuration.ConfigurationManager.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\System.Diagnostics.PerformanceCounter.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\System.Security.Cryptography.ProtectedData.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\System.Security.Permissions.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\runtimes\win\lib\netcoreapp2.0\System.Diagnostics.PerformanceCounter.dll
+C:\Users\emilk\OneDrive\tangible\Node\Tangible\TangibleNode\bin\Debug\net5.0\publish\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll

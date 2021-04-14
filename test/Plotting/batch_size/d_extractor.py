@@ -1,6 +1,6 @@
 import pandas as pd
 amount = 20
-cluster = 'timeout2'
+cluster = 'timeout'
 
 # for i in range(1, amount+1):
 # for i in [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]:

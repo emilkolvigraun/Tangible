@@ -18,9 +18,10 @@ namespace TangibleNode
         }
 
         int amount = 0;
-        int points_nr = 15;
+        int points_nr = 1;
         // int interval = 100;
         long t0 = Utils.Millis+5000;
+        // long fin = Utils.Millis+5000+120000;
         public void MarkReady(bool b)
         {
             lock(_ready_lock)
@@ -28,7 +29,7 @@ namespace TangibleNode
                 _ready = b;
                 // if (Utils.Millis > t0 && _ready && amount < 10)
                 // if (Utils.Millis > t0 && _ready && points_nr < 21)
-                if (Utils.Millis > t0 && _ready && amount < 1000001)
+                if (Utils.Millis > t0 && _ready && points_nr < 31)// && amount < 50000) //&& Utils.Millis < fin)//
                 {
                     // if (IsReady && amount < 2000000)
                     // {
@@ -47,7 +48,7 @@ namespace TangibleNode
                             Type = Action._Type.WRITE,
                             Priority = 2,
                             Value = Params.STEP.ToString(),
-                            // T0 = Utils.Micros.ToString(),
+                            Received = Utils.Micros.ToString(),
                             Benv = loc,
                             ReturnTopic = "MyApplication"
                         };
@@ -63,16 +64,16 @@ namespace TangibleNode
 
                         // if (amount==1) t0 = Utils.Millis+10000;
 
-                        // if (amount >= 10000)
-                        // {
-                        //     if (points_nr==1)points_nr+=4;
-                        //     else points_nr+=5;
-                        //     amount = 0;
-                        //     t0 = Utils.Millis+600000;
-                        //     Logger.Write(Logger.Tag.INFO, "Pausing");
-                        // }
+                        if (amount >= 30000)
+                        {
+                            if (points_nr==1)points_nr+=4;
+                            else points_nr+=5;
+                            amount = 0;
+                            t0 = Utils.Millis+720000;
+                            Logger.Write(Logger.Tag.INFO, "Pausing");
+                        }
                         // interval = ((int)((1m/Params.HERTZ)*1000m));
-                        // t0 = Utils.Millis+500;
+                        // t0 = Utils.Millis+1;
 
                         // if (!leader)
                         // {

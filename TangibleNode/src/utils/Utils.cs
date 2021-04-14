@@ -6,7 +6,11 @@ namespace TangibleNode
 {
     class Utils 
     {
-        /// <summary>Generates a universally unique identifier</summary>
+
+        ///System.Diagnostics.PerformanceCounter -Version 4.5.0
+        private static PerformanceCounter CPUCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+
+        /// <summary>Generates a universally unique identifier</summary> 
         public static string GenerateUUID()
         {
             // chars only
@@ -19,6 +23,7 @@ namespace TangibleNode
         /// <summary>Get current timestamp in milliseconds</summary>
         public static long Millis { get { return (long)((DateTime.UtcNow - Jan1St1970).TotalMilliseconds); } }
         // public static long Micros { get { return (long)(DateTime.UtcNow.Ticks / (TimeSpan.TicksPerMillisecond / 1000));}}
+        public static long Micros { get { return (long)((DateTime.UtcNow - Jan1St1970).Ticks / 10);}}
 
         /// <summary>Validates whether an ID equals my own. If so, returns true.</summary>
         public static bool IsMe(string ID)
@@ -50,18 +55,23 @@ namespace TangibleNode
             return (state == State.CANDIDATE);
         }
 
-        public static (double cpu, double memory) ResourceUsage
+        public static double CPUUsage
+        {
+            get 
+            {
+                return CPUCounter.NextValue();
+            }
+        }
+        public static double MemoryUsage
         {
             get 
             {
                 double memory = 0.0;
-                double cpu = 0.0;
                 using (Process proc = Process.GetCurrentProcess())
                 {
                     memory = proc.PrivateMemorySize64 / (1024*1024);
-                    cpu = proc.TotalProcessorTime.TotalSeconds;
                 }
-                return (cpu, memory);
+                return memory;
             }
         }
     }   
