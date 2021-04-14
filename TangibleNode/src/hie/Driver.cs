@@ -197,6 +197,14 @@ namespace TangibleNode
         private bool _sending {get; set;} = false;
         public TSet<string> CurrentlySending {get;} = new TSet<string>();
 
+        public int BehindCount 
+        {
+            get 
+            {
+                return _requestsBehind.Count;
+            }
+        }
+
         public Driver(DriverConfig Config, string Image)
         {
             this.Config = Config;
@@ -218,6 +226,7 @@ namespace TangibleNode
 
         public List<PointRequest> GetRequestsBehind()
         {
+            if (_requestsBehind.Count < 1) return new List<PointRequest>();
             List<PointRequest> requests = new List<PointRequest>();
             foreach (PointRequest r0 in _requestsBehind.Values.ToList())
             {
@@ -233,20 +242,40 @@ namespace TangibleNode
             return requests;
         }
 
+        private bool _writing = false;
+        private object _write_lock = new object();
         public void Write()
         {
-            // if (_requestsBehind.Count < 1 && IsSending) return;
-            if (_requestsBehind.Count < 1) return;
-            List<PointRequest> requests = GetRequestsBehind();
-            if (requests.Count > 0)
+            lock (_write_lock)
             {
-                // SetIsSending(true);
-                _connector.StartClient(this, 
-                    new PointRequestBatch()
-                    {
-                        Batch = requests
-                    });
+                if (_writing) return;
             }
+
+            Task.Run(() => {
+                lock (_write_lock)
+                {
+                    _writing = true;
+                }
+                // if (_requestsBehind.Count < 1 && IsSending) return;
+                List<PointRequest> requests = GetRequestsBehind();
+
+                while (requests.Count > 0)
+                {
+                    // SetIsSending(true);
+                    _connector.StartClient(this, 
+                        new PointRequestBatch()
+                        {
+                            Batch = requests
+                        });
+                    
+                    requests = GetRequestsBehind();
+                }
+
+                lock (_write_lock)
+                {
+                    _writing = false;
+                }
+            });
         }
 
         private readonly object _lock = new object();

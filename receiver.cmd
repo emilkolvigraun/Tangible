@@ -1,1 +1,1 @@
-test\TestReceiver\bin\Debug\net5.0\TestReceiver.exe
+test\TestReceiver\bin\Debug\net5.0\TestReceiver.exe >> receiver_log.txt

@@ -9,7 +9,7 @@ CALL :TANGIBLECLUSTER
 GOTO EXIT
 
 :TANGIBLECLUSTER
-    TangibleNode\bin\Debug\net5.0\TangibleNode.exe settings\settings_%node%.json %stateLog% TcpNode%node% 
+    TangibleNode\bin\Debug\net5.0\TangibleNode.exe settings\node%node%.json %stateLog% TcpNode%node% 
     GOTO EXIT
 
 :MISSINGPARAMETER
