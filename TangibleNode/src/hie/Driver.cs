@@ -246,16 +246,11 @@ namespace TangibleNode
         private object _write_lock = new object();
         public void Write()
         {
-            lock (_write_lock)
-            {
-                if (_writing) return;
-            }
+            
+            if (IsSending) return;
 
             Task.Run(() => {
-                lock (_write_lock)
-                {
-                    _writing = true;
-                }
+                SetIsSending(true);
                 // if (_requestsBehind.Count < 1 && IsSending) return;
                 List<PointRequest> requests = GetRequestsBehind();
 
@@ -271,10 +266,7 @@ namespace TangibleNode
                     requests = GetRequestsBehind();
                 }
 
-                lock (_write_lock)
-                {
-                    _writing = false;
-                }
+                SetIsSending(false);
             });
         }
 
