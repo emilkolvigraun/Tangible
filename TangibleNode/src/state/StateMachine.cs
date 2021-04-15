@@ -248,7 +248,7 @@ namespace TangibleNode
             // } 
                 if (wait < Utils.Millis)
                 {
-                    ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
+                    ready = StateLog.Instance.NotAnyBatchBehind();
                     _consumer.MarkReady(ready);
                 }
             }

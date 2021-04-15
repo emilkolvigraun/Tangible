@@ -87,6 +87,22 @@ namespace TangibleNode
                 return ready;
             // }
         }
+        public bool NotAnyBatchBehind()
+        {
+            // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
+            // {
+                bool ready = true;
+                foreach (Node n in Peers.AsNodes)
+                {
+                    if (BatchesBehindCount(n.ID) != 0)
+                    {
+                        ready = false;
+                        break;
+                    } 
+                }
+                return ready;
+            // }
+        }
 
         public void Follower_AddActionCompleted(string actionID)
         {
