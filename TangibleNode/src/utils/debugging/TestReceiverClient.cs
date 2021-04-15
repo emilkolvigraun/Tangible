@@ -42,10 +42,7 @@ namespace TangibleNode
                 ESBResponse esbResponse = new ESBResponse()
                 {
                     ID = Utils.GenerateUUID(),
-                    Message = response.Message,
-                    NodeReceived = response.NodeReceived
-                    // Timestamp = Utils.Micros.ToString(),
-                    // T01234 = response.T0123+","+response.Timestamp
+                    Message = response.Message
                 };
                 _responsesNotSend.Add(esbResponse.ID, esbResponse);
             }
@@ -62,9 +59,6 @@ namespace TangibleNode
                     foreach (ESBResponse r in _responsesNotSend.Values.ToList())
                     {
                         rs.Batch.Add(r);
-                        // int s = ((Params.BATCH_SIZE-10)/r.Message.Count);
-                        // // if (s>8)s=8;
-                        // if (rs.Batch.Count >= s) break;
                     }
                     return rs;
                 }

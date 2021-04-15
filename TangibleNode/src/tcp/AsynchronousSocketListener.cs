@@ -152,7 +152,7 @@ namespace TangibleNode
                         ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
                         if (CurrentState.Instance.IsLeader)
                         {
-                            StateLog.Instance.Leader_AddActionCompleted(vr.ActionID);
+                            StateLog.Instance.Leader_AddActionCompleted(vr.ActionID, Params.ID);
                         }
                         else 
                         {

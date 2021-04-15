@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System;
+using System.Threading.Tasks;
 
 namespace TangibleDriver
 {
@@ -44,23 +45,21 @@ namespace TangibleDriver
                     {
 
                         List<Request> batches = new List<Request>();
-                        // for (int k = 0; k < 2; k++)
-                        // {
-                            PointRequest request = Requests.Dequeue();
-                            if (request != null)
-                            {
-                                ValueResponse response = handler.OnRequest(request);
-                                Request r0 = new Request(){
-                                        ID = Utils.GenerateUUID(),
-                                        Type = Request._Type.POINT,
-                                        Data = Encoder.EncodeValueResponse(response)
-                                    };
-                                batches.Add(r0);
-                            }
-                        // }
-                        // int s = (Params.BATCH_SIZE-10)/response.Message.Count;
-                        // if (s > 5) s = 5;
-                        // Console.WriteLine("max size: " + s);
+                        PointRequest request = Requests.Dequeue();
+                        if (request != null)
+                        {
+                            
+                            ValueResponse response = handler.OnRequest(request);
+                                            
+                            Task.Delay(15).GetAwaiter().GetResult();
+
+                            Request r0 = new Request(){
+                                    ID = Utils.GenerateUUID(),
+                                    Type = Request._Type.POINT,
+                                    Data = Encoder.EncodeValueResponse(response)
+                                };
+                            batches.Add(r0);
+                        }
                         foreach(Request r in _requestsBehind.Values.ToList())
                         {
                             lock(_lock)
@@ -70,32 +69,20 @@ namespace TangibleDriver
                                     batches.Add(r);
                                     _currentlySending.Add(r.ID);
                                 }
-                                // if (batches.Count >= s) break;
                             }   
                         }
 
-                        // if (batches.Count < s)
-                        // {
-                        // response.Timestamp = Utils.Micros.ToString();
-                        // for (int i = 0; i< 2; i++)
-                        // {
-                            // if (request != null)
-                            // {
-                        //     }
-                        // }
-                        // } else 
-                        // {
-                        //     Requests.Enqueue(request);
-                        // }
-                        RequestBatch rb = new RequestBatch(){
-                            Batch = batches,
-                            Sender = null,
-                            Step = 0,
-                            Completed = null
-                        };
-                        // Console.WriteLine("RB length: " + Encoder.EncodeRequestBatch(rb).Length);
-                        _client.StartClient(rb, this);
-                        Logger.Write(Logger.Tag.INFO, "Returned batch of " + batches.Count + ", behind: " + _requestsBehind.Count);
+                        if (batches.Count > 0)
+                        {
+                            RequestBatch rb = new RequestBatch(){
+                                Batch = batches,
+                                Sender = null,
+                                Step = 0,
+                                Completed = null
+                            };
+                            _client.StartClient(rb, this);
+                            Logger.Write(Logger.Tag.INFO, "Returned batch of " + batches.Count + ", behind: " + _requestsBehind.Count);
+                        }
                     }
                 } catch (Exception e)
                 {   

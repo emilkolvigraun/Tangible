@@ -140,7 +140,6 @@ namespace TangibleDriver
                 // request.T3 = Utils.Micros.ToString();
                 handler.Requests.Enqueue(request);
                 response.Add(request.ID, true);
-                Logger.Write(Logger.Tag.INFO, "Received + [type:" + request.Type.ToString() + ", value:"+request.Value+", length:"+request.PointIDs.Count.ToString()+"]");
             }
 
             return new PointResponse(){

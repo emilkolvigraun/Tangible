@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Generic;
 
 namespace TangibleNode
 {
@@ -46,8 +47,26 @@ namespace TangibleNode
         {
             if (Instance._fileLog)
             {
-                WriteToFile("time,action_count,log_count,priority_queue_count,node_count,state,cpu_time,memory_usage");
+                WriteToFile("time,ram,cpu,nodecount,id,batch,value,receive,send");
             }
+        }
+
+        public void AppendEntry(string actionID, string count, string complete, string received, string node)
+        {
+            long f = Utils.Millis;
+            List<string> nodeCount = new List<string>();
+            StateLog.Instance.Peers.ForEachPeer((p)=>{
+                nodeCount.Add(
+                    p.Client.ID+":"+StateLog.Instance.BatchesBehindCount(p.Client.ID).ToString()+":"+StateLog.Instance.Leader_GetActionsCompletedCount(p.Client.ID).ToString()
+                );
+            });
+            string ram = Utils.MemoryUsage.ToString();
+            string cpu = Utils.CPUUsage.ToString();
+            WriteToFile(
+                string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}",
+                f.ToString(), ram, cpu, string.Join(";", nodeCount), actionID, count, complete, received, node
+                )
+            );
         }
 
         public void CreateLogFile()

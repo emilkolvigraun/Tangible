@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TangibleDriver
 {
@@ -9,20 +10,13 @@ namespace TangibleDriver
     {
         public ValueResponse OnRequest(PointRequest request)
         {
-            int count = 1;
-            // string t0 = Utils.Micros.ToString();
             Dictionary<string, (string Value, string Time)> r0 = new Dictionary<string, (string Value, string Time)>();
             request.PointIDs.ForEach((s) => {
                 r0.Add(s, (request.Value, Utils.Micros.ToString()));
-                count++;
             });
-            // Logger.Write(Logger.Tag.INFO, "Received point request of " + request.PointIDs.Count + ", action: " + request.ID);
-            // Console.WriteLine("dict size: " + Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(r0, Formatting.None)).Length);
             return new ValueResponse(){
                 ActionID = request.ID,
-                Message = r0,
-                NodeReceived = request.Received
-                // T0123 = request.T0+","+request.T1+","+request.T2+","+request.T3
+                Message = r0
             };
         }
     }

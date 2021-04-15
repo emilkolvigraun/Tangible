@@ -23,7 +23,7 @@ namespace TangibleNode
             {
                 if (r0.Completed!=null) 
                     r0.Completed.ForEach((a)=>{
-                            StateLog.Instance.Leader_AddActionCompleted(a);
+                            StateLog.Instance.Leader_AddActionCompleted(a, receiverID);
                     });
 
             } catch (Exception e) {Logger.Write(Logger.Tag.ERROR, e.ToString());}

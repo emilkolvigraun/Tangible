@@ -25,6 +25,13 @@ namespace TangibleNode
             }
         }
 
+        public Action GetAction(string actionID)
+        {
+            if (_tasks.ContainsKey(actionID))
+                return _tasks[actionID];
+            return null;
+        }
+
         public void AddAction(Action action)
         {
             if (!_tasks.ContainsKey(action.ID))

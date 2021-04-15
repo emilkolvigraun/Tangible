@@ -59,9 +59,8 @@ namespace TangibleNode
                     Value = dataRequest.Value,
                     ID = Utils.GenerateUUID(),
                     Assigned = StateLog.Instance.Peers.ScheduleAction(),
-                    Received = dataRequest.Received,
-                    // T1 = Utils.Micros.ToString(),
-                    ReturnTopic = dataRequest.ReturnTopic
+                    ReturnTopic = dataRequest.ReturnTopic,
+                    Received = Utils.Micros.ToString()
                 };
                 StateLog.Instance.AppendAction(action);
                 Request r0 = new Request() {

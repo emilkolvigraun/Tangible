@@ -54,11 +54,16 @@ namespace TangibleNode
             }
         }
 
-        public void Leader_AddActionCompleted(string actionID)
+        public void Leader_AddActionCompleted(string actionID, string node)
         {
             lock(_action_lock)
             {
+                Action a = null;
                 Peers.ForEachPeer((p) => {
+                    if (a==null)
+                    {
+                        a = p.GetAction(actionID);
+                    }
                     p.RemoveAction(actionID);
                     if (!this.ActionsCompleted.ContainsKey(p.Client.ID))
                         this.ActionsCompleted.Add(p.Client.ID, new HashSet<string>());
@@ -68,6 +73,10 @@ namespace TangibleNode
                         Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
                     }
                 });
+                if (a!=null)
+                {
+                    FileLogger.Instance.AppendEntry(a.ID, a.PointID.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
+                }
             }
         }
 

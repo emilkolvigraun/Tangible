@@ -201,26 +201,10 @@ namespace TangibleNode
                     }
                 });
 
-                // if(CurrentState.Instance.Timer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2))) || connectionsLost)
-                // {
-
-                    // if (CurrentState.Instance.IsLeader)
-                    // {
-                        // bool ready = true;
-                        // foreach (Node n in StateLog.Instance.Peers.AsNodes)
-                        // {
-                        //     if (StateLog.Instance.BatchesBehindCount(n.ID) != 0 || StateLog.Instance.Leader_GetActionsCompletedCount(n.ID) != 0)
-                        //     {
-                        //         ready = false;
-                        //         break;
-                        //     } 
-                        // }
-                        
-                    // }
                 bool ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
                 bool passed = CurrentState.Instance.Timer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2)));
 
-                if (!ready || passed || connectionsLost)
+                if (!ready || passed || connectionsLost || StateLog.Instance.Peers.PeerLogCount > StateLog.Instance.Peers.NodeCount)
                 {
                     Task[] tasks;
                     StateLog.Instance.Peers.ForEachAsync((p) => {
@@ -245,7 +229,7 @@ namespace TangibleNode
                     Producer.Instance.Broadcast();
                     CurrentState.Instance.Timer.Reset();
                 }
-            // } 
+
                 if (wait < Utils.Millis)
                 {
                     ready = StateLog.Instance.NotAnyBatchBehind();
@@ -275,11 +259,6 @@ namespace TangibleNode
                             new PointRequest(){
                                 ID = prioritizedAction.ID,
                                 PointIDs = prioritizedAction.PointID,
-                                // ReturnTopic = prioritizedAction.ReturnTopic,
-                                // T0 = prioritizedAction.T0,
-                                // T1 = prioritizedAction.T1,
-                                // T2 = Utils.Micros.ToString(),
-                                Received = prioritizedAction.Received,
                                 Type = prioritizedAction.Type,
                                 Value = prioritizedAction.Value,
                                 ReturnTopic = prioritizedAction.ReturnTopic
@@ -304,7 +283,7 @@ namespace TangibleNode
                 TestReceiverClient.Instance.StartClient();
             }
 
-            if (FileLogger.Instance.IsEnabled && Utils.Millis > FileLogTS+1000)
+            if (FileLogger.Instance.IsEnabled && Utils.Millis > FileLogTS+1000 && !CurrentState.Instance.IsLeader)
             {
                 long f = Utils.Millis;
                 int i0 = StateLog.Instance.ActionCount;

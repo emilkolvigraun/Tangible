@@ -50,9 +50,7 @@ namespace TangibleDriver
 
                         // bool sendSuccess = Task.Run(() => {
                             // Send the data through the socket.  
-                        Logger.Write(Logger.Tag.INFO, "sending bytes: " + msg.Length);
                         int bytesSent = sender.Send(msg);  
-                        Logger.Write(Logger.Tag.INFO, "2 bytesSend: " + bytesSent);
 
                         // Data buffer for incoming data.  
                         byte[] bytes = new byte[2048*Params.BATCH_SIZE];  // hope thats enough

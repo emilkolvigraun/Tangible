@@ -32,29 +32,17 @@ namespace TestReceiver
             Instance.Comma();
             Instance.Print(ConsoleColor.Cyan, "node");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Yellow, "point_id");
-            Instance.Comma();
             Instance.Print(ConsoleColor.Red, "point_value");
             Instance.Comma();
             Instance.Print(ConsoleColor.Blue, "point_value_time");
             Instance.Comma();
-            Instance.Print(ConsoleColor.Magenta, "node_received");
-            Instance.Comma();
-            Instance.Print(ConsoleColor.Magenta, "points");
-            Instance.Comma();
-            // Instance.Print(ConsoleColor.Magenta, "T0,T1,T2,T3,T4");
-            Instance.PrintLine(ConsoleColor.Green, "node_completed");
-            // Instance.Comma();
-            // Instance.Print(ConsoleColor.Gray, "amount");
-            // Instance.Comma();
-            // Instance.PrintLine(ConsoleColor.Green, "extra");
+            Instance.PrintLine(ConsoleColor.Magenta, "points");
             Console.ForegroundColor = ConsoleColor.White;
         }
 
         private void Log(ESBResponse response)
         {
             string time = Utils.Micros.ToString();
-            string n = response.Node;
             // string amount = response.Message.Keys.Count.ToString();
             lock(_lock)
             {   
@@ -62,19 +50,13 @@ namespace TestReceiver
                 {
                     Print(ConsoleColor.Green, time);
                     Comma();
-                    Print(ConsoleColor.Cyan, n);
-                    Comma();
                     Print(ConsoleColor.Yellow, entry.Key);
                     Comma();
                     Print(ConsoleColor.Red, entry.Value.Value);
                     Comma();
                     Print(ConsoleColor.Blue, entry.Value.Time);
                     Comma();
-                    Print(ConsoleColor.Magenta, response.NodeReceived);
-                    Comma();
-                    Print(ConsoleColor.Green, response.Message.Count.ToString());
-                    Comma();
-                    PrintLine(ConsoleColor.Cyan, response.Timestamp);
+                    PrintLine(ConsoleColor.Green, response.Message.Count.ToString());
                     // Comma();
                     // PrintLine(ConsoleColor.Gray, amount);
                     Console.ForegroundColor = ConsoleColor.White;

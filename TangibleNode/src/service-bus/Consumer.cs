@@ -19,24 +19,19 @@ namespace TangibleNode
 
         int amount = 0;
         int points_nr = 1;
-        // int interval = 100;
         long t0 = Utils.Millis+5000;
-        // long fin = Utils.Millis+5000+120000;
+        int warmup = 0;
         public void MarkReady(bool b)
         {
             lock(_ready_lock)
             { 
                 _ready = b;
-                // if (Utils.Millis > t0 && _ready && amount < 10)
-                // if (Utils.Millis > t0 && _ready && points_nr < 21)
                 if (Utils.Millis > t0 && _ready)
                 {
                     for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount; bs++)
                     {
-                        if(points_nr < 31)// && amount < 50000) //&& Utils.Millis < fin)//
+                        if(points_nr < 15)
                         {
-                            // if (IsReady && amount < 2000000)
-                            // {
                                 amount++;
                                 Params.STEP++;
                                 Location loc = new Location(){
@@ -57,48 +52,29 @@ namespace TangibleNode
                                     ReturnTopic = "MyApplication"
                                 };
                                 ReceiveDataRequest(dr);
-                                // ReceiveDataRequest(new DataRequest(){
-                                //     Type = Action._Type.WRITE,
-                                //     Priority = 2,
-                                //     Value = Params.STEP.ToString(),
-                                //     T0 = Utils.Micros.ToString(),
-                                //     Benv = loc,
-                                //     ReturnTopic = "MyApplication"
-                                // });
 
-                                // if (amount==1) t0 = Utils.Millis+10000;
-
-                                if (amount >= 30000)
+                                if (amount >= 1000)
                                 {
-                                    if (points_nr==1)points_nr+=4;
-                                    else points_nr+=5;
-                                    amount = 0;
-                                    t0 = Utils.Millis+720000;
-                                    Logger.Write(Logger.Tag.INFO, "Pausing");
+                                    if (points_nr==1)
+                                    {
+                                        warmup += 1;
+                                    }
+                                    if (warmup>1)
+                                    {
+                                        points_nr+=2;
+                                        amount = 0;
+                                        t0 = Utils.Millis+180000;
+                                        Logger.Write(Logger.Tag.INFO, "Pausing");
+                                    } else 
+                                    {
+                                        t0 = Utils.Millis+60000;
+                                        Logger.Write(Logger.Tag.INFO, "Starting in 1 minute");
+                                    }                                    
                                 }
-                                // interval = ((int)((1m/Params.HERTZ)*1000m));
-                                // t0 = Utils.Millis+1;
-
-                                // if (!leader)
-                                // {
-                                //     t_die_l = Utils.Millis+Params.DIE_AS_LEADER;
-                                //     leader=true;
-                                // }
-                                // if (Params.DIE_AS_LEADER!=-1&&t2>=t_die_l) Environment.Exit(0);
-                                // if (amount >= 1000) 
-                                // {
-                                //     if (Params.HERTZ==1m) Params.HERTZ += 9m;
-                                //     else Params.HERTZ+=10m;
-                                //     interval = ((int)((1m/Params.HERTZ)*1000m));
-                                //     amount = 0;
-                                // } if (Params.HERTZ > 2000) Environment.Exit(0);
                                 MarkReady(false);
-                            // }
                         }
                     }
                 }
-                
-                // if (!_ready) t0 = Utils.Millis-(Utils.Millis-t2);
             }
         }
 
