@@ -30,7 +30,7 @@ namespace TangibleNode
                 {
                     for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount; bs++)
                     {
-                        if(points_nr < 15)
+                        if(points_nr < 16)
                         {
                                 amount++;
                                 Params.STEP++;
