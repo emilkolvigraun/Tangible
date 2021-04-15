@@ -47,7 +47,7 @@ namespace TangibleNode
         {
             if (Instance._fileLog)
             {
-                WriteToFile("time,ram,cpu,nodecount,id,batch,value,receive,send");
+                WriteToFile("time,ram,cpu,nodecount,id,batch,receive,send,node");
             }
         }
 

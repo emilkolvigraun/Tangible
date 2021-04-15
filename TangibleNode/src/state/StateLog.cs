@@ -75,7 +75,7 @@ namespace TangibleNode
                 });
                 if (a!=null)
                 {
-                    FileLogger.Instance.AppendEntry(a.ID, a.PointID.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
+                    FileLogger.Instance.AppendEntry(a.Value, a.PointID.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
                 }
             }
         }

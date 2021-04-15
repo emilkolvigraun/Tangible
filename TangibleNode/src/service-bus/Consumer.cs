@@ -53,7 +53,7 @@ namespace TangibleNode
                                 };
                                 ReceiveDataRequest(dr);
 
-                                if (amount >= 1000)
+                                if (amount >= 2000)
                                 {
                                     if (points_nr==1)
                                     {
