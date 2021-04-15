@@ -40,39 +40,49 @@ namespace TangibleDriver
             {
                 try 
                 {
-                    if (Requests.Count > 0)
+                    if (Requests.Count > 1)
                     {
-                        PointRequest request = Requests.Dequeue();
-                        ValueResponse response = handler.OnRequest(request);
 
                         List<Request> batches = new List<Request>();
+                        // for (int k = 0; k < 2; k++)
+                        // {
+                            PointRequest request = Requests.Dequeue();
+                            if (request != null)
+                            {
+                                ValueResponse response = handler.OnRequest(request);
+                                Request r0 = new Request(){
+                                        ID = Utils.GenerateUUID(),
+                                        Type = Request._Type.POINT,
+                                        Data = Encoder.EncodeValueResponse(response)
+                                    };
+                                batches.Add(r0);
+                            }
+                        // }
                         // int s = (Params.BATCH_SIZE-10)/response.Message.Count;
                         // if (s > 5) s = 5;
                         // Console.WriteLine("max size: " + s);
-                            foreach(Request r in _requestsBehind.Values.ToList())
+                        foreach(Request r in _requestsBehind.Values.ToList())
+                        {
+                            lock(_lock)
                             {
-                                lock(_lock)
+                                if (!_currentlySending.Contains(r.ID) && batches.Count < 1)
                                 {
-                                    if (!_currentlySending.Contains(r.ID) && batches.Count < 1)
-                                    {
-                                        batches.Add(r);
-                                        _currentlySending.Add(r.ID);
-                                    }
-                                    // if (batches.Count >= s) break;
-                                }   
-                            }
+                                    batches.Add(r);
+                                    _currentlySending.Add(r.ID);
+                                }
+                                // if (batches.Count >= s) break;
+                            }   
+                        }
 
                         // if (batches.Count < s)
                         // {
                         // response.Timestamp = Utils.Micros.ToString();
-                        Request r0 = new Request(){
-                                ID = Utils.GenerateUUID(),
-                                Type = Request._Type.POINT,
-                                Data = Encoder.EncodeValueResponse(response)
-                            };
-                        // Console.WriteLine("VR length: " + Encoder.EncodeValueResponse(response).Length);
-                        // Console.WriteLine("Rq length: " + Encoder.EncodeRequest(r0).Length);
-                        batches.Add(r0);
+                        // for (int i = 0; i< 2; i++)
+                        // {
+                            // if (request != null)
+                            // {
+                        //     }
+                        // }
                         // } else 
                         // {
                         //     Requests.Enqueue(request);

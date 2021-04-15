@@ -264,27 +264,43 @@ namespace TangibleNode
 
             if(Params.RUN_HIE)
             {
-                Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
-                if (prioritizedAction != null)
+                
+                for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount*2; bs++)
                 {
-                    Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);
-                    requiredDriver.AddRequestBehind(
-                        new PointRequest(){
-                            ID = prioritizedAction.ID,
-                            PointIDs = prioritizedAction.PointID,
-                            // ReturnTopic = prioritizedAction.ReturnTopic,
-                            // T0 = prioritizedAction.T0,
-                            // T1 = prioritizedAction.T1,
-                            // T2 = Utils.Micros.ToString(),
-                            Received = prioritizedAction.Received,
-                            Type = prioritizedAction.Type,
-                            Value = prioritizedAction.Value,
-                            ReturnTopic = prioritizedAction.ReturnTopic
-                    });
+                    Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
+                    if (prioritizedAction != null)
+                    {
+                        Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);
+                        requiredDriver.AddRequestBehind(
+                            new PointRequest(){
+                                ID = prioritizedAction.ID,
+                                PointIDs = prioritizedAction.PointID,
+                                // ReturnTopic = prioritizedAction.ReturnTopic,
+                                // T0 = prioritizedAction.T0,
+                                // T1 = prioritizedAction.T1,
+                                // T2 = Utils.Micros.ToString(),
+                                Received = prioritizedAction.Received,
+                                Type = prioritizedAction.Type,
+                                Value = prioritizedAction.Value,
+                                ReturnTopic = prioritizedAction.ReturnTopic
+                        });
+                    }
                 }
+                List<Task> tasks = new List<Task>();
                 HIE.ForEachDriver((d) => {
-                    d.Write();
+                    Task t = Task.Run(
+                        ()=>{
+                            d.Write();
+                        }
+                    );
+                    tasks.Add(t);
                 });
+                Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
+                Task ta = Task.WhenAll(tasks);
+                try {
+                    ta.Wait();
+                }
+                catch {} 
                 TestReceiverClient.Instance.StartClient();
             }
 

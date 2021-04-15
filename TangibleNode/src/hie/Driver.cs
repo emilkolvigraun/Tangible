@@ -252,15 +252,16 @@ namespace TangibleNode
                 // if (_requestsBehind.Count < 1 && IsSending) return;
                 List<PointRequest> requests = GetRequestsBehind();
 
-                // while (requests.Count > 0)
-                // {
-                    // SetIsSending(true);
-                    _connector.StartClient(this, 
-                        new PointRequestBatch()
-                        {
-                            Batch = requests
-                        });
+                if (requests.Count > 0)
+                {
+                // SetIsSending(true);
+                _connector.StartClient(this, 
+                    new PointRequestBatch()
+                    {
+                        Batch = requests
+                    });
                     
+                }// {
                     // requests = GetRequestsBehind();
                 // }
 
