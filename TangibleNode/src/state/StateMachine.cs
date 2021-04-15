@@ -288,7 +288,7 @@ namespace TangibleNode
                 }
                 List<Task> tasks = new List<Task>();
                 HIE.ForEachDriver((d) => {
-                    Task t = Task.Run(
+                    Task t = new Task(
                         ()=>{
                             d.Write();
                         }
