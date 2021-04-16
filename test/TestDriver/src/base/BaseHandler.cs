@@ -70,7 +70,7 @@ namespace TangibleDriver
                                     batches.Add(r);
                                     _currentlySending.Add(r.ID);
                                 } 
-                                if (batches.Count >= 1) break;
+                                if (batches.Count >= 2) break;
                             }   
                         }
 
