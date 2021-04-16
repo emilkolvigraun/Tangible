@@ -65,12 +65,12 @@ namespace TangibleDriver
                         {
                             lock(_lock)
                             {
-                                if (!_currentlySending.Contains(r.ID) && batches.Count < 10)
+                                if (!_currentlySending.Contains(r.ID) && batches.Count < 2)
                                 {
                                     batches.Add(r);
                                     _currentlySending.Add(r.ID);
                                 } 
-                                if (batches.Count >= 10) break;
+                                if (batches.Count >= 1) break;
                             }   
                         }
 
