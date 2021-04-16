@@ -72,7 +72,6 @@ namespace TangibleNode
                 
                 requests.Add(r0);
             }
-            // return requests;
         }
 
         private Dictionary<string, List<string>> ExtractFromRDF(Location location)

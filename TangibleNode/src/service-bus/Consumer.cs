@@ -16,63 +16,59 @@ namespace TangibleNode
         {
             this.HA = HA;
         }
-
-        int amount = 0;
         int points_nr = 1;
         long t0 = Utils.Millis+5000;
-        int warmup = 0;
         public void MarkReady(bool b)
         {
             lock(_ready_lock)
             { 
                 _ready = b;
-                if (Utils.Millis > t0 && _ready)
+                if (Utils.Millis > t0 && _ready && Params.STEP < 500000)
                 {
                     for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount; bs++)
                     {
-                        if(points_nr < 16)
-                        {
-                                amount++;
-                                Params.STEP++;
-                                Location loc = new Location(){
-                                    HasPoint = new List<Point>{}
-                                };
+                        // if(points_nr < 16)
+                        // {
+                            Params.STEP++;
+                            Location loc = new Location(){
+                                HasPoint = new List<Point>{}
+                            };
 
-                                for (int i = 0; i < points_nr; i++)
-                                {
-                                    loc.HasPoint.Add(new Point(){ID = i.ToString()});
-                                }
+                            for (int i = 0; i < points_nr; i++)
+                            {
+                                loc.HasPoint.Add(new Point(){ID = i.ToString()});
+                            }
 
-                                DataRequest dr = new DataRequest(){
-                                    Type = Action._Type.WRITE,
-                                    Priority = 2,
-                                    Value = Params.STEP.ToString(),
-                                    Received = Utils.Micros.ToString(),
-                                    Benv = loc,
-                                    ReturnTopic = "MyApplication"
-                                };
-                                ReceiveDataRequest(dr);
+                            DataRequest dr = new DataRequest(){
+                                Type = Action._Type.WRITE,
+                                Priority = 2,
+                                Value = Params.STEP.ToString(),
+                                Received = Utils.Micros.ToString(),
+                                Benv = loc,
+                                ReturnTopic = "MyApplication"
+                            };
+                            ReceiveDataRequest(dr);
 
-                                if (amount >= 2000)
-                                {
-                                    if (points_nr==1)
-                                    {
-                                        warmup += 1;
-                                    }
-                                    if (warmup>1)
-                                    {
-                                        points_nr+=2;
-                                        amount = 0;
-                                        t0 = Utils.Millis+180000;
-                                        Logger.Write(Logger.Tag.INFO, "Pausing");
-                                    } else 
-                                    {
-                                        t0 = Utils.Millis+60000;
-                                        Logger.Write(Logger.Tag.INFO, "Starting in 1 minute");
-                                    }                                    
-                                }
-                                MarkReady(false);
-                        }
+                            // if (amount >= 2000)
+                            // {
+                            //     if (points_nr==1)
+                            //     {
+                            //         warmup += 1;
+                            //     }
+                            //     if (warmup>1)
+                            //     {
+                            //         points_nr+=2;
+                            //         amount = 0;
+                            //         t0 = Utils.Millis+180000;
+                            //         Logger.Write(Logger.Tag.INFO, "Pausing");
+                            //     } else 
+                            //     {
+                            //         t0 = Utils.Millis+60000;
+                            //         Logger.Write(Logger.Tag.INFO, "Starting in 1 minute");
+                            //     }                                    
+                            // }
+                            MarkReady(false);
+                        // }
                     }
                 }
             }

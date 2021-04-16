@@ -41,7 +41,7 @@ namespace TangibleDriver
             {
                 try 
                 {
-                    if (Requests.Count > 1)
+                    if (Requests.Count > 1 || _requestsBehind.Count > 0)
                     {
 
                         List<Request> batches = new List<Request>();
@@ -51,7 +51,7 @@ namespace TangibleDriver
                             
                             ValueResponse response = handler.OnRequest(request);
                                             
-                            Task.Delay(15).GetAwaiter().GetResult();
+                            // Task.Delay(15).GetAwaiter().GetResult();
 
                             Request r0 = new Request(){
                                     ID = Utils.GenerateUUID(),
@@ -60,15 +60,17 @@ namespace TangibleDriver
                                 };
                             batches.Add(r0);
                         }
+
                         foreach(Request r in _requestsBehind.Values.ToList())
                         {
                             lock(_lock)
                             {
-                                if (!_currentlySending.Contains(r.ID) && batches.Count < 1)
+                                if (!_currentlySending.Contains(r.ID) && batches.Count < 10)
                                 {
                                     batches.Add(r);
                                     _currentlySending.Add(r.ID);
-                                }
+                                } 
+                                if (batches.Count >= 10) break;
                             }   
                         }
 

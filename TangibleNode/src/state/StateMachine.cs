@@ -232,7 +232,7 @@ namespace TangibleNode
 
                 if (wait < Utils.Millis)
                 {
-                    ready = StateLog.Instance.NotAnyBatchBehind();
+                    ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
                     _consumer.MarkReady(ready);
                 }
             }
