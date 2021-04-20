@@ -45,6 +45,7 @@ namespace TangibleNode
                     Message = response.Message
                 };
                 _responsesNotSend.Add(esbResponse.ID, esbResponse);
+                FileLogger.Instance.AppendEntry(response.Message.ElementAt(0).Value.Value, response.Message.Count.ToString(), Utils.Micros.ToString(), response.NodeReceived, Params.ID, "completed");
             }
         }
 

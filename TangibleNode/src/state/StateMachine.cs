@@ -261,7 +261,8 @@ namespace TangibleNode
                                 PointIDs = prioritizedAction.PointID,
                                 Type = prioritizedAction.Type,
                                 Value = prioritizedAction.Value,
-                                ReturnTopic = prioritizedAction.ReturnTopic
+                                ReturnTopic = prioritizedAction.ReturnTopic,
+                                T = prioritizedAction.Received
                         });
                     }
                 }
@@ -283,21 +284,21 @@ namespace TangibleNode
                 TestReceiverClient.Instance.StartClient();
             }
 
-            if (FileLogger.Instance.IsEnabled && Utils.Millis > FileLogTS+1000 && !CurrentState.Instance.IsLeader)
-            {
-                long f = Utils.Millis;
-                int i0 = StateLog.Instance.ActionCount;
-                int lc = StateLog.Instance.LogCount;
-                int i1 = StateLog.Instance.PriorityQueue.Count;
-                int i2 = StateLog.Instance.Peers.NodeCount;
-                string ram = Utils.MemoryUsage.ToString();
-                string cpu = Utils.CPUUsage.ToString();
-                FileLogger.Instance.WriteToFile(
-                    string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
-                    f.ToString(), i0.ToString(), lc.ToString(), i1.ToString(), i2.ToString(), state.State.ToString(), cpu, ram)
-                );
-                FileLogTS = Utils.Millis;
-            }
+            // if (FileLogger.Instance.IsEnabled && Utils.Millis > FileLogTS+1000 && !CurrentState.Instance.IsLeader)
+            // {
+            //     long f = Utils.Millis;
+            //     int i0 = StateLog.Instance.ActionCount;
+            //     int lc = StateLog.Instance.LogCount;
+            //     int i1 = StateLog.Instance.PriorityQueue.Count;
+            //     int i2 = StateLog.Instance.Peers.NodeCount;
+            //     string ram = Utils.MemoryUsage.ToString();
+            //     string cpu = Utils.CPUUsage.ToString();
+            //     FileLogger.Instance.WriteToFile(
+            //         string.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+            //         f.ToString(), i0.ToString(), lc.ToString(), i1.ToString(), i2.ToString(), state.State.ToString(), cpu, ram)
+            //     );
+            //     FileLogTS = Utils.Millis;
+            // }
         }
     }
 }

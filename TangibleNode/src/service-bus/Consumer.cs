@@ -17,13 +17,13 @@ namespace TangibleNode
             this.HA = HA;
         }
         int points_nr = 1;
-        long t0 = Utils.Millis+5000;
+        long t0 = Utils.Millis+10000;
         public void MarkReady(bool b)
         {
             lock(_ready_lock)
             { 
                 _ready = b;
-                if (Utils.Millis > t0 && _ready && Params.STEP < 500000)
+                if (Utils.Millis > t0 && _ready && Params.STEP < 100000)
                 {
                     for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount; bs++)
                     {

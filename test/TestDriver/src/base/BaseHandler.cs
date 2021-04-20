@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
 using System;
-using System.Threading.Tasks;
 
 namespace TangibleDriver
 {
@@ -34,7 +33,6 @@ namespace TangibleDriver
                     _currentlySending.Remove(r.ID);
             });
         }
-
         public void Start(IRequestHandler handler)
         {
             while (true)
@@ -65,12 +63,12 @@ namespace TangibleDriver
                         {
                             lock(_lock)
                             {
-                                if (!_currentlySending.Contains(r.ID) && batches.Count < 2)
+                                if (!_currentlySending.Contains(r.ID) && batches.Count < 10)
                                 {
                                     batches.Add(r);
                                     _currentlySending.Add(r.ID);
                                 } 
-                                if (batches.Count >= 2) break;
+                                if (batches.Count >= 10) break;
                             }   
                         }
 

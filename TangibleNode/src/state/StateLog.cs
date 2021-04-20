@@ -73,7 +73,7 @@ namespace TangibleNode
                         Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
                     }
                 });
-                if (a!=null)
+                if (a!=null && CurrentState.Instance.IsLeader)
                 {
                     FileLogger.Instance.AppendEntry(a.Value, a.PointID.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
                 }
@@ -257,8 +257,11 @@ namespace TangibleNode
                 if (action.Assigned == Params.ID)
                 {
                     if (!_currentTasks.Contains(action.ID))
+                    {
                         _currentTasks.Add(action.ID); 
-                    PriorityQueue.Enqueue(action);
+                        PriorityQueue.Enqueue(action);
+                        FileLogger.Instance.AppendEntry(action.Value.ToString(), action.PointID.Count.ToString(), Utils.Micros.ToString(), action.Received, Params.ID, "append");
+                    }
                     return true;
                 } else 
                 {

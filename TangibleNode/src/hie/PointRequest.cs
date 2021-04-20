@@ -12,5 +12,8 @@ namespace TangibleNode
         public List<string> PointIDs {get; set;}
         public string Value {get; set;}
         public string ReturnTopic {get; set;}
+
+        // debugging
+        public string T {get; set;}
     }
 }

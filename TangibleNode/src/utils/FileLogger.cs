@@ -51,8 +51,9 @@ namespace TangibleNode
             }
         }
 
-        public void AppendEntry(string actionID, string count, string complete, string received, string node)
+        public void AppendEntry(string actionID, string count, string complete, string received, string node, string extra = "")
         {
+            // if (extra!="") return;
             long f = Utils.Millis;
             List<string> nodeCount = new List<string>();
             StateLog.Instance.Peers.ForEachPeer((p)=>{
@@ -63,8 +64,8 @@ namespace TangibleNode
             string ram = Utils.MemoryUsage.ToString();
             string cpu = Utils.CPUUsage.ToString();
             WriteToFile(
-                string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}",
-                f.ToString(), ram, cpu, string.Join(";", nodeCount), actionID, count, complete, received, node
+                string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
+                f.ToString(), ram, cpu, string.Join(";", nodeCount), actionID, count, complete, received, node, extra
                 )
             );
         }

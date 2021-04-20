@@ -96,38 +96,8 @@ namespace TangibleNode
 
                         // Send the data through the socket.  
                         bool sendSuccess = Task.Run(() => {
+
                             int bytesSent = sender.Send(msg);  
-
-                        // An incoming connection needs to be processed.  
-                        // string data = null;
-                        // bool sendSuccess = Task.Run(() => {
-                        //     while (true) {  
-                        //         try 
-                        //         {
-                        //             byte[] bytes = new byte[1024*Params.BATCH_SIZE];  // hope thats enough
-                        //             int bytesRec = sender.Receive(bytes);  
-                        //             data += Encoding.ASCII.GetString(bytes,0,bytesRec);  
-                        //             if (data.IndexOf("<EOF>") > -1) {  
-                        //                 break;  
-                        //             }  
-                        //         } catch (Exception e)
-                        //         { 
-                        //             Logger.Write(Logger.Tag.ERROR, string.Format("ReceivingException : {0}", e.ToString()));
-                        //             HandleFailure(driver, request);
-                        //             break;
-                        //         }
-                        //     }  
-
-                        // }).Wait(Params.TIMEOUT);
-
-                        // if (sendSuccess)
-                        // {
-                        //     PointResponse response = Encoder.DecodePointResponse(data);
-                        //     if (response==null) HandleFailure(driver, request);
-                        //     else new DriverResponseHandler().OnResponse(driver, request, response); 
-                        //     _notified = true;
-                        // }
-
                             // Data buffer for incoming data.  
                             // TODO: implement proper parsing of incoming response data
                             byte[] bytes = new byte[2048*Params.BATCH_SIZE];  // hope thats enough
@@ -233,6 +203,7 @@ namespace TangibleNode
                 if (!CurrentlySending.Contains(r0.ID))
                 {
                     requests.Add(r0);
+                    FileLogger.Instance.AppendEntry(r0.Value, r0.PointIDs.Count.ToString(), Utils.Micros.ToString(), r0.T, Params.ID, "driver");
                     CurrentlySending.Add(r0.ID);
                     // int s = (Params.BATCH_SIZE-10)/r0.PointIDs.Count;
                     // // if (s>8)s=8;
