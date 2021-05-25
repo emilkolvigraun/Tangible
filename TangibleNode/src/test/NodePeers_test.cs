@@ -35,7 +35,6 @@ namespace TangibleNode
             Task.WaitAll(_tasks);
             Console.WriteLine("Nodes_test add successful " + Nodes.NodeCount);
 
-
             Nodes.AddNewNode(new Node(){
                 ID = "0",
                 Host = "test123",

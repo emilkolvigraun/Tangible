@@ -6,17 +6,17 @@ namespace TangibleNode
 {
     class Encoder 
     {
-        public static byte[] EncodeAction(Action action)
+        public static byte[] EncodeDataRequest(DataRequest action)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(action, Formatting.None));
         }
-        public static Action DecodeAction(string msg)
+        public static DataRequest DecodeDataRequest(string msg)
         {
-            return JsonConvert.DeserializeObject<Action>(msg);
+            return JsonConvert.DeserializeObject<DataRequest>(msg);
         }
-        public static Action DecodeAction(byte[] msg)
+        public static DataRequest DecodeDataRequest(byte[] msg)
         {
-            return JsonConvert.DeserializeObject<Action>(Encoding.ASCII.GetString(msg));
+            return JsonConvert.DeserializeObject<DataRequest>(Encoding.ASCII.GetString(msg));
         }
         public static byte[] EncodeVote(Vote node)
         {
@@ -46,15 +46,15 @@ namespace TangibleNode
         {
             return JsonConvert.DeserializeObject<Request>(msg);
         }
-        public static byte[] EncodeRequestBatch(RequestBatch request)
+        public static byte[] EncodeProcedureCallBatch(ProcedureCallBatch request)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(request, Formatting.None) + "<EOF>");
         }
-        public static RequestBatch DecodeRequestBatch(string msg)
+        public static ProcedureCallBatch DecodeProcedureCallBatch(string msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<RequestBatch>(msg.Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<ProcedureCallBatch>(msg.Replace("<EOF>",""));
             } catch {return null;}
         }
         public static byte[] EncodeResponse(Response node)
@@ -85,13 +85,13 @@ namespace TangibleNode
         {
             return JsonConvert.DeserializeObject<ESBRequest>(msg.Replace("<EOF>", ""));
         }
-        public static byte[] EncodeDataRequest(DataRequest node)
+        public static byte[] EncodeESBDataRequest(ESBDataRequest node)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
-        public static DataRequest DecodeDataRequest(string msg)
+        public static ESBDataRequest DecodeESBDataRequest(string msg)
         {
-            return JsonConvert.DeserializeObject<DataRequest>(msg);
+            return JsonConvert.DeserializeObject<ESBDataRequest>(msg);
         }
         public static byte[] EncodeBroadcast(Broadcast node)
         {

@@ -8,7 +8,7 @@ namespace TangibleNode
 
         public enum _Type 
         {
-            ACTION,
+            DATA_REQUEST,
             NODE_ADD,
             NODE_DEL,
             VOTE,

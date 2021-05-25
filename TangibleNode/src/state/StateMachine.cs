@@ -26,7 +26,7 @@ namespace TangibleNode
                 }
             }
         }
-        public void OnResponse(string receiverID, RequestBatch sender, string response)
+        public void OnResponse(string receiverID, ProcedureCallBatch sender, string response)
         {
             if (response==null) return;
             Response r0 = Encoder.DecodeResponse(response);
@@ -143,7 +143,7 @@ namespace TangibleNode
                 };
                 Task[] tasks;
                 StateLog.Instance.Peers.ForEachAsync((p) => {
-                    RequestBatch rb = new RequestBatch(){
+                    ProcedureCallBatch rb = new ProcedureCallBatch(){
                         Batch = batch,
                         Sender = Node.Self
                     };
@@ -168,20 +168,20 @@ namespace TangibleNode
 
                         Peer peer = null;
                         bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
-                        Dictionary<string, Action> _rescheduledActions = new Dictionary<string, Action>();
+                        Dictionary<string, DataRequest> _rescheduledActions = new Dictionary<string, DataRequest>();
 
                         if (success)
                         {
                             peer.ForEachAction((a)=>{
                                 if (!_rescheduledActions.ContainsKey(a.ID))
                                 {
-                                    Action action = a;
+                                    DataRequest action = a;
                                     action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
                                     action.ID = Utils.GenerateUUID();
                                     StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
-                                        Type = Request._Type.ACTION,
+                                        Type = Request._Type.DATA_REQUEST,
                                         ID = Utils.GenerateUUID(),
-                                        Data = Encoder.EncodeAction(action)
+                                        Data = Encoder.EncodeDataRequest(action)
                                     });
                                     _rescheduledActions.Add(a.ID, action);
                                 }
@@ -209,7 +209,7 @@ namespace TangibleNode
                     Task[] tasks;
                     StateLog.Instance.Peers.ForEachAsync((p) => {
                         HashSet<string> acp = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID);
-                        RequestBatch rb = new RequestBatch(){
+                        ProcedureCallBatch rb = new ProcedureCallBatch(){
                             Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
                             Completed = acp,
                             Sender = Node.Self
@@ -251,7 +251,7 @@ namespace TangibleNode
                 
                 for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount*2; bs++)
                 {
-                    Action prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
+                    DataRequest prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
                     if (prioritizedAction != null)
                     {
                         Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);

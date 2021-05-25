@@ -5,7 +5,7 @@ namespace TangibleNode
 {
     class DefaultHandler : IResponseHandler
     {
-        public void OnResponse(string receiverID, RequestBatch sender, string response)
+        public void OnResponse(string receiverID, ProcedureCallBatch sender, string response)
         {
             if (sender.Completed!=null)
             {

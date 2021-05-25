@@ -12,8 +12,8 @@ namespace TangibleNode
 
             int bytes = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(new Point(){ID = "sensor_999"}, Formatting.None)).Length;
             Console.WriteLine("Point bytes: " + bytes);
-            DataRequest dr = new DataRequest(){
-                Type = Action._Type.WRITE,
+            ESBDataRequest dr = new ESBDataRequest(){
+                Type = DataRequest._Type.WRITE,
                 Priority = 2,
                 Value = Params.STEP.ToString(),
                 // T0 = Utils.Micros.ToString(),
@@ -22,10 +22,11 @@ namespace TangibleNode
                 }},
                 ReturnTopic = "MyApplication"
             };
+            Console.WriteLine(JsonConvert.SerializeObject(dr));
             int bytes_dr = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(dr, Formatting.None)).Length;
             Console.WriteLine("DR bytes: " + bytes_dr);
 
-            Action action = new Action(){
+            DataRequest action = new DataRequest(){
                 Type = dr.Type,
                 PointID = new List<string>{"sensor_999"},
                 Image = "...........aadsasd...............asdasd............",
@@ -39,22 +40,20 @@ namespace TangibleNode
             };
             Request r0 = new Request() {
                 ID = Utils.GenerateUUID(),
-                Data = Encoder.EncodeAction(action),
-                Type = Request._Type.ACTION
+                Data = Encoder.EncodeDataRequest(action),
+                Type = Request._Type.DATA_REQUEST
             };
             int bytes_r0 = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(r0, Formatting.None)).Length;
             Console.WriteLine("r0 bytes: " + bytes_dr);
 
             
-            int bytes_rb = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(new RequestBatch(){
+            int bytes_rb = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(new ProcedureCallBatch(){
                 Batch = new List<Request>{r0},
                 Completed = new HashSet<string>{"sensor_999"},
                 Sender = Node.Self,
                 Step = 10000000000
             }, Formatting.None)).Length;
-            Console.WriteLine("rb bytes: " + bytes_rb);
-
-            
+            Console.WriteLine("rb bytes: " + bytes_rb);       
         }
     }
 }

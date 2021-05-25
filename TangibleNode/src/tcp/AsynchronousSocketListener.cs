@@ -110,7 +110,7 @@ namespace TangibleNode
                         Response response1 = new Response(){Completed = null, Data = null, Status = null};;
                         try 
                         {
-                            RequestBatch requestBatch = Encoder.DecodeRequestBatch(content);
+                            ProcedureCallBatch requestBatch = Encoder.DecodeProcedureCallBatch(content);
                             if (requestBatch!=null)
                             {
                                 StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
@@ -139,7 +139,7 @@ namespace TangibleNode
             }
         }
 
-        private Response MakeResponse(RequestBatch requestBatch)
+        private Response MakeResponse(ProcedureCallBatch requestBatch)
         {
             Dictionary<string, bool> response = new Dictionary<string, bool>();
 
@@ -217,9 +217,9 @@ namespace TangibleNode
                             Data = Encoder.EncodeVote(myVote)
                         };
 
-                    } else if (request.Type == Request._Type.ACTION)
+                    } else if (request.Type == Request._Type.DATA_REQUEST)
                     {
-                        Action action = Encoder.DecodeAction(request.Data);
+                        DataRequest action = Encoder.DecodeDataRequest(request.Data);
                         // action.T1 = Utils.Micros.ToString();
                         bool b = true;
                         if (!cpa.Contains(action.ID))

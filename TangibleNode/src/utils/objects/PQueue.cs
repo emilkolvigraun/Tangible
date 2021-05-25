@@ -8,10 +8,10 @@ namespace TangibleNode
     /// </summary>
     internal class PQueue
     {
-        internal TDict<int, Queue<Action>> _dict = new TDict<int, Queue<Action>>();
+        internal TDict<int, Queue<DataRequest>> _dict = new TDict<int, Queue<DataRequest>>();
         private readonly object _lock = new object();
 
-        public void Enqueue(Action action)
+        public void Enqueue(DataRequest action)
         {
             lock (_lock)
             {
@@ -19,22 +19,22 @@ namespace TangibleNode
                 {
                     if (!_dict.ContainsKey(action.Priority))
                     {
-                        _dict.Add(action.Priority, new Queue<Action>());
+                        _dict.Add(action.Priority, new Queue<DataRequest>());
                     }
                 } catch {}
                 if(!_dict[action.Priority].Any((a) => a.ID == action.ID)) 
                 {
                     _dict[action.Priority].Enqueue(action);
-                    Logger.Write(Logger.Tag.ACTION, "Committed [action:"+action.ID.Substring(0,10)+"...] to self");
+                    Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to self");
                 }
             }
         }
 
-        public Action Dequeue()
+        public DataRequest Dequeue()
         {
             lock(_lock)
             {
-                Action ra = null;
+                DataRequest ra = null;
                 if (_dict.Count < 1) return ra;
 
                 foreach(int priority in _dict.Keys.OrderByDescending(i => i))

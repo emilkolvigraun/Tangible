@@ -4,8 +4,7 @@ namespace TangibleNode
 {
     class ESBResponse
     {
-        // public string Timestamp {get; set;} = Utils.Micros.ToString();
-        // Point (value, time)
+        // Response is always a json formatted as a string
         public Dictionary<string, (string Value, string Time)> Message {get; set;}
         // DEBUGGING
         public string ID {get; set;}

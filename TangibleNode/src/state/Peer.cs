@@ -5,7 +5,7 @@ namespace TangibleNode
     class Peer
     {
         public SynchronousClient Client {get;}
-        private TDict<string, Action> _tasks {get;}
+        private TDict<string, DataRequest> _tasks {get;}
         public TInt Heartbeat {get;}
         private Node _node {get;}
 
@@ -13,7 +13,7 @@ namespace TangibleNode
         {
             _node = node;
             Client = new SynchronousClient(node.Host, node.Port, node.ID);
-            _tasks = new TDict<string, Action>();
+            _tasks = new TDict<string, DataRequest>();
             Heartbeat = new TInt();
         }
 
@@ -25,19 +25,19 @@ namespace TangibleNode
             }
         }
 
-        public Action GetAction(string actionID)
+        public DataRequest GetAction(string actionID)
         {
             if (_tasks.ContainsKey(actionID))
                 return _tasks[actionID];
             return null;
         }
 
-        public void AddAction(Action action)
+        public void AddAction(DataRequest action)
         {
             if (!_tasks.ContainsKey(action.ID))
             {
-                _tasks.AddSafe(new KeyValuePair<string, Action>(action.ID, action));
-                Logger.Write(Logger.Tag.ACTION, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
+                _tasks.AddSafe(new KeyValuePair<string, DataRequest>(action.ID, action));
+                Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
             } 
         }
 
@@ -47,7 +47,7 @@ namespace TangibleNode
                 _tasks.Remove(actionID);
         }
 
-        public void ForEachAction(System.Action<Action> action)
+        public void ForEachAction(System.Action<DataRequest> action)
         {
             _tasks.ForEachRead((p) => action(p));
         }

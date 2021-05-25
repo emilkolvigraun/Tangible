@@ -27,7 +27,7 @@ namespace TangibleNode
             });
         }
 
-        public Driver GetOrCreateDriver(Action action, bool wait = false)
+        public Driver GetOrCreateDriver(DataRequest action, bool wait = false)
         {
             if (!_drivers.ContainsKey(action.Image))
             {

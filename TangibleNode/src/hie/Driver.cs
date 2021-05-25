@@ -298,7 +298,7 @@ namespace TangibleNode
             }
             return new Driver(config, image);
         }
-        public static Driver MakeDriver(Action action, int replica)
+        public static Driver MakeDriver(DataRequest action, int replica)
         {
             return MakeDriver(action.Image, replica);
         }

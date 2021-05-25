@@ -39,8 +39,8 @@ namespace TangibleNode
                                 loc.HasPoint.Add(new Point(){ID = i.ToString()});
                             }
 
-                            DataRequest dr = new DataRequest(){
-                                Type = Action._Type.WRITE,
+                            ESBDataRequest dr = new ESBDataRequest(){
+                                Type = DataRequest._Type.WRITE,
                                 Priority = 2,
                                 Value = Params.STEP.ToString(),
                                 Received = Utils.Micros.ToString(),
@@ -88,7 +88,7 @@ namespace TangibleNode
         public void Handle(ESBRequest request)
         {
             if (request.Type == ESBRequest._Type.ACTION)
-                ReceiveDataRequest(Encoder.DecodeDataRequest(request.Data));
+                ReceiveDataRequest(Encoder.DecodeESBDataRequest(request.Data));
             else if (request.Type == ESBRequest._Type.BROADCAST)
                 ReceiveBroadcast(Encoder.DecodeBroadcast(request.Data));
         }
@@ -159,9 +159,8 @@ namespace TangibleNode
             // }
         }
 
-        public void ReceiveDataRequest(DataRequest dataRequest)
+        public void ReceiveDataRequest(ESBDataRequest dataRequest)
         {
-            // List<Request> requests = HA.MarshallDataRequest(dataRequest);
             HA.MarshallDataRequest(dataRequest);
         }
 
@@ -185,7 +184,7 @@ namespace TangibleNode
 
             Task[] tasks;
             StateLog.Instance.Peers.ForEachAsync((p0) => {
-                RequestBatch rb = new RequestBatch(){
+                ProcedureCallBatch rb = new ProcedureCallBatch(){
                     Batch = new List<Request>{request},
                     Completed = StateLog.Instance.Leader_GetActionsCompleted(p0.Client.ID),
                     Sender = Node.Self

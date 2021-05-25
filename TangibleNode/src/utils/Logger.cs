@@ -12,11 +12,11 @@ namespace TangibleNode
             COMMIT,
             WARN,
             ERROR,
-            ACTION,
             FATAL
         }
 
-        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.ACTION, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL}; //{Tag.INFO, Tag.ACTION, Tag.WARN};//{Tag.WARN};//
+        // EVALUATION DOES NOT LOAD THIS THROUGH CONFIG FILE
+        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL}; 
 
         private static readonly object _i_lock = new object();
         private readonly object _lock = new object();
@@ -66,37 +66,43 @@ namespace TangibleNode
         {
             if (_tags.Contains(tag))
             {
-                lock(_lock)
-                {   
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    Console.Write(Utils.Millis); 
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write("|"); 
-                    int i0 = StateLog.Instance.ActionCount;
-                    int lc = StateLog.Instance.LogCount;
-                    int i1 = StateLog.Instance.PriorityQueue.Count;
-                    int i2 = StateLog.Instance.Peers.NodeCount;
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.Write(i0+",");
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write(lc+",");
-                    Console.ForegroundColor = ConsoleColor.Blue;
-                    Console.Write(i1+",");
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write(i2+",");
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                    Console.Write(Params.STEP);           
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write("|");           
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.Write(tag.ToString().PadRight(6));            
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write("|");           
-                    SetColor(tag);
-                    Console.WriteLine(message);         
-                    Console.ForegroundColor = ConsoleColor.White;
+                if (_tags.Contains(Tag.DEBUG))
+                {
+                    // TURNED OFF FOR EVALUATION/DEBUGGING
+                    // FileLogger.Instance.WriteToFile(tag.ToString().PadRight(6)+"|"+message);
+                } else {
+                    lock(_lock)
+                    {   
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.Write(Utils.Millis); 
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.Write("|"); 
+                        int i0 = StateLog.Instance.ActionCount;
+                        int lc = StateLog.Instance.LogCount;
+                        int i1 = StateLog.Instance.PriorityQueue.Count;
+                        int i2 = StateLog.Instance.Peers.NodeCount;
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Write(i0+",");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Write(lc+",");
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        Console.Write(i1+",");
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Write(i2+",");
+                        Console.ForegroundColor = ConsoleColor.Magenta;
+                        Console.Write(Params.STEP);           
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.Write("|");           
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Write(tag.ToString().PadRight(6));            
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.Write("|");           
+                        SetColor(tag);
+                        Console.WriteLine(message);         
+                        Console.ForegroundColor = ConsoleColor.White;
 
-                    if (tag==Tag.FATAL) Environment.Exit(0);   
+                        if (tag==Tag.FATAL) Environment.Exit(0);   
+                    }
                 }
             }
         }
@@ -108,7 +114,7 @@ namespace TangibleNode
                 case Tag.DEBUG: 
                     Console.ForegroundColor = ConsoleColor.White; 
                     break;
-                case Tag.INFO or Tag.ACTION:
+                case Tag.INFO:
                     Console.ForegroundColor = ConsoleColor.Green; 
                     break;
                 case Tag.ERROR:

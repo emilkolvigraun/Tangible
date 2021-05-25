@@ -58,7 +58,7 @@ namespace TangibleNode
         {
             lock(_action_lock)
             {
-                Action a = null;
+                DataRequest a = null;
                 Peers.ForEachPeer((p) => {
                     if (a==null)
                     {
@@ -156,9 +156,9 @@ namespace TangibleNode
                 {
                     behind.Add(r);
                     int s = Params.BATCH_SIZE-10;
-                    if (r.Type == Request._Type.ACTION)
+                    if (r.Type == Request._Type.DATA_REQUEST)
                     {
-                        Action a = Encoder.DecodeAction(r.Data);
+                        DataRequest a = Encoder.DecodeDataRequest(r.Data);
                         s = (Params.BATCH_SIZE-10)/a.PointID.Count;
                         // if (s>8)s=8;
                     }
@@ -250,7 +250,7 @@ namespace TangibleNode
             }
         }
 
-        public bool AppendAction(Action action)
+        public bool AppendAction(DataRequest action)
         {
             lock (_action_lock)
             {

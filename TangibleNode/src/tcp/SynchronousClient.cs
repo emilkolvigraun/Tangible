@@ -33,7 +33,7 @@ namespace TangibleNode
         /// <summary>
         /// Establishes connection to the remote host, sends the request an activates OnResponse on the requesthandler
         /// </summary>
-        public void StartClient(RequestBatch request, IResponseHandler rh) 
+        public void StartClient(ProcedureCallBatch request, IResponseHandler rh) 
         {   
             // Connect to a remote device.  
             _received.Clear();
@@ -43,8 +43,6 @@ namespace TangibleNode
             try {  
                 _notified = false;
                 sender.LingerState = _linger;
-                // Establish the remote endpoint for the socket.  
-                // This example uses port 11000 on the local computer.  
                 
                 // Connect the socket to the remote endpoint. Catch any errors.  
                 try {  
@@ -58,16 +56,14 @@ namespace TangibleNode
                         sender.EndConnect(result);
                         
                         // Encode the data string into a byte array.  
-                        byte[] msg = Encoder.EncodeRequestBatch(request);
+                        byte[] msg = Encoder.EncodeProcedureCallBatch(request);
 
                         // Send the data through the socket.  
                         
                         int bytesSent = sender.Send(msg);  
 
-                        // bool sendSuccess = Task.Run(()=>{
                         // Data buffer for incoming data.  
                         byte[] bytes = new byte[2048*Params.BATCH_SIZE];  // hope thats enough
-                        // byte[] bytes = new byte[10240];  // hope thats enough
 
                         // Receive the response from the remote device.  
                         int bytesRec = sender.Receive(bytes);  
@@ -76,14 +72,11 @@ namespace TangibleNode
 
                         rh.OnResponse(ID, request, Encoding.ASCII.GetString(bytes)); 
                         _notified = true;
-                        // }).Wait(Params.TIMEOUT);
-
-                        // if (!sendSuccess && !_notified) HandleFailure(request, rh);
                     }
                 } catch (ArgumentNullException ane) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", ane.ToString()));
-                } catch (SocketException) {  
-                    // Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", se.ToString()));
+                } catch (SocketException se) {  
+                    Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", se.ToString()));
                 } catch (Exception e) {  
                     Logger.Write(Logger.Tag.ERROR, string.Format("ArgumentNullException : {0}", e.ToString()));
                 }  
@@ -102,7 +95,7 @@ namespace TangibleNode
                 HandleFailure(request, rh);
         }  
         
-        private void HandleFailure(RequestBatch request, IResponseHandler rh)
+        private void HandleFailure(ProcedureCallBatch request, IResponseHandler rh)
         {
             Dictionary<string, bool> r0 = new Dictionary<string, bool>();
             foreach (Request r1 in request.Batch)

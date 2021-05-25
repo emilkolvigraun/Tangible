@@ -13,8 +13,8 @@ namespace TangibleNode
             while (i<10)
             {
                 q.Enqueue(
-                    new Action(){
-                        Type = Action._Type.WRITE,
+                    new DataRequest(){
+                        Type = DataRequest._Type.WRITE,
                         PointID = new List<string>{"123abc", "321cba"},
                         Image = "docker-image-1",
                         Priority = i
@@ -26,7 +26,7 @@ namespace TangibleNode
             for(int j = 0; j<i;j++)
                 if(q.PCount(j) != 1) throw new Exception("ENTRY WAS NOT ADDED");
 
-            Action a = q.Dequeue();
+            DataRequest a = q.Dequeue();
             int w = i-1;
             while (a!=null)
             {

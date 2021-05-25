@@ -43,7 +43,7 @@ namespace TangibleNode
             }
         }
 
-        public void MarshallDataRequest(DataRequest dataRequest)
+        public void MarshallDataRequest(ESBDataRequest dataRequest)
         {
 
             Dictionary<string, List<string>> table = ExtractFromRDF(dataRequest.Benv);
@@ -51,7 +51,7 @@ namespace TangibleNode
             List<Request> requests = new List<Request>();
             foreach(KeyValuePair<string, List<string>> r1 in table)
             {
-                Action action = new Action(){
+                DataRequest action = new DataRequest(){
                     Type = dataRequest.Type,
                     PointID = r1.Value,
                     Image = r1.Key,
@@ -65,8 +65,8 @@ namespace TangibleNode
                 StateLog.Instance.AppendAction(action);
                 Request r0 = new Request() {
                     ID = Utils.GenerateUUID(),
-                    Data = Encoder.EncodeAction(action),
-                    Type = Request._Type.ACTION
+                    Data = Encoder.EncodeDataRequest(action),
+                    Type = Request._Type.DATA_REQUEST
                 };
                 StateLog.Instance.AddRequestBehindToAll(r0);
                 

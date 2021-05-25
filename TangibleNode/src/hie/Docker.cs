@@ -31,17 +31,34 @@ namespace TangibleNode
                         FromImage = image,
                         Tag = "latest"
                     },
-                        auth,
-                        new Progress<JSONMessage>()//(message)=>Logger.Write(Logger.Tag.ERROR, JsonConvert.SerializeObject(message)))
+                    auth,
+                    new Progress<JSONMessage>()//(message)=>Logger.Write(Logger.Tag.ERROR, JsonConvert.SerializeObject(message)))
                 );
-                Logger.Write(Logger.Tag.INFO, "Pulled " + image);
-                return true;
+                return IsImagePulled(image);
             } catch (Exception e) 
             { 
                 Logger.Write(Logger.Tag.ERROR, e.ToString());
                 return false;
             }
+
+            
         }  
+
+        public bool IsImagePulled(string image)
+        {
+            IList<ImagesListResponse> images = _client.Images.ListImagesAsync(new ImagesListParameters{
+                All = true
+            }).GetAwaiter().GetResult();
+            foreach (ImagesListResponse ilr in images)
+            {
+                if (ilr.ID.Contains(image)) 
+                {
+                    Logger.Write(Logger.Tag.INFO, "Pulled " + image);
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public async Task<string> Containerize(DriverConfig config)
         {

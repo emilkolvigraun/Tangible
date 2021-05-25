@@ -105,7 +105,7 @@ namespace TangibleNode
             );
         }
 
-        public bool AppendAction(string id, Action action)
+        public bool AppendAction(string id, DataRequest action)
         {
             if (_nodes.ContainsKey(id))
             {
