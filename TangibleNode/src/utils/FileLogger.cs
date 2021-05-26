@@ -65,7 +65,7 @@ namespace TangibleNode
             string cpu = Utils.CPUUsage.ToString();
             WriteToFile(
                 string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
-                f.ToString(), ram, cpu, string.Join(";", nodeCount), actionID, count, complete, received, node, extra
+                f.ToString(), ram, cpu, string.Join(";", nodeCount), actionID, count, complete, node, extra
                 )
             );
         }

@@ -18,7 +18,7 @@ namespace TangibleNode
                 string Host = i.ToString()+"."+i.ToString()+"."+i.ToString()+"."+i.ToString();
                 int Port = int.Parse(i.ToString()+i.ToString()+i.ToString()+i.ToString());
                 tasks.Add(new Task(()=>{
-                    Nodes.AddNewNode(new Node(){
+                    Nodes.AddNewNode(new Sender(){
                         ID = ID,
                         Host = Host,
                         Port = Port
@@ -35,13 +35,13 @@ namespace TangibleNode
             Task.WaitAll(_tasks);
             Console.WriteLine("Nodes_test add successful " + Nodes.NodeCount);
 
-            Nodes.AddNewNode(new Node(){
+            Nodes.AddNewNode(new Sender(){
                 ID = "0",
                 Host = "test123",
                 Port = 1234
             });
 
-            Peer client;
+            Node client;
             Nodes.TryGetNode("0", out client);
 
             if (client.Client.Host!="test123") throw new Exception("NODE WAS NOT UPDATED");
@@ -53,7 +53,7 @@ namespace TangibleNode
             {
                 string ID = j.ToString();
                 tasks1.Add(new Task(()=>{
-                    Peer client;
+                    Node client;
                     Nodes.TryGetNode(ID, out client);
                     Nodes.TryRemoveNode(ID);
                 }));

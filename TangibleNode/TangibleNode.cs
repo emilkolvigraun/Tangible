@@ -97,7 +97,7 @@ namespace TangibleNode
             StateMachine _stateMachine = new StateMachine(consumer, hie);
 
             _stateMachineThread = new Thread(() => {
-                _stateMachine.Start(settings.TcpNodes);
+                _stateMachine.Start(settings.Members);
             });
             _consumerThread = new Thread(() => {
                 consumer.Start();

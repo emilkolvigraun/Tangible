@@ -11,7 +11,7 @@ namespace TangibleNode
         
         // action id, point ids
         private TSet<string> _currentTasks {get;} = new TSet<string>();
-        private TDict<string, TDict<string, Request>> BatchesBehind {get;} = new TDict<string, TDict<string, Request>>();
+        private TDict<string, TDict<string, Call>> BatchesBehind {get;} = new TDict<string, TDict<string, Call>>();
         private TDict<string, HashSet<string>> ActionsCompleted {get;} = new TDict<string, HashSet<string>>();
         private TSet<string> MyCompletedActions {get;} = new TSet<string>();
         private readonly object _batch_lock = new object();
@@ -75,7 +75,7 @@ namespace TangibleNode
                 });
                 if (a!=null && CurrentState.Instance.IsLeader)
                 {
-                    FileLogger.Instance.AppendEntry(a.Value, a.PointID.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
+                    FileLogger.Instance.AppendEntry(a.Value, a.PointDetails.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
                 }
             }
         }
@@ -85,7 +85,7 @@ namespace TangibleNode
             // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
             // {
                 bool ready = true;
-                foreach (Node n in Peers.AsNodes)
+                foreach (Sender n in Peers.AsNodes)
                 {
                     if (BatchesBehindCount(n.ID) != 0 || Leader_GetActionsCompletedCount(n.ID) != 0)
                     {
@@ -101,7 +101,7 @@ namespace TangibleNode
             // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
             // {
                 bool ready = true;
-                foreach (Node n in Peers.AsNodes)
+                foreach (Sender n in Peers.AsNodes)
                 {
                     if (BatchesBehindCount(n.ID) != 0)
                     {
@@ -146,20 +146,20 @@ namespace TangibleNode
             }
         }
 
-        public List<Request> GetBatchesBehind(string peerID)
+        public List<Call> GetBatchesBehind(string peerID)
         {
             lock (_batch_lock)
             {
-                if (!BatchesBehind.ContainsKey(peerID)) return new List<Request>();
-                List<Request> behind = new List<Request>();
-                foreach (Request r in BatchesBehind[peerID].Values.ToList())
+                if (!BatchesBehind.ContainsKey(peerID)) return new List<Call>();
+                List<Call> behind = new List<Call>();
+                foreach (Call r in BatchesBehind[peerID].Values.ToList())
                 {
                     behind.Add(r);
                     int s = Params.BATCH_SIZE-10;
-                    if (r.Type == Request._Type.DATA_REQUEST)
+                    if (r.Type == Call._Type.DATA_REQUEST)
                     {
                         DataRequest a = Encoder.DecodeDataRequest(r.Data);
-                        s = (Params.BATCH_SIZE-10)/a.PointID.Count;
+                        s = (Params.BATCH_SIZE-10)/a.PointDetails.Count;
                         // if (s>8)s=8;
                     }
                     if (behind.Count >= s) break;
@@ -177,7 +177,7 @@ namespace TangibleNode
             }
         }
 
-        public void RemoveBatchBehind(string peerID, Request request)
+        public void RemoveBatchBehind(string peerID, Call request)
         {
             lock(_batch_lock)
             {
@@ -206,18 +206,18 @@ namespace TangibleNode
             }
         }
 
-        public void AddRequestBehind(string peerID, Request request)
+        public void AddRequestBehind(string peerID, Call request)
         {
             lock(_batch_lock)
             {
                 if (!BatchesBehind.ContainsKey(peerID))
-                    BatchesBehind.Add(peerID, new TDict<string, Request>());
+                    BatchesBehind.Add(peerID, new TDict<string, Call>());
                 if (!BatchesBehind[peerID].ContainsKey(request.ID))
                     BatchesBehind[peerID].Add(request.ID, request);
             }
         }
 
-        public void AddRequestBehindToAllBut(string peerID, Request request)
+        public void AddRequestBehindToAllBut(string peerID, Call request)
         {
             lock(_request_lock)
             {
@@ -229,7 +229,7 @@ namespace TangibleNode
                 });
             }
         }
-        public void AddRequestBehindToAll(Request request)
+        public void AddRequestBehindToAll(Call request)
         {
             lock(_request_lock)
             {
@@ -260,7 +260,7 @@ namespace TangibleNode
                     {
                         _currentTasks.Add(action.ID); 
                         PriorityQueue.Enqueue(action);
-                        FileLogger.Instance.AppendEntry(action.Value.ToString(), action.PointID.Count.ToString(), Utils.Micros.ToString(), action.Received, Params.ID, "append");
+                        FileLogger.Instance.AppendEntry(action.Value.ToString(), action.PointDetails.Count.ToString(), Utils.Micros.ToString(), action.Received, Params.ID, "append");
                     }
                     return true;
                 } else 

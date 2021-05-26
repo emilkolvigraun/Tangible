@@ -3,6 +3,6 @@ namespace TangibleNode
 {
     class Broadcast 
     {
-        public Node Self {get; set;} = Node.Self;
+        public Sender Self {get; set;} = Sender.Self;
     }
 }

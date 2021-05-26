@@ -7,7 +7,7 @@ namespace TangibleNode
 {
     class NodePeers 
     {
-        private TDict<string, Peer> _nodes = new TDict<string, Peer>();
+        private TDict<string, Node> _nodes = new TDict<string, Node>();
         internal ReaderWriterLockSlim _client_lock = new ReaderWriterLockSlim();
 
         public bool ContainsPeer(string peerID)
@@ -15,13 +15,13 @@ namespace TangibleNode
             return _nodes.ContainsKey(peerID);
         }
 
-        public void AddNewNode(Node node)
+        public void AddNewNode(Sender node)
         {
             if (node.ID.Contains(Params.ID)) return;
             bool b = AddIfNew(node);
             if (b)
             {
-                _nodes.RemoveThenAdd((l) => l==node.ID, new Dictionary<string, Peer>{{node.ID, new Peer(node)}});
+                _nodes.RemoveThenAdd((l) => l==node.ID, new Dictionary<string, Node>{{node.ID, new Node(node)}});
             }
         }
 
@@ -31,31 +31,31 @@ namespace TangibleNode
             return _nodes[peerID].Heartbeat.Value;
         }
 
-        public bool AddIfNew(Node node)
+        public bool AddIfNew(Sender node)
         {
             if (node==null || node.ID.Contains(Params.ID)) return false;
             bool b = _nodes.ContainsKey(node.ID);
             if (!b)
             {
-                _nodes.AddSafe(new KeyValuePair<string, Peer>(node.ID, new Peer(node)));
+                _nodes.AddSafe(new KeyValuePair<string, Node>(node.ID, new Node(node)));
                 Logger.Write(Logger.Tag.COMMIT, "Comitted APPEND [node:"+node.ID+"] to peers.");
             }
             return b;
         }
 
-        public List<Node> AsNodes
+        public List<Sender> AsNodes
         {
             get 
             {
-                List<Node> nodes = new List<Node>();
+                List<Sender> nodes = new List<Sender>();
                 _nodes.ForEachRead((p) => {
-                    nodes.Add(new Node(){ID = p.Client.ID, Host = p.Client.Host, Port = p.Client.Port});
+                    nodes.Add(new Sender(){ID = p.Client.ID, Host = p.Client.Host, Port = p.Client.Port});
                 });
                 return nodes;
             }
         }
 
-        public bool TryGetNode(string ID, out Peer peer)
+        public bool TryGetNode(string ID, out Node peer)
         {
             bool b = _nodes.ContainsKey(ID);
             if (!b)
@@ -97,7 +97,7 @@ namespace TangibleNode
             }
         }
 
-        public void ForEachPeer(System.Action<Peer> action)
+        public void ForEachPeer(System.Action<Node> action)
         {
             _nodes.Keys.ToList().ForEach((k) => {
                     action(_nodes[k]);
@@ -115,9 +115,9 @@ namespace TangibleNode
             return false;
         }
 
-        private Peer FindAnotherThanToAvoid(string avoid, int retry, KeyValuePair<string, Peer>[] peers)
+        private Node FindAnotherThanToAvoid(string avoid, int retry, KeyValuePair<string, Node>[] peers)
         {
-            Peer peer = peers[retry].Value;
+            Node peer = peers[retry].Value;
             if (peer.Client.ID == avoid && peers.Length > retry+1)
             {
                 return FindAnotherThanToAvoid(avoid, retry+1, peers);
@@ -129,13 +129,13 @@ namespace TangibleNode
         {
             int nodeCount = NodeCount;
             if (nodeCount < 1) return Params.ID;
-            KeyValuePair<string, Peer>[] peers = new KeyValuePair<string, Peer>[NodeCount];
+            KeyValuePair<string, Node>[] peers = new KeyValuePair<string, Node>[NodeCount];
             _nodes.CopyTo(peers, 0);
-            Peer selected_peer = FindAnotherThanToAvoid(avoid, 0, peers);
+            Node selected_peer = FindAnotherThanToAvoid(avoid, 0, peers);
             if (selected_peer.ActionCount == 0) return selected_peer.Client.ID;
             string selected_peer_name = selected_peer.Client.ID;
 
-            foreach (KeyValuePair<string, Peer> peer in peers)
+            foreach (KeyValuePair<string, Node> peer in peers)
             {
                 if (peer.Value.Client.ID == avoid) continue;
                 if (peer.Value.ActionCount < selected_peer.ActionCount)
@@ -160,12 +160,12 @@ namespace TangibleNode
                 action(_nodes[ID].Heartbeat);
         }
 
-        public void ForEachAsync(System.Action<Peer> action, out Task[] tasks)
+        public void ForEachAsync(System.Action<Node> action, out Task[] tasks)
         {
             List<Task> t0 = new List<Task>();
-            KeyValuePair<string, Peer>[] peers = new KeyValuePair<string, Peer>[NodeCount];
+            KeyValuePair<string, Node>[] peers = new KeyValuePair<string, Node>[NodeCount];
             _nodes.CopyTo(peers, 0);
-            foreach(KeyValuePair<string, Peer> peer in peers)
+            foreach(KeyValuePair<string, Node> peer in peers)
             {
                 t0.Add(
                     new Task(()=>{

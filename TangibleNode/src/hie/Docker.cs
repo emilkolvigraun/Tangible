@@ -80,9 +80,9 @@ namespace TangibleNode
                         "ID="+config.ID, 
                         "TIMEOUT="+Params.TIMEOUT.ToString(),
                         "BATCH_SIZE="+Params.BATCH_SIZE.ToString(),
-                        "NODE_HOST="+config.Maintainer.Host, 
-                        "NODE_NAME="+config.Maintainer.ID, 
-                        "NODE_PORT="+config.Maintainer.Port.ToString()
+                        "NODE_HOST="+config.AssociatedNode.Host, 
+                        "NODE_NAME="+config.AssociatedNode.ID, 
+                        "NODE_PORT="+config.AssociatedNode.Port.ToString()
                     }, 
                     ExposedPorts = new Dictionary<string, EmptyStruct>
                     {

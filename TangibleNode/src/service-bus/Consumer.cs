@@ -175,29 +175,29 @@ namespace TangibleNode
             }
             StateLog.Instance.Peers.AddIfNew(broadcast.Self);
 
-            Request request = new Request()
+            Call request = new Call()
             {
                 ID = Utils.GenerateUUID(),
                 Data = Encoder.EncodeNode(broadcast.Self),
-                Type = Request._Type.NODE_ADD
+                Type = Call._Type.NODE_ADD
             };
 
             Task[] tasks;
             StateLog.Instance.Peers.ForEachAsync((p0) => {
                 ProcedureCallBatch rb = new ProcedureCallBatch(){
-                    Batch = new List<Request>{request},
+                    Batch = new List<Call>{request},
                     Completed = StateLog.Instance.Leader_GetActionsCompleted(p0.Client.ID),
-                    Sender = Node.Self
+                    Sender = Sender.Self
                 };
                 rb.Batch.AddRange(StateLog.Instance.GetBatchesBehind(p0.Client.ID));
                 
                 StateLog.Instance.Peers.ForEachPeer((p1) => {
                     if (p1.Client.ID != p0.Client.ID)
                     {
-                        rb.Batch.Add( new Request(){
+                        rb.Batch.Add( new Call(){
                             ID = Utils.GenerateUUID(),
                             Data = Encoder.EncodeNode(p1.AsNode),
-                            Type = Request._Type.NODE_ADD
+                            Type = Call._Type.NODE_ADD
                         });
                     }
                 });

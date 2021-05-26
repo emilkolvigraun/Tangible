@@ -48,30 +48,25 @@ namespace TangibleNode
 
             Dictionary<string, List<string>> table = ExtractFromRDF(dataRequest.Benv);
 
-            List<Request> requests = new List<Request>();
-            foreach(KeyValuePair<string, List<string>> r1 in table)
-            {
-                DataRequest action = new DataRequest(){
-                    Type = dataRequest.Type,
-                    PointID = r1.Value,
-                    Image = r1.Key,
-                    Priority = dataRequest.Priority,
-                    Value = dataRequest.Value,
-                    ID = Utils.GenerateUUID(),
-                    Assigned = StateLog.Instance.Peers.ScheduleAction(),
-                    ReturnTopic = dataRequest.ReturnTopic,
-                    Received = Utils.Micros.ToString()
-                };
-                StateLog.Instance.AppendAction(action);
-                Request r0 = new Request() {
-                    ID = Utils.GenerateUUID(),
-                    Data = Encoder.EncodeDataRequest(action),
-                    Type = Request._Type.DATA_REQUEST
-                };
-                StateLog.Instance.AddRequestBehindToAll(r0);
-                
-                requests.Add(r0);
-            }
+            // List<Request> requests = new List<Request>();
+            DataRequest action = new DataRequest(){
+                Type = dataRequest.Type,
+                PointDetails = table,
+                Priority = dataRequest.Priority,
+                Value = dataRequest.Value,
+                ID = Utils.GenerateUUID(),
+                Assigned = StateLog.Instance.Peers.ScheduleAction(),
+                ReturnTopic = dataRequest.ReturnTopic,
+                Received = Utils.Micros.ToString()
+            };
+            StateLog.Instance.AppendAction(action);
+            Call r0 = new Call() {
+                ID = Utils.GenerateUUID(),
+                Data = Encoder.EncodeDataRequest(action),
+                Type = Call._Type.DATA_REQUEST
+            };
+            StateLog.Instance.AddRequestBehindToAll(r0);
+            // requests.Add(r0);
         }
 
         private Dictionary<string, List<string>> ExtractFromRDF(Location location)

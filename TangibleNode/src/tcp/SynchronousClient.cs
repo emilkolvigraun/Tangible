@@ -98,7 +98,7 @@ namespace TangibleNode
         private void HandleFailure(ProcedureCallBatch request, IResponseHandler rh)
         {
             Dictionary<string, bool> r0 = new Dictionary<string, bool>();
-            foreach (Request r1 in request.Batch)
+            foreach (Call r1 in request.Batch)
             {
                 r0.Add(r1.ID, false);
             }

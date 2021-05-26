@@ -83,12 +83,12 @@ namespace TangibleNode
             _sleepingTimer = new TTimer("sleepingTimer");
         }
 
-        public void Start(List<Node> tcpNodes = default(List<Node>))
+        public void Start(List<Sender> tcpNodes = default(List<Sender>))
         {
             // Giving the server time to start, so that it is able to receive connections
             Utils.Sleep(200);
 
-            foreach (Node node in tcpNodes)
+            foreach (Sender node in tcpNodes)
                 _consumer.ReceiveBroadcast(
                     new Broadcast()
                     {
@@ -127,9 +127,9 @@ namespace TangibleNode
 
             if (Utils.IsCandidate(state.State))
             {
-                List<Request> batch = new List<Request>{
-                    new Request(){
-                        Type = Request._Type.VOTE,
+                List<Call> batch = new List<Call>{
+                    new Call(){
+                        Type = Call._Type.VOTE,
                         ID = Utils.GenerateUUID(),
                         Data = Encoder.EncodeVote(new Vote(){
                             ID = Params.ID,
@@ -145,7 +145,7 @@ namespace TangibleNode
                 StateLog.Instance.Peers.ForEachAsync((p) => {
                     ProcedureCallBatch rb = new ProcedureCallBatch(){
                         Batch = batch,
-                        Sender = Node.Self
+                        Sender = Sender.Self
                     };
                     p.Client.StartClient(rb, handler);
                 }, out tasks);
@@ -160,13 +160,13 @@ namespace TangibleNode
                     if (p.Heartbeat.Value >= Params.MAX_RETRIES)
                     {
                         connectionsLost = true;
-                        StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
-                            Type = Request._Type.NODE_DEL,
+                        StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Call(){
+                            Type = Call._Type.NODE_DEL,
                             ID = Utils.GenerateUUID(),
                             Data = Encoder.EncodeNode(p.AsNode)
                         });
 
-                        Peer peer = null;
+                        Node peer = null;
                         bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
                         Dictionary<string, DataRequest> _rescheduledActions = new Dictionary<string, DataRequest>();
 
@@ -178,8 +178,8 @@ namespace TangibleNode
                                     DataRequest action = a;
                                     action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
                                     action.ID = Utils.GenerateUUID();
-                                    StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Request(){
-                                        Type = Request._Type.DATA_REQUEST,
+                                    StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Call(){
+                                        Type = Call._Type.DATA_REQUEST,
                                         ID = Utils.GenerateUUID(),
                                         Data = Encoder.EncodeDataRequest(action)
                                     });
@@ -212,7 +212,7 @@ namespace TangibleNode
                         ProcedureCallBatch rb = new ProcedureCallBatch(){
                             Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
                             Completed = acp,
-                            Sender = Node.Self
+                            Sender = Sender.Self
                         };
                         p.Client.StartClient(rb, new DefaultHandler());
                     }, out tasks);
@@ -255,15 +255,7 @@ namespace TangibleNode
                     if (prioritizedAction != null)
                     {
                         Driver requiredDriver = HIE.GetOrCreateDriver(prioritizedAction);
-                        requiredDriver.AddRequestBehind(
-                            new PointRequest(){
-                                ID = prioritizedAction.ID,
-                                PointIDs = prioritizedAction.PointID,
-                                Type = prioritizedAction.Type,
-                                Value = prioritizedAction.Value,
-                                ReturnTopic = prioritizedAction.ReturnTopic,
-                                T = prioritizedAction.Received
-                        });
+                        requiredDriver.AddRequestBehind(prioritizedAction);
                     }
                 }
                 List<Task> tasks = new List<Task>();

@@ -14,13 +14,13 @@ namespace TangibleNode
                     Host = "1212",
                     ID = "2323",
                     Port = 1,
-                    TcpNodes = new List<Node>{
-                        new Node(){
+                    Members = new List<Sender>{
+                        new Sender(){
                             ID = "bacon0",
                             Host = "host",
                             Port = 1234
                         },
-                        new Node(){
+                        new Sender(){
                             ID = "bacon1",
                             Host = "host",
                             Port = 1234

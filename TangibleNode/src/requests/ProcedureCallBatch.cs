@@ -4,9 +4,9 @@ namespace TangibleNode
 {
     public class ProcedureCallBatch 
     {
-        public List<Request> Batch {get; set;}
+        public List<Call> Batch {get; set;}
         public HashSet<string> Completed {get; set;}
-        public Node Sender {get; set;}
+        public Sender Sender {get; set;}
 
         // DEBUGGING
         public long Step {get; set;} = Params.STEP;

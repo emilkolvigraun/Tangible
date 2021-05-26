@@ -28,7 +28,7 @@ namespace TangibleNode
 
             DataRequest action = new DataRequest(){
                 Type = dr.Type,
-                PointID = new List<string>{"sensor_999"},
+                PointDetails = new Dictionary<string, List<string>> {{"awdawdadwawdawd", new List<string>{"sensor_999"}}},
                 Image = "...........aadsasd...............asdasd............",
                 Priority = dr.Priority,
                 Value = dr.Value,
@@ -38,19 +38,19 @@ namespace TangibleNode
                 // T1 = Utils.Micros.ToString(),
                 ReturnTopic = dr.ReturnTopic
             };
-            Request r0 = new Request() {
+            Call r0 = new Call() {
                 ID = Utils.GenerateUUID(),
                 Data = Encoder.EncodeDataRequest(action),
-                Type = Request._Type.DATA_REQUEST
+                Type = Call._Type.DATA_REQUEST
             };
             int bytes_r0 = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(r0, Formatting.None)).Length;
             Console.WriteLine("r0 bytes: " + bytes_dr);
 
             
             int bytes_rb = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(new ProcedureCallBatch(){
-                Batch = new List<Request>{r0},
+                Batch = new List<Call>{r0},
                 Completed = new HashSet<string>{"sensor_999"},
-                Sender = Node.Self,
+                Sender = Sender.Self,
                 Step = 10000000000
             }, Formatting.None)).Length;
             Console.WriteLine("rb bytes: " + bytes_rb);       

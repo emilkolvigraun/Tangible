@@ -2,14 +2,14 @@ using System.Collections.Generic;
 
 namespace TangibleNode
 {
-    class Peer
+    class Node
     {
         public SynchronousClient Client {get;}
         private TDict<string, DataRequest> _tasks {get;}
         public TInt Heartbeat {get;}
-        private Node _node {get;}
+        private Sender _node {get;}
 
-        public Peer(Node node)
+        public Node(Sender node)
         {
             _node = node;
             Client = new SynchronousClient(node.Host, node.Port, node.ID);
@@ -17,7 +17,7 @@ namespace TangibleNode
             Heartbeat = new TInt();
         }
 
-        public Node AsNode
+        public Sender AsNode
         {
             get 
             {

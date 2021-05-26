@@ -8,8 +8,6 @@ namespace TangibleNode
         private State _state {get; set;} = State.SLEEPER;
         private State p_state {get; set;} = State.SLEEPER;
         internal ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
-
-
         public void Cancel()
         {
             _lock.EnterReadLock();

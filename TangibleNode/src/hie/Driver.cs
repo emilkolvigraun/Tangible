@@ -162,7 +162,7 @@ namespace TangibleNode
         public DriverConfig Config {get;}
         public string Image {get;}
         private Connector _connector {get;}
-        private TDict<string, PointRequest> _requestsBehind {get;}
+        private TDict<string, DataRequest> _requestsBehind {get;}
         public TInt Heartbeat {get;} = new TInt();
         private bool _sending {get; set;} = false;
         public TSet<string> CurrentlySending {get;} = new TSet<string>();
@@ -179,11 +179,11 @@ namespace TangibleNode
         {
             this.Config = Config;
             this.Image = Image;
-            _requestsBehind = new TDict<string, PointRequest>();
+            _requestsBehind = new TDict<string, DataRequest>();
             _connector = new Connector(Config);
         }
 
-        public void AddRequestBehind(PointRequest request)
+        public void AddRequestBehind(DataRequest request)
         {
             if (!_requestsBehind.ContainsKey(request.ID))
                 _requestsBehind.Add(request.ID, request);
@@ -194,16 +194,16 @@ namespace TangibleNode
             _requestsBehind.Remove(requestID);
         }
 
-        public List<PointRequest> GetRequestsBehind()
+        public List<DataRequest> GetRequestsBehind()
         {
-            if (_requestsBehind.Count < 1) return new List<PointRequest>();
-            List<PointRequest> requests = new List<PointRequest>();
-            foreach (PointRequest r0 in _requestsBehind.Values.ToList())
+            if (_requestsBehind.Count < 1) return new List<DataRequest>();
+            List<DataRequest> requests = new List<DataRequest>();
+            foreach (DataRequest r0 in _requestsBehind.Values.ToList())
             {
                 if (!CurrentlySending.Contains(r0.ID))
                 {
                     requests.Add(r0);
-                    FileLogger.Instance.AppendEntry(r0.Value, r0.PointIDs.Count.ToString(), Utils.Micros.ToString(), r0.T, Params.ID, "driver");
+                    FileLogger.Instance.AppendEntry(r0.Value, r0.PointDetails.Count.ToString(), Utils.Micros.ToString(), "timestamp", Params.ID, "driver");
                     CurrentlySending.Add(r0.ID);
                     // int s = (Params.BATCH_SIZE-10)/r0.PointIDs.Count;
                     // // if (s>8)s=8;
@@ -221,7 +221,7 @@ namespace TangibleNode
             // Task.Run(() => {
                 SetIsSending(true);
                 // if (_requestsBehind.Count < 1 && IsSending) return;
-                List<PointRequest> requests = GetRequestsBehind();
+                List<DataRequest> requests = GetRequestsBehind();
 
                 if (requests.Count > 0)
                 {
@@ -267,7 +267,7 @@ namespace TangibleNode
                 ID = name,
                 Host = Params.DOCKER_HOST,
                 Port = Params.GetUnusedPort(),
-                Maintainer = Node.Self,
+                AssociatedNode = Sender.Self,
                 Image = image
             };
 

@@ -145,9 +145,9 @@ namespace TangibleNode
 
             if (requestBatch.Sender == null)
             {
-                foreach (Request request in requestBatch.Batch)
+                foreach (Call request in requestBatch.Batch)
                 {
-                    if (request.Type == Request._Type.POINT)
+                    if (request.Type == Call._Type.VALUE_RESPONSE)
                     {
                         ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
                         if (CurrentState.Instance.IsLeader)
@@ -188,9 +188,9 @@ namespace TangibleNode
                     foreach (string actionID in cpa)
                         StateLog.Instance.Follower_AddActionCompleted(actionID);
                 }
-                foreach (Request request in requestBatch.Batch)
+                foreach (Call request in requestBatch.Batch)
                 {
-                    if (request.Type == Request._Type.VOTE)
+                    if (request.Type == Call._Type.VOTE)
                     {
                         Vote vote = Encoder.DecodeVote(request.Data);
                         Vote myVote = vote;
@@ -217,7 +217,7 @@ namespace TangibleNode
                             Data = Encoder.EncodeVote(myVote)
                         };
 
-                    } else if (request.Type == Request._Type.DATA_REQUEST)
+                    } else if (request.Type == Call._Type.DATA_REQUEST)
                     {
                         DataRequest action = Encoder.DecodeDataRequest(request.Data);
                         // action.T1 = Utils.Micros.ToString();
@@ -226,17 +226,17 @@ namespace TangibleNode
                             b = StateLog.Instance.AppendAction(action);
                         CurrentState.Instance.CancelState();
                         response.Add(request.ID, b);
-                    } else if (request.Type == Request._Type.NODE_ADD)
+                    } else if (request.Type == Call._Type.NODE_ADD)
                     {
-                        Node node = Encoder.DecodeNode(request.Data);
+                        Sender node = Encoder.DecodeNode(request.Data);
                         StateLog.Instance.Peers.AddNewNode(node);
                         // if (CurrentState.Instance.IsLeader)
                         // CurrentState.Instance.CancelState();
                         response.Add(request.ID, true);
                     }
-                    else if (request.Type == Request._Type.NODE_DEL)
+                    else if (request.Type == Call._Type.NODE_DEL)
                     {
-                        Node node = Encoder.DecodeNode(request.Data);
+                        Sender node = Encoder.DecodeNode(request.Data);
                         StateLog.Instance.ClearPeerLog(node.ID);
                         StateLog.Instance.Peers.TryRemoveNode(node.ID);
                         CurrentState.Instance.CancelState();

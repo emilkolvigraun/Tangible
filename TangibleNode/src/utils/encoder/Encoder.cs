@@ -26,25 +26,25 @@ namespace TangibleNode
         {
             return JsonConvert.DeserializeObject<Vote>(Encoding.ASCII.GetString(msg));
         }
-        public static byte[] EncodeNode(Node node)
+        public static byte[] EncodeNode(Sender node)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
-        public static Node DecodeNode(string msg)
+        public static Sender DecodeNode(string msg)
         {
-            return JsonConvert.DeserializeObject<Node>(msg);
+            return JsonConvert.DeserializeObject<Sender>(msg);
         }
-        public static Node DecodeNode(byte[] msg)
+        public static Sender DecodeNode(byte[] msg)
         {
-            return JsonConvert.DeserializeObject<Node>(Encoding.ASCII.GetString(msg));
+            return JsonConvert.DeserializeObject<Sender>(Encoding.ASCII.GetString(msg));
         }
-        public static byte[] EncodeRequest(Request request)
+        public static byte[] EncodeCall(Call request)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(request, Formatting.None));
         }
-        public static Request DecodeRequest(string msg)
+        public static Call DecodeCall(string msg)
         {
-            return JsonConvert.DeserializeObject<Request>(msg);
+            return JsonConvert.DeserializeObject<Call>(msg);
         }
         public static byte[] EncodeProcedureCallBatch(ProcedureCallBatch request)
         {
@@ -101,18 +101,18 @@ namespace TangibleNode
         {
             return JsonConvert.DeserializeObject<Broadcast>(msg);
         }
-        public static byte[] EncodePointRequest(PointRequest node)
-        {
-            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
-        }
-        public static PointRequest DecodePointRequest(string msg)
-        {
-            return JsonConvert.DeserializeObject<PointRequest>(msg);
-        }
-        public static PointRequest DecodePointRequest(byte[] msg)
-        {
-            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
-        }
+        // public static byte[] EncodeDataRequest(DataRequest node)
+        // {
+        //     return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
+        // }
+        // public static DataRequest DecodeDataRequest(string msg)
+        // {
+        //     return JsonConvert.DeserializeObject<DataRequest>(msg);
+        // }
+        // public static DataRequest DecodeDataRequest(byte[] msg)
+        // {
+        //     return JsonConvert.DeserializeObject<DataRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
+        // }
         public static PointResponse DecodePointResponse(byte[] msg)
         {
             try 

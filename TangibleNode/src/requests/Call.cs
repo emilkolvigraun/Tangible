@@ -3,7 +3,7 @@ using Newtonsoft.Json.Converters;
 
 namespace TangibleNode 
 {
-    public class Request
+    public class Call
     {
 
         public enum _Type 
@@ -12,7 +12,7 @@ namespace TangibleNode
             NODE_ADD,
             NODE_DEL,
             VOTE,
-            POINT
+            VALUE_RESPONSE
         }
         public string ID {get; set;}
         
