@@ -111,7 +111,7 @@ namespace TangibleNode
         long wait = Utils.Millis+Params.WAIT_BEFORE_START;
         private void Loop()
         {
-            bool morePeers = (StateLog.Instance.Peers.NodeCount > 0);
+            bool morePeers = (StateLog.Instance.Nodes.NodeCount > 0);
             bool timerActive = CurrentState.Instance.Timer.Active;
             (State State, bool TimePassed) state = CurrentState.Instance.Get_State;
             
@@ -139,10 +139,10 @@ namespace TangibleNode
                 };
                 VoteResponseHandler handler = new VoteResponseHandler()
                 {
-                    Quorum = StateLog.Instance.Peers.NodeCount
+                    Quorum = StateLog.Instance.Nodes.NodeCount
                 };
                 Task[] tasks;
-                StateLog.Instance.Peers.ForEachAsync((p) => {
+                StateLog.Instance.Nodes.ForEachAsync((p) => {
                     ProcedureCallBatch rb = new ProcedureCallBatch(){
                         Batch = batch,
                         Sender = Sender.Self
@@ -156,18 +156,18 @@ namespace TangibleNode
             if (CurrentState.Instance.IsLeader)
             {
                 bool connectionsLost = false;
-                StateLog.Instance.Peers.ForEachPeer((p) => {
+                StateLog.Instance.Nodes.ForEachPeer((p) => {
                     if (p.Heartbeat.Value >= Params.MAX_RETRIES)
                     {
                         connectionsLost = true;
-                        StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Call(){
+                        StateLog.Instance.AddBehindToAllButOne(p.Client.ID, new Call(){
                             Type = Call._Type.NODE_DEL,
                             ID = Utils.GenerateUUID(),
                             Data = Encoder.EncodeNode(p.AsNode)
                         });
 
                         Node peer = null;
-                        bool success = StateLog.Instance.Peers.TryGetNode(p.Client.ID, out peer);
+                        bool success = StateLog.Instance.Nodes.TryGetNode(p.Client.ID, out peer);
                         Dictionary<string, DataRequest> _rescheduledActions = new Dictionary<string, DataRequest>();
 
                         if (success)
@@ -176,9 +176,9 @@ namespace TangibleNode
                                 if (!_rescheduledActions.ContainsKey(a.ID))
                                 {
                                     DataRequest action = a;
-                                    action.Assigned = StateLog.Instance.Peers.ScheduleAction(p.Client.ID);
+                                    action.Assigned = StateLog.Instance.Nodes.ScheduleRequest(p.Client.ID);
                                     action.ID = Utils.GenerateUUID();
-                                    StateLog.Instance.AddRequestBehindToAllBut(p.Client.ID, new Call(){
+                                    StateLog.Instance.AddBehindToAllButOne(p.Client.ID, new Call(){
                                         Type = Call._Type.DATA_REQUEST,
                                         ID = Utils.GenerateUUID(),
                                         Data = Encoder.EncodeDataRequest(action)
@@ -189,7 +189,7 @@ namespace TangibleNode
                         }
                         
                         StateLog.Instance.ClearPeerLog(p.Client.ID);
-                        StateLog.Instance.Peers.TryRemoveNode(p.Client.ID);
+                        StateLog.Instance.Nodes.TryRemoveNode(p.Client.ID);
                         
                         foreach(var action in _rescheduledActions.Values)
                         {
@@ -204,10 +204,10 @@ namespace TangibleNode
                 bool ready = StateLog.Instance.NotAnyBatchOrCompleteBehind();
                 bool passed = CurrentState.Instance.Timer.HasTimePassed(((int)(Params.HEARTBEAT_MS/2)));
 
-                if (!ready || passed || connectionsLost || StateLog.Instance.Peers.PeerLogCount > StateLog.Instance.Peers.NodeCount)
+                if (!ready || passed || connectionsLost || StateLog.Instance.Nodes.PeerLogCount > StateLog.Instance.Nodes.NodeCount)
                 {
                     Task[] tasks;
-                    StateLog.Instance.Peers.ForEachAsync((p) => {
+                    StateLog.Instance.Nodes.ForEachAsync((p) => {
                         HashSet<string> acp = StateLog.Instance.Leader_GetActionsCompleted(p.Client.ID);
                         ProcedureCallBatch rb = new ProcedureCallBatch(){
                             Batch = StateLog.Instance.GetBatchesBehind(p.Client.ID),
@@ -249,7 +249,7 @@ namespace TangibleNode
             if(Params.RUN_HIE)
             {
                 
-                for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount*2; bs++)
+                for (int bs = 0; bs < StateLog.Instance.Nodes.NodeCount*2; bs++)
                 {
                     DataRequest prioritizedAction = StateLog.Instance.PriorityQueue.Dequeue();
                     if (prioritizedAction != null)

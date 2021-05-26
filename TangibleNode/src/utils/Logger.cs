@@ -80,7 +80,7 @@ namespace TangibleNode
                         int i0 = StateLog.Instance.ActionCount;
                         int lc = StateLog.Instance.LogCount;
                         int i1 = StateLog.Instance.PriorityQueue.Count;
-                        int i2 = StateLog.Instance.Peers.NodeCount;
+                        int i2 = StateLog.Instance.Nodes.NodeCount;
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.Write(i0+",");
                         Console.ForegroundColor = ConsoleColor.Red;

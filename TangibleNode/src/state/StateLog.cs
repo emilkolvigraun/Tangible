@@ -6,7 +6,7 @@ namespace TangibleNode
 {
     class StateLog
     {
-        public NodePeers Peers {get;} = new NodePeers();
+        public Nodes Nodes {get;} = new Nodes();
         public PQueue PriorityQueue {get;} = new PQueue(); 
         
         // action id, point ids
@@ -59,7 +59,7 @@ namespace TangibleNode
             lock(_action_lock)
             {
                 DataRequest a = null;
-                Peers.ForEachPeer((p) => {
+                Nodes.ForEachPeer((p) => {
                     if (a==null)
                     {
                         a = p.GetAction(actionID);
@@ -85,7 +85,7 @@ namespace TangibleNode
             // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
             // {
                 bool ready = true;
-                foreach (Sender n in Peers.AsNodes)
+                foreach (Sender n in Nodes.AsSenders)
                 {
                     if (BatchesBehindCount(n.ID) != 0 || Leader_GetActionsCompletedCount(n.ID) != 0)
                     {
@@ -101,7 +101,7 @@ namespace TangibleNode
             // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
             // {
                 bool ready = true;
-                foreach (Sender n in Peers.AsNodes)
+                foreach (Sender n in Nodes.AsSenders)
                 {
                     if (BatchesBehindCount(n.ID) != 0)
                     {
@@ -118,7 +118,7 @@ namespace TangibleNode
             lock(_action_lock)
             {
                 MyCompletedActions.Remove(actionID);
-                Peers.ForEachPeer((p) => {
+                Nodes.ForEachPeer((p) => {
                     p.RemoveAction(actionID);
                 });
                 Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETION [action:" + actionID.Substring(0,10)+"...]");
@@ -206,7 +206,7 @@ namespace TangibleNode
             }
         }
 
-        public void AddRequestBehind(string peerID, Call request)
+        public void AddToNodeBehind(string peerID, Call request)
         {
             lock(_batch_lock)
             {
@@ -217,24 +217,24 @@ namespace TangibleNode
             }
         }
 
-        public void AddRequestBehindToAllBut(string peerID, Call request)
+        public void AddBehindToAllButOne(string peerID, Call request)
         {
             lock(_request_lock)
             {
-                Peers.ForEachPeer((p)=>{
+                Nodes.ForEachPeer((p)=>{
                     if (p.Client.ID != peerID)
                     {
-                        AddRequestBehind(p.Client.ID, request);
+                        AddToNodeBehind(p.Client.ID, request);
                     }
                 });
             }
         }
-        public void AddRequestBehindToAll(Call request)
+        public void AddToAllBehind(Call request)
         {
             lock(_request_lock)
             {
-                Peers.ForEachPeer((p)=>{
-                    AddRequestBehind(p.Client.ID, request);
+                Nodes.ForEachPeer((p)=>{
+                    AddToNodeBehind(p.Client.ID, request);
                 });
             }
         }
@@ -265,7 +265,7 @@ namespace TangibleNode
                     return true;
                 } else 
                 {
-                    return Peers.AppendAction(action.Assigned, action);
+                    return Nodes.AppendRequest(action.Assigned, action);
                 }
             }
         }
@@ -291,7 +291,7 @@ namespace TangibleNode
                     // int i0 = _currentTasks.ToList().Count;
                     // int i1 = Peers.PeerLogCount;
                     // return i0+i1;
-                    return Peers.PeerLogCount;
+                    return Nodes.PeerLogCount;
                 }
             }
         }

@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace TangibleNode
 {
-    class NodePeers 
+    class Nodes 
     {
         private TDict<string, Node> _nodes = new TDict<string, Node>();
         internal ReaderWriterLockSlim _client_lock = new ReaderWriterLockSlim();
@@ -43,7 +43,7 @@ namespace TangibleNode
             return b;
         }
 
-        public List<Sender> AsNodes
+        public List<Sender> AsSenders
         {
             get 
             {
@@ -105,7 +105,7 @@ namespace TangibleNode
             );
         }
 
-        public bool AppendAction(string id, DataRequest action)
+        public bool AppendRequest(string id, DataRequest action)
         {
             if (_nodes.ContainsKey(id))
             {
@@ -125,7 +125,7 @@ namespace TangibleNode
             return peer;
         }
 
-        public string ScheduleAction(string avoid = "")
+        public string ScheduleRequest(string avoid = "")
         {
             int nodeCount = NodeCount;
             if (nodeCount < 1) return Params.ID;

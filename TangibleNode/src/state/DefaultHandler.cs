@@ -31,11 +31,11 @@ namespace TangibleNode
             sender.Batch.ForEach((r) => {
                 if (r0.Status.ContainsKey(r.ID) && r0.Status[r.ID])
                 {
-                    StateLog.Instance.Peers.AccessHeartbeat(receiverID, (i) => i.Reset());
+                    StateLog.Instance.Nodes.AccessHeartbeat(receiverID, (i) => i.Reset());
                     StateLog.Instance.RemoveBatchBehind(receiverID, r);
                 } else 
                 { 
-                    StateLog.Instance.AddRequestBehind(receiverID, r);
+                    StateLog.Instance.AddToNodeBehind(receiverID, r);
                 }
             });
 

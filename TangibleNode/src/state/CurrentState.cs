@@ -20,7 +20,7 @@ namespace TangibleNode
             get 
             {
                 bool passed = Timer.HasTimeSpanPassed;
-                return (_state.Get(passed, StateLog.Instance.Peers.NodeCount < 1), passed);
+                return (_state.Get(passed, StateLog.Instance.Nodes.NodeCount < 1), passed);
             }
         }
 

@@ -25,7 +25,7 @@ namespace TangibleNode
                 _ready = b;
                 if (Utils.Millis > t0 && _ready && Params.STEP < 100000)
                 {
-                    for (int bs = 0; bs < StateLog.Instance.Peers.NodeCount; bs++)
+                    for (int bs = 0; bs < StateLog.Instance.Nodes.NodeCount; bs++)
                     {
                         // if(points_nr < 16)
                         // {
@@ -166,14 +166,14 @@ namespace TangibleNode
 
         public void ReceiveBroadcast(Broadcast broadcast)
         {
-            if (broadcast.Self.ID == Params.ID ||StateLog.Instance.Peers.ContainsPeer(broadcast.Self.ID)) return; 
+            if (broadcast.Self.ID == Params.ID ||StateLog.Instance.Nodes.ContainsPeer(broadcast.Self.ID)) return; 
             Logger.Write(Logger.Tag.INFO,"Received broadcast from [node:"+broadcast.Self.ID+"]");
             if(!CurrentState.Instance.IsLeader)
             {
                 CurrentState.Instance.Timer.Reset();
                 CurrentState.Instance.CancelState();
             }
-            StateLog.Instance.Peers.AddIfNew(broadcast.Self);
+            StateLog.Instance.Nodes.AddIfNew(broadcast.Self);
 
             Call request = new Call()
             {
@@ -183,7 +183,7 @@ namespace TangibleNode
             };
 
             Task[] tasks;
-            StateLog.Instance.Peers.ForEachAsync((p0) => {
+            StateLog.Instance.Nodes.ForEachAsync((p0) => {
                 ProcedureCallBatch rb = new ProcedureCallBatch(){
                     Batch = new List<Call>{request},
                     Completed = StateLog.Instance.Leader_GetActionsCompleted(p0.Client.ID),
@@ -191,7 +191,7 @@ namespace TangibleNode
                 };
                 rb.Batch.AddRange(StateLog.Instance.GetBatchesBehind(p0.Client.ID));
                 
-                StateLog.Instance.Peers.ForEachPeer((p1) => {
+                StateLog.Instance.Nodes.ForEachPeer((p1) => {
                     if (p1.Client.ID != p0.Client.ID)
                     {
                         rb.Batch.Add( new Call(){

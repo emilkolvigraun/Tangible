@@ -56,7 +56,7 @@ namespace TangibleNode
             // if (extra!="") return;
             long f = Utils.Millis;
             List<string> nodeCount = new List<string>();
-            StateLog.Instance.Peers.ForEachPeer((p)=>{
+            StateLog.Instance.Nodes.ForEachPeer((p)=>{
                 nodeCount.Add(
                     p.Client.ID+":"+StateLog.Instance.BatchesBehindCount(p.Client.ID).ToString()+":"+StateLog.Instance.Leader_GetActionsCompletedCount(p.Client.ID).ToString()
                 );

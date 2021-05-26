@@ -110,8 +110,8 @@ namespace TangibleNode
                 Data = null
             }));  
             
-            Logger.Write(Logger.Tag.WARN, "Unable to connect to [node:" + ID +"][retries:"+StateLog.Instance.Peers.GetHeartbeat(ID)+"]");
-            StateLog.Instance.Peers.AccessHeartbeat(ID, (hb) => {hb.Increment();});   
+            Logger.Write(Logger.Tag.WARN, "Unable to connect to [node:" + ID +"][retries:"+StateLog.Instance.Nodes.GetHeartbeat(ID)+"]");
+            StateLog.Instance.Nodes.AccessHeartbeat(ID, (hb) => {hb.Increment();});   
             _notified = true;
         }
     }  

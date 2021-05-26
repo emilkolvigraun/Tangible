@@ -113,7 +113,7 @@ namespace TangibleNode
                             ProcedureCallBatch requestBatch = Encoder.DecodeProcedureCallBatch(content);
                             if (requestBatch!=null)
                             {
-                                StateLog.Instance.Peers.AddIfNew(requestBatch.Sender);
+                                StateLog.Instance.Nodes.AddIfNew(requestBatch.Sender);
                                 response1 = MakeResponse(requestBatch);
                             }
                         } catch (Exception e)
@@ -229,7 +229,7 @@ namespace TangibleNode
                     } else if (request.Type == Call._Type.NODE_ADD)
                     {
                         Sender node = Encoder.DecodeNode(request.Data);
-                        StateLog.Instance.Peers.AddNewNode(node);
+                        StateLog.Instance.Nodes.AddNewNode(node);
                         // if (CurrentState.Instance.IsLeader)
                         // CurrentState.Instance.CancelState();
                         response.Add(request.ID, true);
@@ -238,7 +238,7 @@ namespace TangibleNode
                     {
                         Sender node = Encoder.DecodeNode(request.Data);
                         StateLog.Instance.ClearPeerLog(node.ID);
-                        StateLog.Instance.Peers.TryRemoveNode(node.ID);
+                        StateLog.Instance.Nodes.TryRemoveNode(node.ID);
                         CurrentState.Instance.CancelState();
                         response.Add(request.ID, true);
                     } else 

@@ -8,7 +8,7 @@ namespace TangibleNode
     {
         public static void Run()
         {
-            NodePeers Nodes = new NodePeers();
+            Nodes Nodes = new Nodes();
 
             List<Task> tasks = new List<Task>();
             int i = 0;

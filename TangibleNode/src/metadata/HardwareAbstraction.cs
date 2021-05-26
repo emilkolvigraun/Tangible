@@ -46,18 +46,18 @@ namespace TangibleNode
         public void MarshallDataRequest(ESBDataRequest dataRequest)
         {
 
-            Dictionary<string, List<string>> table = ExtractFromRDF(dataRequest.Benv);
+            Dictionary<string, List<string>> pointDetails = ExtractFromRDF(dataRequest.Benv);
 
             // List<Request> requests = new List<Request>();
             DataRequest action = new DataRequest(){
                 Type = dataRequest.Type,
-                PointDetails = table,
+                PointDetails = pointDetails,
                 Priority = dataRequest.Priority,
                 Value = dataRequest.Value,
                 ID = Utils.GenerateUUID(),
-                Assigned = StateLog.Instance.Peers.ScheduleAction(),
+                Assigned = StateLog.Instance.Nodes.ScheduleRequest(),
                 ReturnTopic = dataRequest.ReturnTopic,
-                Received = Utils.Micros.ToString()
+                Received = Utils.Micros.ToString() // debugging
             };
             StateLog.Instance.AppendAction(action);
             Call r0 = new Call() {
@@ -65,7 +65,7 @@ namespace TangibleNode
                 Data = Encoder.EncodeDataRequest(action),
                 Type = Call._Type.DATA_REQUEST
             };
-            StateLog.Instance.AddRequestBehindToAll(r0);
+            StateLog.Instance.AddToAllBehind(r0);
             // requests.Add(r0);
         }
 

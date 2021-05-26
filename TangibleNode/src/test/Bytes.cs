@@ -33,7 +33,7 @@ namespace TangibleNode
                 Priority = dr.Priority,
                 Value = dr.Value,
                 ID = Utils.GenerateUUID(),
-                Assigned = StateLog.Instance.Peers.ScheduleAction(),
+                Assigned = StateLog.Instance.Nodes.ScheduleRequest(),
                 // T0 = dr.T0,
                 // T1 = Utils.Micros.ToString(),
                 ReturnTopic = dr.ReturnTopic
