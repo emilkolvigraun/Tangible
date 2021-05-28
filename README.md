@@ -7,7 +7,7 @@ Tangible executes read, write and subscribe requests in a Hardware Interaction E
  https://hub.docker.com/repository/docker/emilkolvigraun/tangible-test-driver
 ```
 
-The current version acts as a standalone EXE, but requires an installation of [Docker](https://docs.docker.com/docker-for-windows/install/). Furthermore, emphasises the evaluation and sorts the ESB out of the loop. A demonstration can be run by following the description in the **Demonstration** section.
+The current version acts as a standalone EXE, but requires an installation of [Docker](https://docs.docker.com/docker-for-windows/install/). Furthermore, emphasises the evaluation and sorts the [ESB](https://kafka.apache.org/) out of the loop. A demonstration can be run by following the description in the **Demonstration** section.
 
 
 * `KafkaCluster` showcases the facilitation of a [Confluent Kafka Cluster](https://github.com/confluentinc/confluent-kafka-dotnet).
@@ -26,7 +26,7 @@ To run the demonstrations build two projects:
 ..\Tools\TestReceiver> dotnet publish
 ```
 
-Tangible will autpomatically pull the Docker image from the registry.
+Tangible will automatically pull the Docker image from the registry.
 
 `spawn_cluster.cmd` executes a cluster of N nodes and creates a TestReceiver to demonstrate the delivery of requests. This automatically generates a set of configuration files and removes them again. The nodes will automatically discover each other and requests are load balanced. If you close a follower node, the leader will resolve it. If you close a leader node, the remaining followers will perform a leader electerion to resolve new authority. A single node runs as a sleeper and if aware of the other (broken) nodes, activates `CandidateResolve`. Run the cluster as such:
 
