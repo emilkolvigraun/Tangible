@@ -31,15 +31,26 @@ namespace TangibleNode
             _lock.ExitWriteLock();
             LogIfChangeDetected();
         }
+        public void SetStateAsSleeper()
+        {
+            _lock.EnterReadLock();
+            State s0 = _state;
+            _lock.ExitReadLock();
+            _lock.EnterWriteLock();
+            p_state = s0;
+            _state = State.SLEEPER;
+            _lock.ExitWriteLock();
+            LogIfChangeDetected();
+        }
 
         public State Get(bool timePassed, bool alone) 
         {
             _lock.EnterWriteLock();
             p_state = _state;
             if (_state==State.LEADER) _state = State.LEADER;
-            else if (timePassed) _state = State.CANDIDATE;
-            else if (alone) _state = State.SLEEPER;
-            else _state = State.FOLLOWER;
+            else if (timePassed && !CurrentState.Instance.CandidateResolve) _state = State.CANDIDATE;
+            else if (alone || CurrentState.Instance.CandidateResolve) _state = State.SLEEPER;
+            else if (!CurrentState.Instance.CandidateResolve) _state = State.FOLLOWER;
             _lock.ExitWriteLock();
 
             return LogIfChangeDetected();

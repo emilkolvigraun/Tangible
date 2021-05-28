@@ -1,20 +1,17 @@
 @ECHO OFF
-SET stateLog=%1
-SET node=%2
+SET node=%1
 
 IF [%1] == [] GOTO MISSINGPARAMETER
-IF [%2] == [] GOTO MISSINGPARAMETER
 
 CALL :TANGIBLECLUSTER
 GOTO EXIT
 
 :TANGIBLECLUSTER
-    TangibleNode\bin\Debug\net5.0\TangibleNode.exe settings\node%node%.json %stateLog% TcpNode%node% 
+    CALL start "DemoNode0" call TangibleNode\bin\Debug\net5.0\TangibleNode.exe %node% DemoNode0
     GOTO EXIT
 
 :MISSINGPARAMETER
-    ECHO "[1]" Please define whether to run with STATE_LOG enabled, i.e., "$> ...cmd <true or false>"
-    ECHO "[2]" Please define the node, e.g., 1, 2, 3 ..
+    ECHO "[2]" Please define the location of the configuration file, e.g., "TangibleNode\settings\single_node.json"
     GOTO EXIT
 
 :EXIT

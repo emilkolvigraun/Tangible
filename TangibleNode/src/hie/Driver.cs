@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace TangibleNode
 {
 
-    class PointResponse
+    class StatusResponse
     {
         public Dictionary<string, bool> Status {get; set;}
     }
@@ -17,7 +17,7 @@ namespace TangibleNode
 
     class DriverResponseHandler 
     {
-        public void OnResponse(Driver driver, PointRequestBatch request, PointResponse response)
+        public void OnResponse(Driver driver, DataRequestBatch request, StatusResponse response)
         {
             if (response!=null && response.Status != null)
             {
@@ -70,7 +70,7 @@ namespace TangibleNode
         /// <summary>
         /// Establishes connection to the remote host, sends the request an activates OnResponse on the requesthandler
         /// </summary>
-        public void StartClient(Driver driver, PointRequestBatch request) 
+        public void StartClient(Driver driver, DataRequestBatch request) 
         {   
             _received.Clear();
 
@@ -92,7 +92,7 @@ namespace TangibleNode
                         sender.EndConnect(result);
                         
                         // Encode the data string into a byte array.  
-                        byte[] msg = Encoder.EncodePointRequestBatch(request);
+                        byte[] msg = Encoder.EncodeDataRequestBatch(request);
 
                         // Send the data through the socket.  
                         bool sendSuccess = Task.Run(() => {
@@ -107,7 +107,7 @@ namespace TangibleNode
 
                             if (bytesRec < 1) HandleFailure(driver, request);
 
-                            PointResponse response = Encoder.DecodePointResponse(bytes);
+                            StatusResponse response = Encoder.DecodePointResponse(bytes);
                             if (response==null) HandleFailure(driver, request);
                             else new DriverResponseHandler().OnResponse(driver, request, response); 
                             
@@ -139,7 +139,7 @@ namespace TangibleNode
                 HandleFailure(driver, request);
         }  
         
-        private void HandleFailure(Driver driver, PointRequestBatch request)
+        private void HandleFailure(Driver driver, DataRequestBatch request)
         {
             // Activate the responsehandler
             Dictionary<string, bool> r0 = new Dictionary<string, bool>();
@@ -147,7 +147,7 @@ namespace TangibleNode
                 r0.Add(r.ID, false);
                 }
             );
-            new DriverResponseHandler().OnResponse(driver, request, new PointResponse(){
+            new DriverResponseHandler().OnResponse(driver, request, new StatusResponse(){
                 Status = r0
             });  
             
@@ -203,7 +203,7 @@ namespace TangibleNode
                 if (!CurrentlySending.Contains(r0.ID))
                 {
                     requests.Add(r0);
-                    FileLogger.Instance.AppendEntry(r0.Value, r0.PointDetails.Count.ToString(), Utils.Micros.ToString(), "timestamp", Params.ID, "driver");
+                    // FileLogger.Instance.AppendEntry(r0.Value, r0.PointDetails.Count.ToString(), Utils.Micros.ToString(), "timestamp", Params.ID, "driver");
                     CurrentlySending.Add(r0.ID);
                     // int s = (Params.BATCH_SIZE-10)/r0.PointIDs.Count;
                     // // if (s>8)s=8;
@@ -227,7 +227,7 @@ namespace TangibleNode
                 {
                 // SetIsSending(true);
                 _connector.StartClient(this, 
-                    new PointRequestBatch()
+                    new DataRequestBatch()
                     {
                         Batch = requests
                     });
@@ -267,7 +267,7 @@ namespace TangibleNode
                 ID = name,
                 Host = Params.DOCKER_HOST,
                 Port = Params.GetUnusedPort(),
-                AssociatedNode = Sender.Self,
+                AssociatedNode = Credentials.Self,
                 Image = image
             };
 
@@ -293,14 +293,15 @@ namespace TangibleNode
                 {
                     Utils.Sleep(Utils.GetRandomInt(Params.ELECTION_TIMEOUT_START, Params.ELECTION_TIMEOUT_END));
                     (bool running, string id) info = Docker.Instance.IsContainerRunning(name).GetAwaiter().GetResult();
+                    // Console.WriteLine("pulled" + info.id + " " + info.running.ToString());
                     if (info.running) break;
                 }
             }
             return new Driver(config, image);
         }
-        public static Driver MakeDriver(DataRequest action, int replica)
-        {
-            return MakeDriver(action.Image, replica);
-        }
+        // public static Driver MakeDriver(DataRequest action, int replica)
+        // {
+        //     return MakeDriver(action.Image, replica);
+        // }
     }
 }

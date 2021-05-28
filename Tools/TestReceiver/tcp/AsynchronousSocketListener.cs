@@ -99,7 +99,7 @@ namespace TestReceiver
                         // All the data has been read from the
                         // client.         
 
-                        PointResponse response1 = null;
+                        StatusResponse response1 = null;
                         try 
                         {
                             RequestResponse requestBatch = Encoder.DecodeRequestResponse(content);
@@ -107,7 +107,7 @@ namespace TestReceiver
                         } catch (Exception e) 
                         {
                             Console.WriteLine(e.ToString());
-                            response1 = new PointResponse(){Status = null};
+                            response1 = new StatusResponse(){Status = null};
                         }
                             
                         Send(handler, Encoder.EncodePointResponse(response1));  
@@ -123,17 +123,17 @@ namespace TestReceiver
             }  
         }
 
-        private PointResponse MakeResponse(RequestResponse requestBatch)
+        private StatusResponse MakeResponse(RequestResponse requestBatch)
         {
             try 
             {
                 Dictionary<string, bool> response = new Dictionary<string, bool>();
-                foreach (ESBResponse request in requestBatch.Batch)
+                foreach (KeyValuePair<string, ValueResponse> request in requestBatch.Batch)
                 {
-                    response.Add(request.ID, true);
-                    Logger.Write(request);
+                    response.Add(request.Key, true);
+                    Logger.Write(request.Value);
                 } 
-                return new PointResponse(){
+                return new StatusResponse(){
                     Status = response
                 };
             } catch (Exception e)

@@ -32,13 +32,13 @@ namespace TangibleNode
                         Tag = "latest"
                     },
                     auth,
-                    new Progress<JSONMessage>()//(message)=>Logger.Write(Logger.Tag.ERROR, JsonConvert.SerializeObject(message)))
+                    new Progress<JSONMessage>((message)=>Logger.Write(Logger.Tag.INFO, JsonConvert.SerializeObject(message)))
                 );
-                return IsImagePulled(image);
+                return true; //IsImagePulled(image);
             } catch (Exception e) 
             { 
                 Logger.Write(Logger.Tag.ERROR, e.ToString());
-                return false;
+                return IsImagePulled(image);
             }
 
             
@@ -64,11 +64,13 @@ namespace TangibleNode
         {
             string ID = null;
             bool status = await PullImage(config.Image);
+            // Console.WriteLine(status);
             if (!status) return ID;
             
             // CancellationTokenSource cts = new CancellationTokenSource(8000);
             // cts.CancelAfter(8000);
             // Task.Run(async () => {
+            // Console.WriteLine(ID);
                 var response = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
                 { 
                     Image = config.Image,  
@@ -79,6 +81,7 @@ namespace TangibleNode
                         "PORT="+config.Port.ToString(), 
                         "ID="+config.ID, 
                         "TIMEOUT="+Params.TIMEOUT.ToString(),
+                        "IMAGE="+config.Image,
                         "BATCH_SIZE="+Params.BATCH_SIZE.ToString(),
                         "NODE_HOST="+config.AssociatedNode.Host, 
                         "NODE_NAME="+config.AssociatedNode.ID, 

@@ -9,7 +9,6 @@ namespace TangibleNode
     {
         public static void Run()
         {
-
             int bytes = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(new Point(){ID = "sensor_999"}, Formatting.None)).Length;
             Console.WriteLine("Point bytes: " + bytes);
             ESBDataRequest dr = new ESBDataRequest(){
@@ -28,8 +27,7 @@ namespace TangibleNode
 
             DataRequest action = new DataRequest(){
                 Type = dr.Type,
-                PointDetails = new Dictionary<string, List<string>> {{"awdawdadwawdawd", new List<string>{"sensor_999"}}},
-                Image = "...........aadsasd...............asdasd............",
+                PointDetails = new Dictionary<string, List<string>> {{"docker-image-1", new List<string>{"sensor_999"}}},
                 Priority = dr.Priority,
                 Value = dr.Value,
                 ID = Utils.GenerateUUID(),
@@ -46,11 +44,10 @@ namespace TangibleNode
             int bytes_r0 = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(r0, Formatting.None)).Length;
             Console.WriteLine("r0 bytes: " + bytes_dr);
 
-            
             int bytes_rb = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(new ProcedureCallBatch(){
                 Batch = new List<Call>{r0},
                 Completed = new HashSet<string>{"sensor_999"},
-                Sender = Sender.Self,
+                Sender = Credentials.Self,
                 Step = 10000000000
             }, Formatting.None)).Length;
             Console.WriteLine("rb bytes: " + bytes_rb);       

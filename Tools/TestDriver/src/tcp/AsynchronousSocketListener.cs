@@ -15,9 +15,9 @@ namespace TangibleDriver
         // Thread signal.  
         public ManualResetEvent allDone = new ManualResetEvent(false);
 
-        BaseHandler handler;
+        MainLoop handler;
 
-        public AsynchronousSocketListener(BaseHandler handler)
+        public AsynchronousSocketListener(MainLoop handler)
         {
             this.handler = handler;
         }
@@ -42,7 +42,7 @@ namespace TangibleDriver
                 listener.ReceiveTimeout = Params.TIMEOUT;
                 listener.Bind(localEndPoint);  
                 listener.Listen(1000);  
-                Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);
+                // Logger.Write(Logger.Tag.INFO,"Started " + Params.ID + " on "+Params.HOST+":"+Params.PORT);
                 while (true) {  
                     // Set the event to nonsignaled state.  
                     allDone.Reset();  
@@ -108,14 +108,16 @@ namespace TangibleDriver
                         // All the data has been read from the
                         // client.         
 
-                        PointResponse response1 = null;
+                        StatusResponse response1 = null;
                         try 
                         {
-                            PointRequestBatch requestBatch = Encoder.DecodePointRequestBatch(content);
+                            DataRequestBatch requestBatch = Encoder.DecodeDataRequestBatch(content);
+                            Logger.Write(Logger.Tag.INFO, "Received DataRequestBatch from " + Params.NODE_NAME + ", with batch size: " + requestBatch.Batch.Count.ToString());
                             response1 = MakeResponse(requestBatch);
                         } catch 
                         {
-                            response1 = new PointResponse(){Status = new Dictionary<string, bool>()};
+                            Logger.Write(Logger.Tag.ERROR, "Failed to parse DataRequestBatch.");
+                            response1 = new StatusResponse(){Status = new Dictionary<string, bool>()};
                         }
                             
                         Send(handler, Encoder.EncodePointResponse(response1));  
@@ -132,17 +134,18 @@ namespace TangibleDriver
             }
         }
 
-        private PointResponse MakeResponse(PointRequestBatch requestBatch)
+        private StatusResponse MakeResponse(DataRequestBatch requestBatch)
         {
             Dictionary<string, bool> response = new Dictionary<string, bool>();
-            foreach (PointRequest request in requestBatch.Batch)
+            foreach (DataRequest request in requestBatch.Batch)
             {
                 // request.T3 = Utils.Micros.ToString();
                 handler.Requests.Enqueue(request);
+                // Logger.Write(Logger.Tag.INFO, "Enqueued request: " + handler.Requests.Count.ToString());
                 response.Add(request.ID, true);
             }
 
-            return new PointResponse(){
+            return new StatusResponse(){
                 Status = response
             };
         }

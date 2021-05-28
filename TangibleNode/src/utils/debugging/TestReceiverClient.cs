@@ -21,7 +21,7 @@ namespace TangibleNode
                 // Create a TCP/IP  socket.  
         Socket sender = null;
 
-        private TDict<string, ESBResponse> _responsesNotSend = new TDict<string, ESBResponse>();
+        private TDict<string, ValueResponse> _responsesNotSend = new TDict<string, ValueResponse>();
         private readonly object _lock = new object();
 
         public int Count 
@@ -35,17 +35,16 @@ namespace TangibleNode
             }
         }
 
-        public void AddEntry(ValueResponse response)
+        public void AddEntry(HashSet<ValueResponse> response)
         {
             lock(_lock)
             {
-                ESBResponse esbResponse = new ESBResponse()
+
+                foreach(ValueResponse r in response)
                 {
-                    ID = Utils.GenerateUUID(),
-                    Message = response.Message
-                };
-                _responsesNotSend.Add(esbResponse.ID, esbResponse);
-                FileLogger.Instance.AppendEntry(response.Message.ElementAt(0).Value.Value, response.Message.Count.ToString(), Utils.Micros.ToString(), response.NodeReceived, Params.ID, "completed");
+                    _responsesNotSend.Add(Utils.GenerateUUID(), r);
+
+                }
             }
         }
 
@@ -56,10 +55,10 @@ namespace TangibleNode
                 lock(_lock)
                 {
                     if (Count < 1) return null;
-                    RequestResponse rs = new RequestResponse(){Batch=new List<ESBResponse>()};
-                    foreach (ESBResponse r in _responsesNotSend.Values.ToList())
+                    RequestResponse rs = new RequestResponse(){Batch=new Dictionary<string, ValueResponse>()};
+                    foreach (KeyValuePair<string, ValueResponse> r in _responsesNotSend.ToList())
                     {
-                        rs.Batch.Add(r);
+                        rs.Batch.Add(r.Key, r.Value);
                     }
                     return rs;
                 }
@@ -110,7 +109,7 @@ namespace TangibleNode
 
                             try 
                             {
-                                PointResponse r1 = Encoder.DecodePointResponse(bytes);
+                                StatusResponse r1 = Encoder.DecodePointResponse(bytes);
                                 OnResponse(response, r1); 
                                 _notified = true;
                             }
@@ -145,26 +144,28 @@ namespace TangibleNode
         private void HandleFailure(RequestResponse response)
         {
             Dictionary<string, bool> r2 = new Dictionary<string, bool>();
-            response.Batch.ForEach((r) => {
-                r2.Add(r.ID, false);
-            });
-            OnResponse(response, new PointResponse(){
+            foreach (KeyValuePair<string, ValueResponse> r in response.Batch.ToList())
+            {
+                r2.Add(r.Key, false);
+            }
+            OnResponse(response, new StatusResponse(){
                 Status = r2
             });
             _notified = true;
         }
 
-        private void OnResponse(RequestResponse sender, PointResponse receiver)
+        private void OnResponse(RequestResponse sender, StatusResponse receiver)
         {
-            sender.Batch.ForEach((s) => {
-                if (receiver!=null&&receiver.Status!=null&&receiver.Status.ContainsKey(s.ID)&&receiver.Status[s.ID])
+            foreach (KeyValuePair<string, ValueResponse> s in sender.Batch.ToList())
+            {
+                if (receiver!=null&&receiver.Status!=null&&receiver.Status.ContainsKey(s.Key)&&receiver.Status[s.Key])
                 {
                     lock(_lock)
                     {
-                        _responsesNotSend.Remove(s.ID);
+                        _responsesNotSend.Remove(s.Key);
                     }
                 }
-            });
+            }
         }
 
         private static TestReceiverClient _instance = null;

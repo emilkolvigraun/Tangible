@@ -6,33 +6,33 @@ namespace TangibleDriver
 {
     class Encoder 
     {
-        public static byte[] EncodeNode(Node node)
+        public static byte[] EncodeNode(Credentials node)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
-        public static Node DecodeNode(string msg)
+        public static Credentials DecodeNode(string msg)
         {
-            return JsonConvert.DeserializeObject<Node>(msg);
+            return JsonConvert.DeserializeObject<Credentials>(msg);
         }
-        public static Node DecodeNode(byte[] msg)
+        public static Credentials DecodeNode(byte[] msg)
         {
-            return JsonConvert.DeserializeObject<Node>(Encoding.ASCII.GetString(msg));
+            return JsonConvert.DeserializeObject<Credentials>(Encoding.ASCII.GetString(msg));
         }
-        public static byte[] EncodeRequest(Request request)
+        public static byte[] EncodeCall(Call request)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(request, Formatting.None));
         }
-        public static Request DecodeRequest(string msg)
+        public static Call DecodeCall(string msg)
         {
-            return JsonConvert.DeserializeObject<Request>(msg);
+            return JsonConvert.DeserializeObject<Call>(msg);
         }
-        public static byte[] EncodeRequestBatch(RequestBatch request)
+        public static byte[] EncodeProcedureCallBatch(ProcedureCallBatch request)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(request, Formatting.None) + "<EOF>");
         }
-        public static RequestBatch DecodeRequestBatch(string msg)
+        public static ProcedureCallBatch DecodeProcedureCallBatch(string msg)
         {
-            return JsonConvert.DeserializeObject<RequestBatch>(msg.Replace("<EOF>",""));
+            return JsonConvert.DeserializeObject<ProcedureCallBatch>(msg.Replace("<EOF>",""));
         }
         public static byte[] EncodeResponse(Response node)
         {
@@ -54,56 +54,66 @@ namespace TangibleDriver
                 return JsonConvert.DeserializeObject<Response>(msg.Replace("<EOF>", ""));
             } catch {return null;}
         }
-        public static byte[] EncodePointRequest(PointRequest node)
+        public static byte[] EncodePointRequest(DataRequest node)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
-        public static PointRequest DecodePointRequest(string msg)
+        public static DataRequest DecodePointRequest(string msg)
         {
-            return JsonConvert.DeserializeObject<PointRequest>(msg);
+            return JsonConvert.DeserializeObject<DataRequest>(msg);
         }
-        public static PointRequest DecodePointRequest(byte[] msg)
+        public static byte[] EncodeValueResponseBatch(ValueResponseBatch batch)
         {
-            return JsonConvert.DeserializeObject<PointRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
+            return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(batch, Formatting.None));
         }
-        public static PointResponse DecodePointResponse(byte[] msg)
+
+        public static DataRequest DecodePointRequest(byte[] msg)
+        {
+            return JsonConvert.DeserializeObject<DataRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
+        }
+        public static StatusResponse DecodePointResponse(byte[] msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<StatusResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
             } catch 
             {
                 return null;
             }
         }
-        public static byte[] EncodePointResponse(PointResponse response)
+        public static byte[] EncodePointResponse(StatusResponse response)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(response, Formatting.None));
         }
-        public static byte[] EncodePointRequestBatch(PointRequestBatch msg)
+        public static byte[] EncodeDataRequestBatch(DataRequestBatch msg)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
         }
-        public static PointRequestBatch DecodePointRequestBatch(byte[] msg)
+        public static DataRequestBatch DecodeDataRequestBatch(byte[] msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointRequestBatch>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<DataRequestBatch>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
             } catch 
             {
                 return null;
             }
         }
-        public static PointRequestBatch DecodePointRequestBatch(string msg)
+        public static DataRequestBatch DecodeDataRequestBatch(string msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointRequestBatch>(msg.Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<DataRequestBatch>(msg.Replace("<EOF>",""));
             } catch {return null;}
         }
         public static byte[] EncodeValueResponse(ValueResponse msg)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None));
+        }
+
+        public static string SerializeObject(object obj)
+        {
+            return JsonConvert.SerializeObject(obj, Formatting.None);
         }
     }
 }

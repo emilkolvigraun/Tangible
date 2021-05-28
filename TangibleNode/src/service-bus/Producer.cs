@@ -6,12 +6,12 @@ namespace TangibleNode
 
         public void Broadcast()
         {
-            Logger.Write(Logger.Tag.DEBUG, "Broadcasted to " + Params.BROADCAST_TOPIC);
+            Logger.Write(Logger.Tag.INFO, "Broadcasted to " + Params.BROADCAST_TOPIC);
         }
 
         public void Respond(string message, string topic)
         {
-            Logger.Write(Logger.Tag.DEBUG, "Responded to " + topic);
+            Logger.Write(Logger.Tag.INFO, "Responded to " + topic);
         }
 
         //-------------------CONSTRUCTER------------------//

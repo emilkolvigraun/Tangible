@@ -26,17 +26,17 @@ namespace TangibleNode
         {
             return JsonConvert.DeserializeObject<Vote>(Encoding.ASCII.GetString(msg));
         }
-        public static byte[] EncodeNode(Sender node)
+        public static byte[] EncodeNode(Credentials node)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(node, Formatting.None));
         }
-        public static Sender DecodeNode(string msg)
+        public static Credentials DecodeNode(string msg)
         {
-            return JsonConvert.DeserializeObject<Sender>(msg);
+            return JsonConvert.DeserializeObject<Credentials>(msg);
         }
-        public static Sender DecodeNode(byte[] msg)
+        public static Credentials DecodeNode(byte[] msg)
         {
-            return JsonConvert.DeserializeObject<Sender>(Encoding.ASCII.GetString(msg));
+            return JsonConvert.DeserializeObject<Credentials>(Encoding.ASCII.GetString(msg));
         }
         public static byte[] EncodeCall(Call request)
         {
@@ -113,35 +113,35 @@ namespace TangibleNode
         // {
         //     return JsonConvert.DeserializeObject<DataRequest>(Encoding.ASCII.GetString(msg)+"<EOF>");
         // }
-        public static PointResponse DecodePointResponse(byte[] msg)
+        public static StatusResponse DecodePointResponse(byte[] msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<StatusResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
             } catch 
             {
                 return null;
             }
         }
-        public static PointResponse DecodePointResponse(string msg)
+        public static StatusResponse DecodePointResponse(string msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointResponse>(msg.Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<StatusResponse>(msg.Replace("<EOF>",""));
             } catch 
             {
                 return null;
             }
         }
-        public static byte[] EncodePointRequestBatch(PointRequestBatch msg)
+        public static byte[] EncodeDataRequestBatch(DataRequestBatch msg)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
         }
-        public static PointRequestBatch DecodePointRequestBatch(byte[] msg)
+        public static DataRequestBatch DecodeDataRequestBatch(byte[] msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointRequestBatch>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<DataRequestBatch>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
             } catch 
             {
                 return null;
@@ -150,6 +150,10 @@ namespace TangibleNode
         public static ValueResponse DecodeValueResponse(byte[] msg)
         {
             return JsonConvert.DeserializeObject<ValueResponse>(Encoding.ASCII.GetString(msg));
+        }
+        public static ValueResponseBatch DecodeValueResponseBatch(byte[] msg)
+        {
+            return JsonConvert.DeserializeObject<ValueResponseBatch>(Encoding.ASCII.GetString(msg));
         }
         public static byte[] EncodeRequestResponse(RequestResponse msg)
         {

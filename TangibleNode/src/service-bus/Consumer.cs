@@ -23,52 +23,33 @@ namespace TangibleNode
             lock(_ready_lock)
             { 
                 _ready = b;
-                if (Utils.Millis > t0 && _ready && Params.STEP < 100000)
+                if (Utils.Millis > t0 && _ready)
                 {
-                    for (int bs = 0; bs < StateLog.Instance.Nodes.NodeCount; bs++)
+                    int balance = StateLog.Instance.Nodes.NodeCount;
+                    if (balance==0) balance = 1;
+                    for (int bs = 0; bs < balance; bs++)
                     {
-                        // if(points_nr < 16)
-                        // {
-                            Params.STEP++;
-                            Location loc = new Location(){
-                                HasPoint = new List<Point>{}
-                            };
+                        Params.STEP++;
+                        Location loc = new Location(){
+                            HasPoint = new List<Point>{}
+                        };
 
-                            for (int i = 0; i < points_nr; i++)
-                            {
-                                loc.HasPoint.Add(new Point(){ID = i.ToString()});
-                            }
+                        for (int i = 0; i < points_nr; i++)
+                        {
+                            loc.HasPoint.Add(new Point(){ID = i.ToString()});
+                        }
 
-                            ESBDataRequest dr = new ESBDataRequest(){
-                                Type = DataRequest._Type.WRITE,
-                                Priority = 2,
-                                Value = Params.STEP.ToString(),
-                                Received = Utils.Micros.ToString(),
-                                Benv = loc,
-                                ReturnTopic = "MyApplication"
-                            };
-                            ReceiveDataRequest(dr);
-
-                            // if (amount >= 2000)
-                            // {
-                            //     if (points_nr==1)
-                            //     {
-                            //         warmup += 1;
-                            //     }
-                            //     if (warmup>1)
-                            //     {
-                            //         points_nr+=2;
-                            //         amount = 0;
-                            //         t0 = Utils.Millis+180000;
-                            //         Logger.Write(Logger.Tag.INFO, "Pausing");
-                            //     } else 
-                            //     {
-                            //         t0 = Utils.Millis+60000;
-                            //         Logger.Write(Logger.Tag.INFO, "Starting in 1 minute");
-                            //     }                                    
-                            // }
-                            MarkReady(false);
-                        // }
+                        ESBDataRequest dr = new ESBDataRequest(){
+                            Type = DataRequest._Type.WRITE,
+                            Priority = 2,
+                            Value = Params.STEP.ToString(),
+                            Received = Utils.Micros.ToString(),
+                            Benv = loc,
+                            ReturnTopic = "MyApplication"
+                        };
+                        ReceiveDataRequest(dr);
+                        t0 = Utils.Millis+Params.HERTZ;
+                        MarkReady(false);
                     }
                 }
             }
@@ -167,6 +148,7 @@ namespace TangibleNode
         public void ReceiveBroadcast(Broadcast broadcast)
         {
             if (broadcast.Self.ID == Params.ID ||StateLog.Instance.Nodes.ContainsPeer(broadcast.Self.ID)) return; 
+            CurrentState.Instance.SetCandidateResolve(false);
             Logger.Write(Logger.Tag.INFO,"Received broadcast from [node:"+broadcast.Self.ID+"]");
             if(!CurrentState.Instance.IsLeader)
             {
@@ -187,7 +169,7 @@ namespace TangibleNode
                 ProcedureCallBatch rb = new ProcedureCallBatch(){
                     Batch = new List<Call>{request},
                     Completed = StateLog.Instance.Leader_GetActionsCompleted(p0.Client.ID),
-                    Sender = Sender.Self
+                    Sender = Credentials.Self
                 };
                 rb.Batch.AddRange(StateLog.Instance.GetBatchesBehind(p0.Client.ID));
                 

@@ -2,17 +2,17 @@ using System;
 
 namespace TangibleNode
 {
-    public class Sender
+    public class Credentials
     {
         public string Host {get; set;}
         public int Port {get; set;}
         public string ID {get; set;}
 
-        public static Sender Self 
+        public static Credentials Self 
         {
             get 
             {
-                return new Sender(){
+                return new Credentials(){
                     Host = Params.HOST,
                     Port = Params.PORT,
                     ID = Params.ID

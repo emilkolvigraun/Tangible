@@ -1,6 +1,8 @@
-using System.Threading;using System;
+using System;
 using System.IO;
 using Newtonsoft.Json;
+using System.Threading;
+using System.Collections.Generic;
 
 namespace TangibleNode
 {
@@ -29,7 +31,7 @@ namespace TangibleNode
         public TangibleNode(string[] args)
         {
             // USED FOR DEBUGGING/EVALUATION
-            bool _enableStateLog = false;
+            // bool _enableStateLog = false;
 
             Settings settings = default(Settings);            
 
@@ -40,13 +42,14 @@ namespace TangibleNode
                     // load the configuration file by the specified filepath
                     settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(args[0]));
                     
-                    // OPTIONAL ARE ORGANIZATION EMPHASISING EVALUATION
+                    // OPTIONAL ARE ORGANISED EMPHASISING EVALUATION
                     if (settings.Optional==null) settings.Optional = new Optional();
-                    if (args.Length > 2)
+                    if (args.Length > 1)
                     {
-                        settings.ID = args[2];
+                        settings.ID = args[1];
                     }
                     
+                    Logger.Instance._tags = new HashSet<Logger.Tag>(settings.LogLevel);
                     // DEBUGGING
                     Console.WriteLine(args[0] +" : "+JsonConvert.SerializeObject(settings, Formatting.Indented));
                     
@@ -66,18 +69,18 @@ namespace TangibleNode
             // parse the settings
             Params.LoadEnvironment(settings);
 
-            // DEBUGGING/EVALUATION
-            if (args.Length > 1)
-            {
-                _enableStateLog = bool.Parse(args[1]);
-                if (_enableStateLog)
-                {
-                    FileLogger.EnableFileLog();
-                }
-            }
+            // // DEBUGGING/EVALUATION
+            // if (args.Length > 1)
+            // {
+            //     _enableStateLog = bool.Parse(args[1]);
+            //     if (_enableStateLog)
+            //     {
+            //         FileLogger.EnableFileLog();
+            //     }
+            // }
 
-            FileLogger.Instance.CreateLogFile();
-            FileLogger.Instance.WriteHeader();
+            // FileLogger.Instance.CreateLogFile();
+            // FileLogger.Instance.WriteHeader();
 
             // initializing the listener
             _listener = new AsynchronousSocketListener();

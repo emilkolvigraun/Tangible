@@ -11,7 +11,7 @@ namespace TangibleNode
         public static int DIE_AS_FOLLOWER;
         public static int DIE_AS_LEADER;
         public static int WAIT_BEFORE_START;
-        public static decimal HERTZ;
+        public static int HERTZ;
         public static bool RUN_HIE;
         public static string TEST_RECEIVER_HOST;
         public static int TEST_RECEIVER_PORT;
@@ -43,6 +43,41 @@ namespace TangibleNode
         public static int DRIVER_PORT_RANGE_END;
         private static Queue<int> _unusedPorts = new Queue<int>();
 
+        public static SyncParams AsParams
+        {
+            get 
+            {
+                return new SyncParams {
+                    Batch_size = BATCH_SIZE,
+                    Broadcast_topic = BROADCAST_TOPIC,
+                    Connection_timeout = TIMEOUT,
+                    Election_timeout_end = ELECTION_TIMEOUT_END,
+                    Election_timeout_start = ELECTION_TIMEOUT_START,
+                    Heartbeat_ms = HEARTBEAT_MS,
+                    Hertz = HERTZ,
+                    Max_retries = MAX_RETRIES,
+                    Request_topic = REQUEST_TOPIC,
+                    Test_receiver_host = TEST_RECEIVER_HOST,
+                    Test_receiver_port = TEST_RECEIVER_PORT
+                };
+            }
+        }
+
+        public static void OverwriteParameters(SyncParams syncParams)
+        {
+            BATCH_SIZE = syncParams.Batch_size;
+            BROADCAST_TOPIC = syncParams.Broadcast_topic;
+            TIMEOUT = syncParams.Connection_timeout;
+            ELECTION_TIMEOUT_END = syncParams.Election_timeout_end;
+            ELECTION_TIMEOUT_START = syncParams.Election_timeout_start;
+            HEARTBEAT_MS = syncParams.Heartbeat_ms;
+            HERTZ = syncParams.Hertz;
+            MAX_RETRIES = syncParams.Max_retries;
+            REQUEST_TOPIC = syncParams.Request_topic;
+            TEST_RECEIVER_HOST = syncParams.Test_receiver_host;
+            TEST_RECEIVER_PORT = syncParams.Test_receiver_port;
+        }
+
         public static void LoadEnvironment(Settings settings)
         {
             HOST = GetStrThrowIfMissing("HOST", settings.Host);
@@ -54,7 +89,7 @@ namespace TangibleNode
             WAIT_BEFORE_START = GetIntOrSet("WAIT_BEFORE_START_CONSUMER", settings.Optional.WaitBeforeStartConsumer_MS, 10000, 2000);
             TEST_RECEIVER_HOST = settings.Testing.TestReceiverHost;
             TEST_RECEIVER_PORT = settings.Testing.TestReceiverPort;
-            HERTZ = settings.Testing.Frequency_Hz;
+            HERTZ = settings.Testing.CommitFrequency;
             RUN_HIE = settings.Testing.RunHIE;
 
             TIMEOUT = GetIntOrSet("TIMEOUT", settings.Optional.Timeout_MS, 500);

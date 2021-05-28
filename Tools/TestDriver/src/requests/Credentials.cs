@@ -2,17 +2,17 @@ using System;
 
 namespace TangibleDriver
 {
-    public class Node
+    public class Credentials
     {
         public string Host {get; set;}
         public int Port {get; set;}
         public string ID {get; set;}
 
-        public static Node Self 
+        public static Credentials Self 
         {
             get 
             {
-                return new Node(){
+                return new Credentials(){
                     Host = Params.HOST,
                     Port = Params.PORT,
                     ID = Params.ID

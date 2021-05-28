@@ -21,7 +21,7 @@ namespace TangibleDriver
         /// <summary>
         /// Establishes connection to the remote host, sends the request an activates OnResponse on the requesthandler
         /// </summary>
-        public void StartClient(RequestBatch request, BaseHandler rh) 
+        public void StartClient(ProcedureCallBatch request, MainLoop rh) 
         {   
             // Connect to a remote device.  
             _received.Clear();
@@ -46,7 +46,7 @@ namespace TangibleDriver
                         sender.EndConnect(result);
                         
                         // Encode the data string into a byte array.  
-                        byte[] msg = Encoder.EncodeRequestBatch(request);
+                        byte[] msg = Encoder.EncodeProcedureCallBatch(request);
 
                         // bool sendSuccess = Task.Run(() => {
                             // Send the data through the socket.  
@@ -101,10 +101,10 @@ namespace TangibleDriver
                 HandleFailure(request, rh);
         }  
         
-        private void HandleFailure(RequestBatch request, BaseHandler rh)
+        private void HandleFailure(ProcedureCallBatch request, MainLoop rh)
         {
             Dictionary<string, bool> r0 = new Dictionary<string, bool>();
-            foreach (Request r1 in request.Batch)
+            foreach (Call r1 in request.Batch)
             {
                 r0.Add(r1.ID, false);
             }

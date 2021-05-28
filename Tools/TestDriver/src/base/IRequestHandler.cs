@@ -4,6 +4,11 @@ namespace TangibleDriver
 {
     public interface IRequestHandler 
     {
-        ValueResponse OnRequest(PointRequest request);
+
+        void ProcessWrite(WriteRequest writeRequest);
+        void ProcessRead(ReadRequest writeRequest);
+        void ProcessSubscribe(SubscribeRequest writeRequest);
+        void ProcessSubscribeStop(SubscribeRequest writeRequest);
+        ValueResponseBatch[] GetResponses();
     }
 }

@@ -15,8 +15,7 @@ namespace TangibleNode
                 q.Enqueue(
                     new DataRequest(){
                         Type = DataRequest._Type.WRITE,
-                        PointDetails = new Dictionary<string, List<string>> {{"awdawdadwawdawd", new List<string>{"sensor_999"}}},
-                        Image = "docker-image-1",
+                        PointDetails = new Dictionary<string, List<string>> {{"docker-image-1", new List<string>{"sensor_999"}}},
                         Priority = i
                     }
                 );

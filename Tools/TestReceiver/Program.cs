@@ -10,13 +10,32 @@ namespace TestReceiver
 
         static void Main(string[] args)
         {
-            HOST = "192.168.1.211";
+            // Console.WriteLine(args[1]);
+            // Environment.Exit(0);
+            try 
+            {
+                HOST = args[1];
+            } catch {
+                HOST = args[0];
+            }
             PORT = 4000;
 
-            Logger.PrintHeader();
+            try {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("Starting TestReciver on: " + HOST.ToString() + ":" + PORT.ToString());
+                Console.ForegroundColor = ConsoleColor.Magenta;
+                Console.WriteLine("-------------");
+                Console.ForegroundColor = ConsoleColor.White;
 
-            AsynchronousSocketListener listener = new AsynchronousSocketListener();
-            listener.StartListening();
+
+                // Logger.PrintHeader();
+
+                AsynchronousSocketListener listener = new AsynchronousSocketListener();
+                listener.StartListening();
+            } catch {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Failed to start.");
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ namespace TangibleNode
         public string Host {get; set;}
         public int Port {get; set;}
         public string Image {get; set;}
-        public Sender AssociatedNode {get; set;}
+        
+        public Credentials AssociatedNode {get; set;}
     }
 }

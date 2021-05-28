@@ -18,7 +18,7 @@ namespace TangibleNode
                 string Host = i.ToString()+"."+i.ToString()+"."+i.ToString()+"."+i.ToString();
                 int Port = int.Parse(i.ToString()+i.ToString()+i.ToString()+i.ToString());
                 tasks.Add(new Task(()=>{
-                    Nodes.AddNewNode(new Sender(){
+                    Nodes.AddNewNode(new Credentials(){
                         ID = ID,
                         Host = Host,
                         Port = Port
@@ -35,7 +35,7 @@ namespace TangibleNode
             Task.WaitAll(_tasks);
             Console.WriteLine("Nodes_test add successful " + Nodes.NodeCount);
 
-            Nodes.AddNewNode(new Sender(){
+            Nodes.AddNewNode(new Credentials(){
                 ID = "0",
                 Host = "test123",
                 Port = 1234

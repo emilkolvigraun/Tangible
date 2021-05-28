@@ -14,7 +14,7 @@ namespace TangibleNode
         [JsonConverter(typeof(StringEnumConverter))] 
         public _Type Type {get; set;}
         public Dictionary<string, List<string>> PointDetails {get; set;}
-        public string Image {get; set;}
+        // public string Image {get; set;}
         public string Value {get; set;}
         public int Priority {get; set;}
         public string ID {get; set;}

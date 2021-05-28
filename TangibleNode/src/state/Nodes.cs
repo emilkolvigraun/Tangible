@@ -15,7 +15,7 @@ namespace TangibleNode
             return _nodes.ContainsKey(peerID);
         }
 
-        public void AddNewNode(Sender node)
+        public void AddNewNode(Credentials node)
         {
             if (node.ID.Contains(Params.ID)) return;
             bool b = AddIfNew(node);
@@ -31,7 +31,7 @@ namespace TangibleNode
             return _nodes[peerID].Heartbeat.Value;
         }
 
-        public bool AddIfNew(Sender node)
+        public bool AddIfNew(Credentials node)
         {
             if (node==null || node.ID.Contains(Params.ID)) return false;
             bool b = _nodes.ContainsKey(node.ID);
@@ -43,13 +43,13 @@ namespace TangibleNode
             return b;
         }
 
-        public List<Sender> AsSenders
+        public List<Credentials> AsCredentials
         {
             get 
             {
-                List<Sender> nodes = new List<Sender>();
+                List<Credentials> nodes = new List<Credentials>();
                 _nodes.ForEachRead((p) => {
-                    nodes.Add(new Sender(){ID = p.Client.ID, Host = p.Client.Host, Port = p.Client.Port});
+                    nodes.Add(new Credentials(){ID = p.Client.ID, Host = p.Client.Host, Port = p.Client.Port});
                 });
                 return nodes;
             }
@@ -128,7 +128,7 @@ namespace TangibleNode
         public string ScheduleRequest(string avoid = "")
         {
             int nodeCount = NodeCount;
-            if (nodeCount < 1) return Params.ID;
+            if (nodeCount < 1 || CurrentState.Instance.CandidateResolve) return Params.ID;
             KeyValuePair<string, Node>[] peers = new KeyValuePair<string, Node>[NodeCount];
             _nodes.CopyTo(peers, 0);
             Node selected_peer = FindAnotherThanToAvoid(avoid, 0, peers);

@@ -7,6 +7,7 @@ namespace TangibleDriver
         // Tangible variables
         public static string HOST;
         public static int PORT;
+        public static string IMAGE;
         public static string ID;
         // Tangible variables
         public static string NODE_HOST;
@@ -24,6 +25,7 @@ namespace TangibleDriver
             HOST = GetStrThrowIfMissing("HOST");
             PORT = GetIntThrowIfMissing("PORT");
             ID = GetStrThrowIfMissing("ID");
+            IMAGE = GetStrThrowIfMissing("IMAGE");
             NODE_HOST = GetStrThrowIfMissing("NODE_HOST");
             NODE_PORT = GetIntThrowIfMissing("NODE_PORT");
             NODE_NAME = GetStrThrowIfMissing("NODE_NAME");

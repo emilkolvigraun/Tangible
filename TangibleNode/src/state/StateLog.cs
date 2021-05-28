@@ -73,10 +73,10 @@ namespace TangibleNode
                         Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
                     }
                 });
-                if (a!=null && CurrentState.Instance.IsLeader)
-                {
-                    FileLogger.Instance.AppendEntry(a.Value, a.PointDetails.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
-                }
+                // if (a!=null && CurrentState.Instance.IsLeader)
+                // {
+                //     FileLogger.Instance.AppendEntry(a.Value, a.PointDetails.Count.ToString(), Utils.Micros.ToString(), a.Received, node);
+                // }
             }
         }
 
@@ -85,7 +85,7 @@ namespace TangibleNode
             // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
             // {
                 bool ready = true;
-                foreach (Sender n in Nodes.AsSenders)
+                foreach (Credentials n in Nodes.AsCredentials)
                 {
                     if (BatchesBehindCount(n.ID) != 0 || Leader_GetActionsCompletedCount(n.ID) != 0)
                     {
@@ -101,7 +101,7 @@ namespace TangibleNode
             // lock(_action_lock) lock(_batch_lock) lock(_request_lock)
             // {
                 bool ready = true;
-                foreach (Sender n in Nodes.AsSenders)
+                foreach (Credentials n in Nodes.AsCredentials)
                 {
                     if (BatchesBehindCount(n.ID) != 0)
                     {
@@ -260,7 +260,7 @@ namespace TangibleNode
                     {
                         _currentTasks.Add(action.ID); 
                         PriorityQueue.Enqueue(action);
-                        FileLogger.Instance.AppendEntry(action.Value.ToString(), action.PointDetails.Count.ToString(), Utils.Micros.ToString(), action.Received, Params.ID, "append");
+                        // FileLogger.Instance.AppendEntry(action.Value.ToString(), action.PointDetails.Count.ToString(), Utils.Micros.ToString(), action.Received, Params.ID, "append");
                     }
                     return true;
                 } else 

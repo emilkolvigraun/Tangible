@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 
 namespace TangibleNode
 {
     class Broadcast 
     {
-        public Sender Self {get; set;} = Sender.Self;
+        public Credentials Self {get; set;} = Credentials.Self;
+        public List<Credentials> Members {get; set;} = StateLog.Instance.Nodes.AsCredentials;
     }
 }

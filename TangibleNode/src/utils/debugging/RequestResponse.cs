@@ -4,6 +4,6 @@ namespace TangibleNode
 {
     class RequestResponse
     {
-        public List<ESBResponse> Batch {get; set;}
+        public Dictionary<string, ValueResponse> Batch {get; set;}
     }
 }

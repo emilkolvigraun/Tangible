@@ -1,23 +1,49 @@
-﻿using System;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System;
 
 namespace TangibleDriver
 {
     class TestRequestHandler : IRequestHandler
     {
-        public ValueResponse OnRequest(PointRequest request)
-        {
-            Dictionary<string, (string Value, string Time)> r0 = new Dictionary<string, (string Value, string Time)>();
-            request.PointIDs.ForEach((s) => {
-                r0.Add(s, (request.Value, Utils.Micros.ToString()));
-            });
-            return new ValueResponse(){
-                ActionID = request.ID,
-                Message = r0
+        private List<ValueResponseBatch> Responses = new List<ValueResponseBatch>();
+
+        public void ProcessWrite(WriteRequest wrq) 
+        { 
+            ValueResponseBatch rr = new ValueResponseBatch
+            {
+                UUID = wrq.UUID,
+                Responses = new HashSet<ValueResponse>()
             };
+
+            foreach (string sensorID in wrq.Points)
+            {
+                rr.Responses.Add(new ValueResponse {
+                    Timestamp = Utils.Millis,
+                    Epoch = "millis",
+                    Value = wrq.Value,
+                    Measure = "temperature",
+                    Unit = "celcius",
+                    Protocol = "test",
+                    Point = sensorID
+                });   
+            }
+
+            Logger.Write(Logger.Tag.INFO, "Processed " + rr.Responses.Count.ToString() + " write requests");
+            Responses.Add(rr);
+        }
+
+        public void ProcessRead(ReadRequest rrq) { }
+        public void ProcessSubscribe(SubscribeRequest rrq) { }
+        public void ProcessSubscribeStop(SubscribeRequest rrq) { }
+
+        public ValueResponseBatch[] GetResponses()
+        {
+            ValueResponseBatch[] responses = new ValueResponseBatch[Responses.Count];
+            // Responses.CopyTo(0, responses, 0, responses.Length);
+            Array.Copy(Responses.ToArray(), responses, Responses.Count);
+            Responses.Clear();
+            Logger.Write(Logger.Tag.INFO, "Retrieved " + responses.Length.ToString() + " ValueResponses");
+            return responses;
         }
     }
 
@@ -36,6 +62,12 @@ namespace TangibleDriver
 
             TestRequestHandler handler = new TestRequestHandler();
             Driver driver = new Driver(handler);
+
+            Logger.Write(Logger.Tag.INFO, "ID -> " + Params.ID);
+            Logger.Write(Logger.Tag.INFO, "ADDRESS -> " + Params.HOST+":"+Params.PORT);
+            Logger.Write(Logger.Tag.INFO, "NODE -> " + Params.NODE_NAME);
+            Logger.Write(Logger.Tag.INFO, "IMAGE -> " + Params.IMAGE);
+            Logger.Write(Logger.Tag.INFO, "-----------");
 
             driver.Start();
         }

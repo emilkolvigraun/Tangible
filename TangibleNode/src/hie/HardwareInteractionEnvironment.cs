@@ -27,31 +27,35 @@ namespace TangibleNode
             });
         }
 
-        public Driver GetOrCreateDriver(DataRequest action, bool wait = false)
+        public List<Driver> GetOrCreateDriver(DataRequest action, bool wait = false)
         {
-            if (!_drivers.ContainsKey(action.Image))
+            List<Driver> drs = new List<Driver>();
+            foreach(KeyValuePair<string, List<string>> details in action.PointDetails)
             {
-                // create driver
-                Create(action.Image, wait);
-            } 
-
-            Driver d0 = _drivers[action.Image].ElementAt(0);
-
-            // extract the least busy driver
-            foreach (Driver d1 in _drivers[action.Image].ToList())
-            {
-                if (d1.BehindCount < d0.BehindCount)
+                if (!_drivers.ContainsKey(details.Key))
                 {
-                    d0 = d1;
+                    // create driver
+                    Create(details.Key, wait);
+                } 
+
+                Driver d0 = _drivers[details.Key].ElementAt(0);
+
+                // extract the least busy driver
+                foreach (Driver d1 in _drivers[details.Key].ToList())
+                {
+                    if (d1.BehindCount < d0.BehindCount)
+                    {
+                        d0 = d1;
+                    }
                 }
-            }
 
-            if (d0.BehindCount > 500)
-            {
-                Create(action.Image, false, _drivers[action.Image].Count);
+                if (d0.BehindCount > 500)
+                {
+                    Create(details.Key, false, _drivers[details.Key].Count);
+                }
+                drs.Add(d0);
             }
-
-            return d0;
+            return drs;
         }
 
         private void Create(string image, bool wait = false, int replica = 0)

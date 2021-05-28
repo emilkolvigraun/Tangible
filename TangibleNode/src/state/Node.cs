@@ -7,9 +7,12 @@ namespace TangibleNode
         public SynchronousClient Client {get;}
         private TDict<string, DataRequest> _tasks {get;}
         public TInt Heartbeat {get;}
-        private Sender _node {get;}
+        private Credentials _node {get;}
 
-        public Node(Sender node)
+        private bool HIEVar {get;} = true;
+        private bool Signal {get;} = true;
+
+        public Node(Credentials node)
         {
             _node = node;
             Client = new SynchronousClient(node.Host, node.Port, node.ID);
@@ -17,7 +20,7 @@ namespace TangibleNode
             Heartbeat = new TInt();
         }
 
-        public Sender AsNode
+        public Credentials AsNode
         {
             get 
             {

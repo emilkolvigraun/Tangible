@@ -12,7 +12,7 @@ namespace TangibleDriver
         {
             Params.LoadEnvironment();
 
-            BaseHandler _handler = new BaseHandler();
+            MainLoop _handler = new MainLoop();
             _listener = new AsynchronousSocketListener(_handler);
 
             _handlerThread = new Thread(() => {

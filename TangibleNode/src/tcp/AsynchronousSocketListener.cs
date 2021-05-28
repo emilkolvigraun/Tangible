@@ -149,21 +149,21 @@ namespace TangibleNode
                 {
                     if (request.Type == Call._Type.VALUE_RESPONSE)
                     {
-                        ValueResponse vr = Encoder.DecodeValueResponse(request.Data);
+                        ValueResponseBatch vr = Encoder.DecodeValueResponseBatch(request.Data);
                         if (CurrentState.Instance.IsLeader)
                         {
-                            StateLog.Instance.Leader_AddActionCompleted(vr.ActionID, Params.ID);
+                            StateLog.Instance.Leader_AddActionCompleted(vr.UUID, Params.ID);
                         }
                         else 
                         {
-                            StateLog.Instance.Follower_MarkActionCompleted(vr.ActionID);
+                            StateLog.Instance.Follower_MarkActionCompleted(vr.UUID);
                         }
-                        StateLog.Instance.RemoveCurrentTask(vr.ActionID);
+                        StateLog.Instance.RemoveCurrentTask(vr.UUID);
                         if (Params.TEST_RECEIVER_HOST!=string.Empty)
                         {
                             try 
                             {
-                                TestReceiverClient.Instance.AddEntry(vr);
+                                TestReceiverClient.Instance.AddEntry(vr.Responses);
                             } catch (Exception e)
                             {
                                 Logger.Write(Logger.Tag.ERROR, "ADD_ENTRY: " + e.ToString());
@@ -181,6 +181,7 @@ namespace TangibleNode
             }
             else 
             {
+                CurrentState.Instance.SetCandidateResolve(false);
                 HashSet<string> cpa = new HashSet<string>();
                 if (requestBatch.Completed!=null) 
                 {
@@ -202,15 +203,16 @@ namespace TangibleNode
                                 ID = Params.ID,
                                 LogCount = count
                             };
-                        }
+                        } 
                         else if (Utils.IsCandidate(CurrentState.Instance.Get_State.State)) 
                         {
+                            Params.OverwriteParameters(vote.Parameters);
                             CurrentState.Instance.CancelState();
                             CurrentState.Instance.Timer.Reset(((int)(Params.HEARTBEAT_MS/2)));
                         }
                         else CurrentState.Instance.Timer.Reset();
                         response.Add(request.ID, true);
-                        Logger.Write(Logger.Tag.WARN, "Received VOTE.");
+                        Logger.Write(Logger.Tag.WARN, "Received VOTE (OVERWROTE PARAMETERS).");
                         return new Response()
                         {
                             Status = response,
@@ -228,7 +230,7 @@ namespace TangibleNode
                         response.Add(request.ID, b);
                     } else if (request.Type == Call._Type.NODE_ADD)
                     {
-                        Sender node = Encoder.DecodeNode(request.Data);
+                        Credentials node = Encoder.DecodeNode(request.Data);
                         StateLog.Instance.Nodes.AddNewNode(node);
                         // if (CurrentState.Instance.IsLeader)
                         // CurrentState.Instance.CancelState();
@@ -236,7 +238,7 @@ namespace TangibleNode
                     }
                     else if (request.Type == Call._Type.NODE_DEL)
                     {
-                        Sender node = Encoder.DecodeNode(request.Data);
+                        Credentials node = Encoder.DecodeNode(request.Data);
                         StateLog.Instance.ClearPeerLog(node.ID);
                         StateLog.Instance.Nodes.TryRemoveNode(node.ID);
                         CurrentState.Instance.CancelState();

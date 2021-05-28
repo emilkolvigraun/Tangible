@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 
 namespace TangibleNode
 {
@@ -43,22 +44,22 @@ namespace TangibleNode
             }
         }
 
-        public void MarshallDataRequest(ESBDataRequest dataRequest)
+        public void MarshallDataRequest(ESBDataRequest esbRequest)
         {
-
-            Dictionary<string, List<string>> pointDetails = ExtractFromRDF(dataRequest.Benv);
+            Dictionary<string, List<string>> pointDetails = ExtractFromRDF(esbRequest.Benv);
 
             // List<Request> requests = new List<Request>();
             DataRequest action = new DataRequest(){
-                Type = dataRequest.Type,
+                Type = esbRequest.Type,
                 PointDetails = pointDetails,
-                Priority = dataRequest.Priority,
-                Value = dataRequest.Value,
+                Priority = esbRequest.Priority,
+                Value = esbRequest.Value,
                 ID = Utils.GenerateUUID(),
                 Assigned = StateLog.Instance.Nodes.ScheduleRequest(),
-                ReturnTopic = dataRequest.ReturnTopic,
+                ReturnTopic = esbRequest.ReturnTopic,
                 Received = Utils.Micros.ToString() // debugging
             };
+            Logger.Write(Logger.Tag.WARN, "SCHEDULING to " + action.Assigned);
             StateLog.Instance.AppendAction(action);
             Call r0 = new Call() {
                 ID = Utils.GenerateUUID(),
@@ -77,6 +78,9 @@ namespace TangibleNode
 
             Dictionary<string, List<string>> table = new Dictionary<string, List<string>>();
             table.Add("emilkolvigraun/tangible-test-driver", points);
+
+            // foreach(KeyValuePair<string, List<string>> tableInfo in table)
+            //     Console.WriteLine(tableInfo.Key + " " + tableInfo.Value);
             
             return table;
         }

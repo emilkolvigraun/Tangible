@@ -1,10 +1,14 @@
 using System;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System.Collections.Generic;
 
 namespace TangibleNode 
 {
     class Logger 
     {
+    
+        [JsonConverter(typeof(StringEnumConverter))] 
         public enum Tag 
         {
             DEBUG,
@@ -16,13 +20,13 @@ namespace TangibleNode
         }
 
         // EVALUATION DOES NOT LOAD THIS THROUGH CONFIG FILE
-        private HashSet<Tag> _tags = new HashSet<Tag>{Tag.DEBUG, Tag.COMMIT, Tag.INFO, Tag.WARN, Tag.ERROR, Tag.FATAL}; 
+        public HashSet<Tag> _tags;
 
         private static readonly object _i_lock = new object();
         private readonly object _lock = new object();
         private static Logger _instance = null;
 
-        private static Logger Instance 
+        public static Logger Instance 
         {
             get 
             {
@@ -66,7 +70,7 @@ namespace TangibleNode
         {
             if (_tags.Contains(tag))
             {
-                if (_tags.Contains(Tag.DEBUG))
+                if (!_tags.Contains(Tag.DEBUG))
                 {
                     // TURNED OFF FOR EVALUATION/DEBUGGING
                     // FileLogger.Instance.WriteToFile(tag.ToString().PadRight(6)+"|"+message);

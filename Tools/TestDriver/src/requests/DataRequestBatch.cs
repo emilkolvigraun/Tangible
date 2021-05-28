@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-namespace TangibleNode
+namespace TangibleDriver
 {
-    class PointRequestBatch
+    class DataRequestBatch
     {
         public List<DataRequest> Batch {get; set;}
     }

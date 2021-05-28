@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace TangibleDriver
 {
-    class PointResponse
+    class StatusResponse
     {
         public Dictionary<string, bool> Status {get; set;}
     }

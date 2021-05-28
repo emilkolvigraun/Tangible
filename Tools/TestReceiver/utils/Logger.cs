@@ -21,46 +21,33 @@ namespace TestReceiver
             }
         }
 
-        public static void Write(ESBResponse response)
-        {
-            Instance.Log(response);
-        }
-
-        public static void PrintHeader()
-        {
-            Instance.Print(ConsoleColor.Green, "time_received");
-            Instance.Comma();
-            Instance.Print(ConsoleColor.Cyan, "node");
-            Instance.Comma();
-            Instance.Print(ConsoleColor.Red, "point_value");
-            Instance.Comma();
-            Instance.Print(ConsoleColor.Blue, "point_value_time");
-            Instance.Comma();
-            Instance.PrintLine(ConsoleColor.Magenta, "points");
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-        private void Log(ESBResponse response)
+        public static void Write(ValueResponse response)
         {
             string time = Utils.Micros.ToString();
             // string amount = response.Message.Keys.Count.ToString();
-            lock(_lock)
+            lock(Instance._lock)
             {   
-                foreach(KeyValuePair<string, (string Value, string Time)> entry in response.Message)
-                {
-                    Print(ConsoleColor.Green, time);
-                    Comma();
-                    Print(ConsoleColor.Yellow, entry.Key);
-                    Comma();
-                    Print(ConsoleColor.Red, entry.Value.Value);
-                    Comma();
-                    Print(ConsoleColor.Blue, entry.Value.Time);
-                    Comma();
-                    PrintLine(ConsoleColor.Green, response.Message.Count.ToString());
-                    // Comma();
-                    // PrintLine(ConsoleColor.Gray, amount);
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
+
+                string message = Encoder.SerializePretty(response);
+                Instance.PrintLine(ConsoleColor.Yellow, message);
+                Instance.PrintLine(ConsoleColor.Magenta, "----------");
+
+
+                // foreach(KeyValuePair<string, (string Value, string Time)> entry in response.Message)
+                // {
+                //     Print(ConsoleColor.Green, time);
+                //     Comma();
+                //     Print(ConsoleColor.Yellow, entry.Key);
+                //     Comma();
+                //     Print(ConsoleColor.Red, entry.Value.Value);
+                //     Comma();
+                //     Print(ConsoleColor.Blue, entry.Value.Time);
+                //     Comma();
+                //     PrintLine(ConsoleColor.Green, response.Message.Count.ToString());
+                //     // Comma();
+                //     // PrintLine(ConsoleColor.Gray, amount);
+                //     Console.ForegroundColor = ConsoleColor.White;
+                // }
                 // string value = response.Value;
                 // string T0 = response.T0;
                 // string T1 = response.T1;
@@ -88,6 +75,20 @@ namespace TestReceiver
                 // PrintLine(ConsoleColor.Yellow, T5);
                 // Console.ForegroundColor = ConsoleColor.White;
             }
+        }
+
+        public static void PrintHeader()
+        {
+            Instance.Print(ConsoleColor.Green, "time_received");
+            Instance.Comma();
+            Instance.Print(ConsoleColor.Cyan, "node");
+            Instance.Comma();
+            Instance.Print(ConsoleColor.Red, "point_value");
+            Instance.Comma();
+            Instance.Print(ConsoleColor.Blue, "point_value_time");
+            Instance.Comma();
+            Instance.PrintLine(ConsoleColor.Magenta, "points");
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         private void Print(ConsoleColor color, string msg)

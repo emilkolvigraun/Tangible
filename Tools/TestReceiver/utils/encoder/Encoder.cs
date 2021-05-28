@@ -6,17 +6,17 @@ namespace TestReceiver
 {
     class Encoder 
     {
-        public static PointResponse DecodePointResponse(byte[] msg)
+        public static StatusResponse DecodePointResponse(byte[] msg)
         {
             try 
             {
-                return JsonConvert.DeserializeObject<PointResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
+                return JsonConvert.DeserializeObject<StatusResponse>(Encoding.ASCII.GetString(msg).Replace("<EOF>",""));
             } catch 
             {
                 return null;
             }
         }
-        public static byte[] EncodePointResponse(PointResponse msg)
+        public static byte[] EncodePointResponse(StatusResponse msg)
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
         }
@@ -27,6 +27,11 @@ namespace TestReceiver
         public static RequestResponse DecodeRequestResponse(string msg)
         {
             return JsonConvert.DeserializeObject<RequestResponse>(msg.Replace("<EOF>",""));
+        }
+
+        public static string SerializePretty(object obj)
+        {
+            return JsonConvert.SerializeObject(obj, Formatting.Indented);
         }
     }
 }
