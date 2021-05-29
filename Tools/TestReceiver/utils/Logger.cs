@@ -21,7 +21,7 @@ namespace TestReceiver
             }
         }
 
-        public static void Write(ValueResponse response)
+        public static void Write(string response)
         {
             string time = Utils.Micros.ToString();
             // string amount = response.Message.Keys.Count.ToString();

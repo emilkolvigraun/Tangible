@@ -9,6 +9,7 @@ namespace TangibleDriver
         // Not used by driver
         // TODO: REMOVE FROM DRIVER
         public List<string> Completed {get; set;}
+        public bool HIEVar {get; set;} = true;
         public byte[] Data {get; set;}
     }
 }

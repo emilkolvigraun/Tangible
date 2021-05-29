@@ -9,8 +9,21 @@ namespace TangibleNode
         public TInt Heartbeat {get;}
         private Credentials _node {get;}
 
-        public bool HIEVar {get;} = true;
-        public bool Signal {get;} = false;
+        private bool hie_var = true;
+
+        public bool HIEVar {
+            get{
+                return hie_var;
+            } 
+            set {
+                if (hie_var != value)
+                    Logger.Write(Logger.Tag.WARN, "HIEvar set to " + hie_var.ToString() + " for " + _node.ID.ToString());
+                hie_var = value;
+            }   
+        } 
+        
+
+        public bool Signal {get; set;} = false;
 
         public Node(Credentials node)
         {
@@ -40,7 +53,7 @@ namespace TangibleNode
             if (!_tasks.ContainsKey(action.ID))
             {
                 _tasks.AddSafe(new KeyValuePair<string, DataRequest>(action.ID, action));
-                Logger.Write(Logger.Tag.COMMIT, "Committed [action:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
+                Logger.Write(Logger.Tag.COMMIT, "Committed [entry:"+action.ID.Substring(0,10)+"...] to [node:"+action.Assigned+"]");
             } 
         }
 

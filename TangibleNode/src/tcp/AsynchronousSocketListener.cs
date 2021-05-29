@@ -216,7 +216,8 @@ namespace TangibleNode
                         return new Response()
                         {
                             Status = response,
-                            Data = Encoder.EncodeVote(myVote)
+                            Data = Encoder.EncodeVote(myVote),
+                            HIEVar = CurrentState.Instance.HIEVar
                         };
 
                     } else if (request.Type == Call._Type.DATA_REQUEST)
@@ -262,7 +263,8 @@ namespace TangibleNode
                 return new Response()
                 {
                     Status = response,
-                    Completed = completed
+                    Completed = completed,
+                    HIEVar = CurrentState.Instance.HIEVar
                 };
             }
         }

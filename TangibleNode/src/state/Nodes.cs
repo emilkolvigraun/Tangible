@@ -118,7 +118,7 @@ namespace TangibleNode
         private Node FirstNodeMeetsRequirements(string avoid, int retry, KeyValuePair<string, Node>[] peers)
         {
             Node peer = peers[retry].Value;
-            if (peer.Client.ID == avoid && peers.Length > retry+1 && NodeMeetsRequirements(peer))
+            if ((peer.Client.ID == avoid || !NodeMeetsRequirements(peer)) && peers.Length > retry+1 )
             {
                 return FirstNodeMeetsRequirements(avoid, retry+1, peers);
             }
@@ -133,7 +133,10 @@ namespace TangibleNode
         public string ScheduleRequest(string avoid = "")
         {
             int nodeCount = NodeCount;
-            if (nodeCount < 1 || CurrentState.Instance.CandidateResolve) return Params.ID;
+            if (nodeCount < 1 || CurrentState.Instance.CandidateResolve) 
+                if (CurrentState.Instance.HIEVar) return Params.ID;
+                else return null;
+
             KeyValuePair<string, Node>[] peers = new KeyValuePair<string, Node>[NodeCount];
             _nodes.CopyTo(peers, 0);
             Node selected_peer = FirstNodeMeetsRequirements(avoid, 0, peers);
@@ -151,6 +154,10 @@ namespace TangibleNode
             }
 
             if (selected_peer_name == avoid) return Params.ID;
+
+            if (!NodeMeetsRequirements(selected_peer)) 
+                if (CurrentState.Instance.HIEVar) return Params.ID;
+                else return null;
 
             return selected_peer_name;
         }

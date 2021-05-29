@@ -4,6 +4,7 @@ namespace TestReceiver
 {
     class RequestResponse
     { 
-        public Dictionary<string, ValueResponse> Batch {get; set;}
+        
+        public Dictionary<string, string> Batch {get; set;}
     }
 }

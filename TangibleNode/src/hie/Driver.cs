@@ -21,7 +21,7 @@ namespace TangibleNode
         {
             if (driver.Heartbeat.Value > Params.MAX_RETRIES)
             {
-
+                CurrentState.Instance.SetHIEVar(false);
                 request.Batch.ForEach((r0) => {
                     driver.CurrentlySending.Remove(r0.ID);
                     driver.RemoveRequestBehind(r0.ID);
@@ -49,10 +49,7 @@ namespace TangibleNode
                     }
                 });
 
-            }
-
-
-            if (response!=null && response.Status != null)
+            } else if (response!=null && response.Status != null)
             {
                 request.Batch.ForEach((r0) => {
                     driver.CurrentlySending.Remove(r0.ID);
@@ -61,6 +58,7 @@ namespace TangibleNode
                     {
                         driver.RemoveRequestBehind(r0.ID);
                         driver.Heartbeat.Reset();
+                        CurrentState.Instance.SetHIEVar(true);
                     } else 
                     {
                         driver.AddRequestBehind(r0);

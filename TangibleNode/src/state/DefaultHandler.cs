@@ -38,6 +38,9 @@ namespace TangibleNode
                     StateLog.Instance.AddToNodeBehind(receiverID, r);
                 }
             });
+            Node node;
+            bool nb = StateLog.Instance.Nodes.TryGetNode(receiverID, out node);
+            if (nb) node.HIEVar = r0.HIEVar;
 
         }
     }

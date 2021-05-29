@@ -12,6 +12,7 @@ namespace TangibleNode
 
         public void Reset()
         {
+            CurrentState.Instance.SetHIEVar(true);
             _lock.EnterWriteLock();
             _value = 0;
             _lock.ExitWriteLock();

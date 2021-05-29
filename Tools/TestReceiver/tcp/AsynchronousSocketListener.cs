@@ -128,7 +128,7 @@ namespace TestReceiver
             try 
             {
                 Dictionary<string, bool> response = new Dictionary<string, bool>();
-                foreach (KeyValuePair<string, ValueResponse> request in requestBatch.Batch)
+                foreach (KeyValuePair<string, string> request in requestBatch.Batch)
                 {
                     response.Add(request.Key, true);
                     Logger.Write(request.Value);

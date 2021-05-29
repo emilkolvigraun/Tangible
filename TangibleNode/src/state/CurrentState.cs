@@ -7,6 +7,29 @@ namespace TangibleNode
         private TState _state {get;} = new TState();
         private readonly object _object_lock = new object();
         private bool _candidate_resolve = false;
+
+        private bool hie_var = false;
+
+        public void SetHIEVar(bool b)
+        {
+            lock (_object_lock)
+            {
+                if (hie_var!=b)
+                    Logger.Write(Logger.Tag.WARN, "HIEvar set to " + hie_var.ToString());
+                hie_var = b;
+            }
+        }
+
+        public bool HIEVar 
+        {
+            get 
+            {
+                lock(_object_lock)
+                {
+                    return hie_var;
+                }
+            }
+        }
         // private bool _received_vote = false;
 
         // public bool ReceviedVote 

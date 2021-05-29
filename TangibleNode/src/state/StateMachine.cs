@@ -56,6 +56,9 @@ namespace TangibleNode
             });
             lock(_lock2)
             {
+                Node node;
+                bool nb = StateLog.Instance.Nodes.TryGetNode(receiverID, out node);
+                if (nb) node.HIEVar = r0.HIEVar;
                 // foreach(string s in votes) Console.WriteLine(s);
                 // if (CurrentState.Instance.ReceviedVote)
                 // {
