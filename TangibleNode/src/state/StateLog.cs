@@ -62,15 +62,15 @@ namespace TangibleNode
                 Nodes.ForEachPeer((p) => {
                     if (a==null)
                     {
-                        a = p.GetAction(actionID);
+                        a = p.GetEntry(actionID);
                     }
-                    p.RemoveAction(actionID);
+                    p.RemoveEntry(actionID);
                     if (!this.ActionsCompleted.ContainsKey(p.Client.ID))
                         this.ActionsCompleted.Add(p.Client.ID, new HashSet<string>());
                     if (!this.ActionsCompleted[p.Client.ID].Contains(actionID))
                     {
                         this.ActionsCompleted[p.Client.ID].Add(actionID);
-                        Logger.Write(Logger.Tag.COMMIT, "Comitted [action:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
+                        Logger.Write(Logger.Tag.COMMIT, "Comitted [entry:" + actionID.Substring(0,10)+"...] COMPLETE, to " + p.Client.ID + ", behind: " + this.ActionsCompleted[p.Client.ID].Count);
                     }
                 });
                 // if (a!=null && CurrentState.Instance.IsLeader)
@@ -119,9 +119,9 @@ namespace TangibleNode
             {
                 MyCompletedActions.Remove(actionID);
                 Nodes.ForEachPeer((p) => {
-                    p.RemoveAction(actionID);
+                    p.RemoveEntry(actionID);
                 });
-                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETION [action:" + actionID.Substring(0,10)+"...]");
+                Logger.Write(Logger.Tag.COMMIT, "Commited COMPLETION [entry:" + actionID.Substring(0,10)+"...]");
             }
         }
 

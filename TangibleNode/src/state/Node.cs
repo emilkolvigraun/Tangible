@@ -9,8 +9,8 @@ namespace TangibleNode
         public TInt Heartbeat {get;}
         private Credentials _node {get;}
 
-        private bool HIEVar {get;} = true;
-        private bool Signal {get;} = true;
+        public bool HIEVar {get;} = true;
+        public bool Signal {get;} = false;
 
         public Node(Credentials node)
         {
@@ -28,14 +28,14 @@ namespace TangibleNode
             }
         }
 
-        public DataRequest GetAction(string actionID)
+        public DataRequest GetEntry(string actionID)
         {
             if (_tasks.ContainsKey(actionID))
                 return _tasks[actionID];
             return null;
         }
 
-        public void AddAction(DataRequest action)
+        public void AddEntry(DataRequest action)
         {
             if (!_tasks.ContainsKey(action.ID))
             {
@@ -44,18 +44,18 @@ namespace TangibleNode
             } 
         }
 
-        public void RemoveAction(string actionID)
+        public void RemoveEntry(string actionID)
         {
             if (_tasks.ContainsKey(actionID))
                 _tasks.Remove(actionID);
         }
 
-        public void ForEachAction(System.Action<DataRequest> action)
+        public void ForEachEntry(System.Action<DataRequest> action)
         {
             _tasks.ForEachRead((p) => action(p));
         }
 
-        public int ActionCount
+        public int Entries
         {
             get 
             {

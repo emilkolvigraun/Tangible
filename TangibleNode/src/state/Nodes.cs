@@ -91,7 +91,7 @@ namespace TangibleNode
             {
                 int entries = _nodes.Count;
                 ForEachPeer((p) => {
-                    entries += p.ActionCount;
+                    entries += p.Entries;
                 });
                 return entries;
             }
@@ -109,20 +109,25 @@ namespace TangibleNode
         {
             if (_nodes.ContainsKey(id))
             {
-                _nodes[id].AddAction(action);
+                _nodes[id].AddEntry(action);
                 return true;
             }
             return false;
         }
 
-        private Node FindAnotherThanToAvoid(string avoid, int retry, KeyValuePair<string, Node>[] peers)
+        private Node FirstNodeMeetsRequirements(string avoid, int retry, KeyValuePair<string, Node>[] peers)
         {
             Node peer = peers[retry].Value;
-            if (peer.Client.ID == avoid && peers.Length > retry+1)
+            if (peer.Client.ID == avoid && peers.Length > retry+1 && NodeMeetsRequirements(peer))
             {
-                return FindAnotherThanToAvoid(avoid, retry+1, peers);
+                return FirstNodeMeetsRequirements(avoid, retry+1, peers);
             }
             return peer;
+        }
+
+        private bool NodeMeetsRequirements(Node node)
+        {
+            return node.HIEVar && !node.Signal;
         }
 
         public string ScheduleRequest(string avoid = "")
@@ -131,14 +136,14 @@ namespace TangibleNode
             if (nodeCount < 1 || CurrentState.Instance.CandidateResolve) return Params.ID;
             KeyValuePair<string, Node>[] peers = new KeyValuePair<string, Node>[NodeCount];
             _nodes.CopyTo(peers, 0);
-            Node selected_peer = FindAnotherThanToAvoid(avoid, 0, peers);
-            if (selected_peer.ActionCount == 0) return selected_peer.Client.ID;
+            Node selected_peer = FirstNodeMeetsRequirements(avoid, 0, peers);
+            if (selected_peer.Entries == 0) return selected_peer.Client.ID;
             string selected_peer_name = selected_peer.Client.ID;
 
             foreach (KeyValuePair<string, Node> peer in peers)
             {
                 if (peer.Value.Client.ID == avoid) continue;
-                if (peer.Value.ActionCount < selected_peer.ActionCount)
+                if (peer.Value.Entries < selected_peer.Entries && NodeMeetsRequirements(peer.Value))
                 {
                     selected_peer_name = peer.Value.Client.ID;
                     selected_peer = peer.Value;

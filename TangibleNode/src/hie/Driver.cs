@@ -19,6 +19,39 @@ namespace TangibleNode
     {
         public void OnResponse(Driver driver, DataRequestBatch request, StatusResponse response)
         {
+            if (driver.Heartbeat.Value > Params.MAX_RETRIES)
+            {
+
+                request.Batch.ForEach((r0) => {
+                    driver.CurrentlySending.Remove(r0.ID);
+                    driver.RemoveRequestBehind(r0.ID);
+                    if (CurrentState.Instance.IsLeader)
+                    {
+                        StateLog.Instance.Leader_AddActionCompleted(r0.ID, Params.ID);
+                    }
+                    else 
+                    {
+                        StateLog.Instance.Follower_MarkActionCompleted(r0.ID);
+                    }
+                    StateLog.Instance.RemoveCurrentTask(r0.ID);
+
+                    Logger.Write(Logger.Tag.WARN, "Failed to execute data-request [entry:" + r0.ID.Substring(0,10) + "]");
+
+                    if (Params.TEST_RECEIVER_HOST!=string.Empty)
+                    {
+                        try 
+                        {
+                            TestReceiverClient.Instance.AddEntryError("Failed to deploy driver.");
+                        } catch (Exception e)
+                        {
+                            Logger.Write(Logger.Tag.ERROR, "ADD_ENTRY: " + e.ToString());
+                        }
+                    }
+                });
+
+            }
+
+
             if (response!=null && response.Status != null)
             {
                 request.Batch.ForEach((r0) => {
@@ -268,7 +301,8 @@ namespace TangibleNode
                 Host = Params.DOCKER_HOST,
                 Port = Params.GetUnusedPort(),
                 AssociatedNode = Credentials.Self,
-                Image = image
+                Image = image,
+                Replica = replica
             };
 
             try 

@@ -159,5 +159,9 @@ namespace TangibleNode
         {
             return Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(msg, Formatting.None)+"<EOF>");
         }
+        public static string SerializeObjectIndented(object node)
+        {
+            return JsonConvert.SerializeObject(node, Formatting.Indented);
+        }
     }
 }

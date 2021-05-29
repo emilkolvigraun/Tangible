@@ -21,7 +21,7 @@ namespace TangibleNode
                 // Create a TCP/IP  socket.  
         Socket sender = null;
 
-        private TDict<string, ValueResponse> _responsesNotSend = new TDict<string, ValueResponse>();
+        private TDict<string, string> _responsesNotSend = new TDict<string, string>();
         private readonly object _lock = new object();
 
         public int Count 
@@ -42,9 +42,21 @@ namespace TangibleNode
 
                 foreach(ValueResponse r in response)
                 {
-                    _responsesNotSend.Add(Utils.GenerateUUID(), r);
+                    _responsesNotSend.Add(Utils.GenerateUUID(), Encoder.SerializeObjectIndented(r));
 
                 }
+            }
+        }
+
+        public void AddEntryError(string response)
+        {
+            lock(_lock)
+            {
+
+                _responsesNotSend.Add(Utils.GenerateUUID(), Encoder.SerializeObjectIndented(new ErrorResponse {
+                    Status = false,
+                    Message = response
+                }));
             }
         }
 
@@ -55,8 +67,8 @@ namespace TangibleNode
                 lock(_lock)
                 {
                     if (Count < 1) return null;
-                    RequestResponse rs = new RequestResponse(){Batch=new Dictionary<string, ValueResponse>()};
-                    foreach (KeyValuePair<string, ValueResponse> r in _responsesNotSend.ToList())
+                    RequestResponse rs = new RequestResponse(){Batch=new Dictionary<string, string>()};
+                    foreach (KeyValuePair<string, string> r in _responsesNotSend.ToList())
                     {
                         rs.Batch.Add(r.Key, r.Value);
                     }
@@ -144,7 +156,7 @@ namespace TangibleNode
         private void HandleFailure(RequestResponse response)
         {
             Dictionary<string, bool> r2 = new Dictionary<string, bool>();
-            foreach (KeyValuePair<string, ValueResponse> r in response.Batch.ToList())
+            foreach (KeyValuePair<string, string> r in response.Batch.ToList())
             {
                 r2.Add(r.Key, false);
             }
@@ -156,7 +168,7 @@ namespace TangibleNode
 
         private void OnResponse(RequestResponse sender, StatusResponse receiver)
         {
-            foreach (KeyValuePair<string, ValueResponse> s in sender.Batch.ToList())
+            foreach (KeyValuePair<string, string> s in sender.Batch.ToList())
             {
                 if (receiver!=null&&receiver.Status!=null&&receiver.Status.ContainsKey(s.Key)&&receiver.Status[s.Key])
                 {

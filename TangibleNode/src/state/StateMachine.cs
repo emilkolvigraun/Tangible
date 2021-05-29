@@ -197,7 +197,7 @@ namespace TangibleNode
 
                         if (success && !CurrentState.Instance.CandidateResolve)
                         {
-                            peer.ForEachAction((a)=>{
+                            peer.ForEachEntry((a)=>{
                                 if (!_rescheduledActions.ContainsKey(a.ID))
                                 {
                                     DataRequest action = a;
@@ -213,7 +213,7 @@ namespace TangibleNode
                             });
                         } else if (success && CurrentState.Instance.CandidateResolve)
                         {
-                            peer.ForEachAction((a)=>{
+                            peer.ForEachEntry((a)=>{
                                 if (!_rescheduledActions.ContainsKey(a.ID))
                                 {
                                     DataRequest action = a;
@@ -319,11 +319,32 @@ namespace TangibleNode
                     tasks.Add(t);
                 });
                 Parallel.ForEach<Task>(tasks, (t) => { t.Start(); });
-                Task ta = Task.WhenAll(tasks);
-                try {
-                    ta.Wait();
-                }
-                catch {} 
+                // Task ta = Task.WhenAll(tasks);
+                // try {
+                //     ta.Wait();
+                // }
+                // catch {} 
+                // List<Task> tasks0 = new List<Task>();
+                // List<Driver> driver_replacements = new List<Driver>();
+                // HIE.ForEachDriver((d) => {
+                //     Task t = new Task(
+                //         ()=>{
+                //             if (d.Heartbeat.Value > Params.MAX_RETRIES+1)
+                //             {
+                //                 Driver d0 = Driver.MakeDriver(d.Image, d.Config.Replica+1);
+                //                 driver_replacements.Add(d0);
+                //             }
+                //         }
+                //     );
+                //     tasks0.Add(t);
+                // });
+                // Parallel.ForEach<Task>(tasks0, (t) => { t.Start(); });
+                // Task ta1 = Task.WhenAll(tasks0);
+                // try {
+                //     ta.Wait();
+                // }
+                // catch {} 
+                
                 TestReceiverClient.Instance.StartClient();
             }
 
